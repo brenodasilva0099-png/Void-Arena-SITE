@@ -188,7 +188,7 @@ let currentEvents = [];
 let currentMainEvent = null;
 let currentEventId = 'coliseu-void-arena';
 let realtimeDashboardTimer = null;
-let dashboardSnapshotFingerprint = '';
+let dashboardSnapshotFingerprintValue = '';
 let currentBracketData = {
   slots: Array(16).fill(null),
   quarters: Array(8).fill(null),
@@ -3575,7 +3575,7 @@ async function loadUsersLookup() {
   return usersLookup;
 }
 
-function dashboardSnapshotFingerprint(data = {}) {
+function buildDashboardSnapshotFingerprint(data = {}) {
   return JSON.stringify({
     teams: data.teams || [],
     events: data.events || [],
@@ -3585,13 +3585,13 @@ function dashboardSnapshotFingerprint(data = {}) {
 }
 
 function applyDashboardSnapshot(data = {}, options = {}) {
-  const nextFingerprint = dashboardSnapshotFingerprint(data);
+  const nextFingerprint = buildDashboardSnapshotFingerprint(data);
 
-  if (!options.force && dashboardSnapshotFingerprint === nextFingerprint) {
+  if (!options.force && dashboardSnapshotFingerprintValue === nextFingerprint) {
     return false;
   }
 
-  dashboardSnapshotFingerprint = nextFingerprint;
+  dashboardSnapshotFingerprintValue = nextFingerprint;
   teams = data.teams || [];
   usersLookup = data.users || [];
   currentEvents = data.events || [];
@@ -3624,9 +3624,39 @@ function applyDashboardSnapshot(data = {}, options = {}) {
 }
 
 async function loadTeamsAndBracket(options = {}) {
-  const data = await apiJson(`/api/dashboard/snapshot?t=${Date.now()}`);
-  applyDashboardSnapshot(data, { force: options.force !== false });
-  return data;
+  try {
+    const data = await apiJson(`/api/dashboard/snapshot?t=${Date.now()}`);
+    applyDashboardSnapshot(data, { force: options.force !== false });
+    return data;
+  } catch (snapshotError) {
+    console.warn('Snapshot do dashboard falhou, usando carregamento antigo:', snapshotError.message);
+
+    const [teamsData, usersData, eventsData, bracketData] = await Promise.all([
+      apiJson('/api/teams'),
+      apiJson('/api/users/lookup'),
+      apiJson('/api/events'),
+      apiJson('/api/bracket').catch(() => ({ bracket: {} }))
+    ]);
+
+    teams = teamsData.teams || [];
+    usersLookup = usersData.users || [];
+    currentEvents = eventsData.events || [];
+
+    if (!currentEvents.some((event) => event.id === currentEventId) && currentEvents[0]) {
+      currentEventId = currentEvents[0].id;
+    }
+
+    currentMainEvent = mainEvent();
+    currentBracketData = normalizeBracketData(bracketData.bracket || {});
+
+    renderTeams();
+    renderMyTeams();
+    renderPlayerHomeData();
+    renderBracket();
+    buildTournamentGroupsPreview();
+
+    return { teams, users: usersLookup, events: currentEvents, bracket: currentBracketData };
+  }
 }
 
 async function refreshDashboardRealtime() {
@@ -4751,51 +4781,44 @@ function stripInteractiveAttributes(root) {
 function installTrainingAnalysisButton() {
   if (document.querySelector('[data-training-analysis-link="true"]')) return;
 
-  const href = '/pages/treinos.html';
-  const candidates = Array.from(document.querySelectorAll('a, button, .nav-item, .sidebar-btn, [data-section], [data-page]'));
+  const candidates = Array.from(document.querySelectorAll('a, button, [role="button"], .nav-item, .sidebar-btn, .side-action, .menu-action'));
   const statsButton = candidates.find((el) => /estat[íi]sticas/i.test((el.textContent || '').trim()));
 
-  if (statsButton) {
-    const clone = statsButton.cloneNode(true);
-    stripInteractiveAttributes(clone);
+  if (!statsButton) return;
 
-    clone.dataset.trainingAnalysisLink = 'true';
-    clone.setAttribute('aria-label', 'Abrir Análise de Treinos');
-    clone.title = 'Análise de Treinos';
+  const clone = statsButton.cloneNode(true);
+  clone.dataset.trainingAnalysisLink = 'true';
+  clone.removeAttribute('id');
+  clone.removeAttribute('data-section');
+  clone.removeAttribute('data-page');
+  clone.removeAttribute('data-action');
+  clone.removeAttribute('aria-current');
 
-    const icon = clone.querySelector('.nav-icon, .sidebar-icon, .menu-icon, .btn-icon, .action-icon, span');
-    if (icon && icon.textContent.trim().length <= 3) {
-      icon.textContent = '🎥';
-    }
+  Array.from(clone.querySelectorAll('*')).forEach((el) => {
+    el.removeAttribute('id');
+    el.removeAttribute('aria-current');
+  });
 
-    const changedText = replaceTextNodes(clone, /estat[íi]sticas/gi, 'Análise de Treinos');
-    if (!changedText) {
-      clone.textContent = '🎥 Análise de Treinos';
-    }
+  const originalHtml = clone.innerHTML;
+  clone.innerHTML = originalHtml
+    .replace(/📊|📈|📉|🏆/g, '🎥')
+    .replace(/Estat[íi]sticas/g, 'Análise de Treinos')
+    .replace(/estat[íi]sticas/g, 'Análise de Treinos');
 
-    if (clone.tagName === 'A') {
-      clone.href = href;
-    } else {
-      clone.type = 'button';
-      clone.addEventListener('click', () => {
-        window.location.href = href;
-      });
-    }
-
-    statsButton.insertAdjacentElement('afterend', clone);
-    return;
+  if (!/Análise de Treinos/i.test(clone.textContent || '')) {
+    clone.textContent = '🎥 Análise de Treinos';
   }
 
-  const sidebar = document.querySelector('.sidebar, aside, nav, .side-menu, .dashboard-sidebar');
-  if (sidebar) {
-    const link = document.createElement('a');
-    link.href = href;
-    link.dataset.trainingAnalysisLink = 'true';
-    link.className = 'sidebar-btn';
-    link.textContent = '🎥 Análise de Treinos';
-    link.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;padding:12px 14px;border-radius:14px;text-decoration:none;color:inherit;background:rgba(139,92,246,.14);border:1px solid rgba(167,139,250,.24);font-weight:800;';
-    sidebar.appendChild(link);
+  if (clone.tagName === 'A') {
+    clone.href = '/pages/treinos.html';
+  } else {
+    clone.type = 'button';
+    clone.onclick = () => {
+      window.location.href = '/pages/treinos.html';
+    };
   }
+
+  statsButton.insertAdjacentElement('afterend', clone);
 }
 
 if (document.readyState === 'loading') {
