@@ -54,6 +54,7 @@ const howToModal = document.querySelector('#howToModal');
 const closeHowToBtn = document.querySelector('#closeHowToBtn');
 const openSiteChatBtn = document.querySelector('#openSiteChatBtn');
 const openStatsBtn = document.querySelector('#openStatsBtn');
+const openTrainingAnalysisBtn = document.querySelector('#openTrainingAnalysisBtn');
 const statsNotificationBadge = document.querySelector('#statsNotificationBadge');
 const statsChatModal = document.querySelector('#statsChatModal');
 const closeStatsChatBtn = document.querySelector('#closeStatsChatBtn');
@@ -666,7 +667,20 @@ function renderEventRegisteredTeams(event = mainEvent()) {
   currentMainEvent = event || null;
 
   const limit = Number(event?.teamLimit || tournamentSettings.teamLimit || 16);
-  const registeredTeams = Array.isArray(event?.registeredTeams) ? event.registeredTeams : [];
+  const originalRegisteredTeams = Array.isArray(event?.registeredTeams) ? event.registeredTeams : [];
+  const registeredIds = new Set(originalRegisteredTeams.map((team) => team.id).filter(Boolean));
+
+  let registeredTeams = originalRegisteredTeams;
+
+  // Fallback importante:
+  // se o evento ainda não tem inscrições vinculadas, mas existem times no banco,
+  // mostra os times cadastrados para o painel não parecer vazio.
+  const showingDatabaseTeamsFallback = !registeredTeams.length && Array.isArray(teams) && teams.length > 0;
+
+  if (showingDatabaseTeamsFallback) {
+    registeredTeams = teams;
+  }
+
   const count = registeredTeams.length;
   const progress = limit > 0 ? Math.min(100, Math.round((count / limit) * 100)) : 0;
 
@@ -676,19 +690,26 @@ function renderEventRegisteredTeams(event = mainEvent()) {
   if (!registeredTeams.length) {
     eventRegisteredTeams.innerHTML = `
       <div class="chat-empty-state">
-        <strong>Nenhum time inscrito ainda.</strong>
-        <p>Quando um capitão inscrever um time nesse evento, ele aparece aqui automaticamente.</p>
+        <strong>Nenhum time cadastrado ainda.</strong>
+        <p>Quando um capitão criar ou inscrever um time, ele aparece aqui automaticamente.</p>
       </div>
     `;
     return;
   }
 
-  eventRegisteredTeams.innerHTML = registeredTeams.map((team) => `
+  eventRegisteredTeams.innerHTML = `
+    ${showingDatabaseTeamsFallback ? `
+      <div class="chat-empty-state event-db-fallback-note">
+        <strong>Times cadastrados no banco</strong>
+        <p>Esses times existem no banco, mas ainda não foram inscritos diretamente nesse evento.</p>
+      </div>
+    ` : ''}
+    ${registeredTeams.map((team) => `
     <button class="registered-team registered-team-btn" type="button" data-team-id="${escapeHtml(team.id)}">
       <span class="registered-team-media">${teamLogoHtml(team)}</span>
       <strong>${escapeHtml(team.name || 'Time')}</strong>
     </button>
-  `).join('');
+  `).join('')}`;
 }
 
 function renderPublicTeamsGrid() {
@@ -4778,55 +4799,10 @@ function stripInteractiveAttributes(root) {
   });
 }
 
-function installTrainingAnalysisButton() {
-  if (document.querySelector('[data-training-analysis-link="true"]')) return;
 
-  const candidates = Array.from(document.querySelectorAll('a, button, [role="button"], .nav-item, .sidebar-btn, .side-action, .menu-action'));
-  const statsButton = candidates.find((el) => /estat[íi]sticas/i.test((el.textContent || '').trim()));
-
-  if (!statsButton) return;
-
-  const clone = statsButton.cloneNode(true);
-  clone.dataset.trainingAnalysisLink = 'true';
-  clone.removeAttribute('id');
-  clone.removeAttribute('data-section');
-  clone.removeAttribute('data-page');
-  clone.removeAttribute('data-action');
-  clone.removeAttribute('aria-current');
-
-  Array.from(clone.querySelectorAll('*')).forEach((el) => {
-    el.removeAttribute('id');
-    el.removeAttribute('aria-current');
+if (openTrainingAnalysisBtn) {
+  openTrainingAnalysisBtn.addEventListener('click', () => {
+    window.location.href = '/pages/treinos.html';
   });
-
-  const originalHtml = clone.innerHTML;
-  clone.innerHTML = originalHtml
-    .replace(/📊|📈|📉|🏆/g, '🎥')
-    .replace(/Estat[íi]sticas/g, 'Análise de Treinos')
-    .replace(/estat[íi]sticas/g, 'Análise de Treinos');
-
-  if (!/Análise de Treinos/i.test(clone.textContent || '')) {
-    clone.textContent = '🎥 Análise de Treinos';
-  }
-
-  if (clone.tagName === 'A') {
-    clone.href = '/pages/treinos.html';
-  } else {
-    clone.type = 'button';
-    clone.onclick = () => {
-      window.location.href = '/pages/treinos.html';
-    };
-  }
-
-  statsButton.insertAdjacentElement('afterend', clone);
 }
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', installTrainingAnalysisButton);
-} else {
-  installTrainingAnalysisButton();
-}
-
-setTimeout(installTrainingAnalysisButton, 700);
-setTimeout(installTrainingAnalysisButton, 1800);
 

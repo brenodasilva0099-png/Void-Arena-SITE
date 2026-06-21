@@ -9447,3 +9447,28 @@ input:focus {
     max-height: none;
   }
 }
+
+
+/* Ajuste fixo do botão Análise de Treinos na sidebar */
+#openTrainingAnalysisBtn.side-rail-btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+#openTrainingAnalysisBtn.side-rail-btn span {
+  flex: 0 0 auto;
+}
+
+#openTrainingAnalysisBtn.side-rail-btn strong {
+  font-size: clamp(9px, 0.64vw, 11px);
+  line-height: 1.05;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+
+.event-db-fallback-note {
+  margin-bottom: 10px;
+  border-style: solid;
+  opacity: .92;
+}
+
