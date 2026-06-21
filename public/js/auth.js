@@ -84,17 +84,30 @@ fetch('/api/me')
   })
   .catch(() => {});
 
-async function loadBotProfileOnLogin() {
-  try {
-    const response = await fetch('/api/bot');
-    const data = await response.json();
+function getBotPublicUrl() {
+  if (window.VOID_ARENA_BOT_URL) {
+    return String(window.VOID_ARENA_BOT_URL).replace(/\/$/, "");
+  }
 
-    if (data.avatar) {
-      document.querySelectorAll('.brand-image img').forEach((img) => {
-        img.src = data.avatar;
-      });
-    }
-  } catch {}
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    return "http://localhost:3002";
+  }
+
+  return "https://void-arena-bot.onrender.com";
 }
 
-loadBotProfileOnLogin();
+function loadServerProfileOnLogin() {
+  const iconUrl = `${getBotPublicUrl()}/public/guild-icon.png?v=6`;
+
+  document.querySelectorAll(".brand-image img").forEach((img) => {
+    img.alt = "Ícone do servidor Hollow Nexus";
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = "/assets/abyss-profile.png";
+    };
+    img.src = iconUrl;
+  });
+}
+
+loadServerProfileOnLogin();
