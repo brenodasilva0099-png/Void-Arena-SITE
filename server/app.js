@@ -1898,6 +1898,38 @@ function createServer({ client }) {
     return { enabled: true, results };
   }
 
+
+  app.get('/api/dashboard/snapshot', requireAuth, async (_req, res) => {
+    const [teams, bracket, events, users, settings] = await Promise.all([
+      readTeams(),
+      readBracket(),
+      readEvents(),
+      readUsers(),
+      readTournamentSettings()
+    ]);
+
+    return res.json({
+      success: true,
+      generatedAt: new Date().toISOString(),
+      teams: teams.map(sanitizeTeam),
+      bracket: normalizeBracketForResponse(bracket, teams),
+      events: events.map((event) => safeTournamentEvent(event, teams)),
+      users: users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email || null,
+        provider: user.provider || 'email',
+        discordId: user.discordId || null,
+        avatar: user.avatar || null,
+        socials: normalizeUserSocials(user.socials || {}),
+        profile: normalizeUserProfile(user.profile || {}),
+        createdAt: user.createdAt || null,
+        updatedAt: user.updatedAt || null
+      })),
+      settings
+    });
+  });
+
   app.get('/api/users/lookup', requireAuth, async (_req, res) => {
     const users = await readUsers();
     const refreshedUsers = await Promise.all(users.map((user) => refreshDiscordProfile(user)));

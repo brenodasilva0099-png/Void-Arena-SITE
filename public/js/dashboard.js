@@ -187,6 +187,8 @@ let currentUser = null;
 let currentEvents = [];
 let currentMainEvent = null;
 let currentEventId = 'coliseu-void-arena';
+let realtimeDashboardTimer = null;
+let dashboardSnapshotFingerprint = '';
 let currentBracketData = {
   slots: Array(16).fill(null),
   quarters: Array(8).fill(null),
@@ -3573,25 +3575,83 @@ async function loadUsersLookup() {
   return usersLookup;
 }
 
-async function loadTeamsAndBracket() {
-  const [teamData, userData, eventData] = await Promise.all([
-    apiJson('/api/teams'),
-    apiJson('/api/users/lookup').catch(() => ({ users: [] })),
-    apiJson('/api/events').catch(() => ({ events: [] }))
-  ]);
+function dashboardSnapshotFingerprint(data = {}) {
+  return JSON.stringify({
+    teams: data.teams || [],
+    events: data.events || [],
+    bracket: data.bracket || {},
+    settings: data.settings || {}
+  });
+}
 
-  teams = teamData.teams || [];
-  usersLookup = userData.users || [];
-  currentEvents = eventData.events || [];
-  if (!currentEvents.some((event) => event.id === currentEventId) && currentEvents[0]) currentEventId = currentEvents[0].id;
+function applyDashboardSnapshot(data = {}, options = {}) {
+  const nextFingerprint = dashboardSnapshotFingerprint(data);
+
+  if (!options.force && dashboardSnapshotFingerprint === nextFingerprint) {
+    return false;
+  }
+
+  dashboardSnapshotFingerprint = nextFingerprint;
+  teams = data.teams || [];
+  usersLookup = data.users || [];
+  currentEvents = data.events || [];
+
+  if (data.settings) {
+    applyTournamentSettings(data.settings || {});
+  }
+
+  if (!currentEvents.some((event) => event.id === currentEventId) && currentEvents[0]) {
+    currentEventId = currentEvents[0].id;
+  }
+
   currentMainEvent = mainEvent();
-  currentBracketData = normalizeBracketData(teamData.bracket || {});
+  currentBracketData = normalizeBracketData(data.bracket || {});
 
   renderTeams();
   renderMyTeams();
   renderPlayerHomeData();
   renderBracket();
   buildTournamentGroupsPreview();
+
+  if (!rankingsModal?.hidden) renderRankings('teams');
+  if (!myMatchesModal?.hidden) renderMyMatches();
+  if (!teamChatModal?.hidden) {
+    renderScrimDirectory();
+    fillTeamChatSelects();
+  }
+
+  return true;
+}
+
+async function loadTeamsAndBracket(options = {}) {
+  const data = await apiJson(`/api/dashboard/snapshot?t=${Date.now()}`);
+  applyDashboardSnapshot(data, { force: options.force !== false });
+  return data;
+}
+
+async function refreshDashboardRealtime() {
+  if (!currentUser || document.hidden) return;
+
+  try {
+    const data = await apiJson(`/api/dashboard/snapshot?t=${Date.now()}`);
+    const changed = applyDashboardSnapshot(data, { force: false });
+
+    if (changed) {
+      fillTeamChatSelects();
+    }
+  } catch (error) {
+    console.warn('Atualização em tempo real falhou:', error.message);
+  }
+}
+
+function startRealtimeDashboardRefresh() {
+  if (realtimeDashboardTimer) clearInterval(realtimeDashboardTimer);
+
+  realtimeDashboardTimer = setInterval(refreshDashboardRealtime, 3500);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshDashboardRealtime();
+  });
 }
 
 async function saveTeam(event) {
@@ -4098,8 +4158,9 @@ async function openRankingsModal() {
   }
 
   try {
-    await loadTeamsAndBracket();
+    await loadTeamsAndBracket({ force: true });
     fillTeamChatSelects();
+    startRealtimeDashboardRefresh();
   } catch (error) {
     if (rankingsContent) {
       rankingsContent.innerHTML = `
@@ -4637,7 +4698,7 @@ async function bootDashboard() {
   startSiteChatNotifications();
   startStatsChatNotifications();
   startBotProfileAutoRefresh();
-  loadTournamentSettings().catch(() => applyTournamentSettings({}));
+  // Configurações, times, eventos e chaveamento agora carregam em uma chamada única pelo snapshot.
 
   try {
     await loadTeamsAndBracket();
@@ -4663,31 +4724,75 @@ applyMusicSettings();
 bootDashboard();
 
 
+function replaceTextNodes(root, matcher, replacement) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let changed = false;
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (matcher.test(node.nodeValue || '')) {
+      node.nodeValue = node.nodeValue.replace(matcher, replacement);
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+function stripInteractiveAttributes(root) {
+  [root, ...root.querySelectorAll('*')].forEach((element) => {
+    element.removeAttribute('id');
+    Array.from(element.attributes || []).forEach((attr) => {
+      if (attr.name.startsWith('data-')) element.removeAttribute(attr.name);
+    });
+  });
+}
+
 function installTrainingAnalysisButton() {
   if (document.querySelector('[data-training-analysis-link="true"]')) return;
 
   const href = '/pages/treinos.html';
-  const label = '🎥 Análise de Treinos';
-
   const candidates = Array.from(document.querySelectorAll('a, button, .nav-item, .sidebar-btn, [data-section], [data-page]'));
-  const statsButton = candidates.find((el) => /estat/i.test((el.textContent || '').trim()));
-
-  const link = document.createElement('a');
-  link.href = href;
-  link.dataset.trainingAnalysisLink = 'true';
-  link.textContent = label;
+  const statsButton = candidates.find((el) => /estat[íi]sticas/i.test((el.textContent || '').trim()));
 
   if (statsButton) {
-    link.className = statsButton.className || 'sidebar-btn';
-    link.style.textDecoration = 'none';
-    link.style.display = getComputedStyle(statsButton).display === 'inline' ? 'inline-flex' : getComputedStyle(statsButton).display;
-    statsButton.insertAdjacentElement('afterend', link);
+    const clone = statsButton.cloneNode(true);
+    stripInteractiveAttributes(clone);
+
+    clone.dataset.trainingAnalysisLink = 'true';
+    clone.setAttribute('aria-label', 'Abrir Análise de Treinos');
+    clone.title = 'Análise de Treinos';
+
+    const icon = clone.querySelector('.nav-icon, .sidebar-icon, .menu-icon, .btn-icon, .action-icon, span');
+    if (icon && icon.textContent.trim().length <= 3) {
+      icon.textContent = '🎥';
+    }
+
+    const changedText = replaceTextNodes(clone, /estat[íi]sticas/gi, 'Análise de Treinos');
+    if (!changedText) {
+      clone.textContent = '🎥 Análise de Treinos';
+    }
+
+    if (clone.tagName === 'A') {
+      clone.href = href;
+    } else {
+      clone.type = 'button';
+      clone.addEventListener('click', () => {
+        window.location.href = href;
+      });
+    }
+
+    statsButton.insertAdjacentElement('afterend', clone);
     return;
   }
 
   const sidebar = document.querySelector('.sidebar, aside, nav, .side-menu, .dashboard-sidebar');
   if (sidebar) {
+    const link = document.createElement('a');
+    link.href = href;
+    link.dataset.trainingAnalysisLink = 'true';
     link.className = 'sidebar-btn';
+    link.textContent = '🎥 Análise de Treinos';
     link.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;padding:12px 14px;border-radius:14px;text-decoration:none;color:inherit;background:rgba(139,92,246,.14);border:1px solid rgba(167,139,250,.24);font-weight:800;';
     sidebar.appendChild(link);
   }
