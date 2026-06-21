@@ -67,5 +67,7 @@ module.exports = {
   saveTeam: remoteStorageMethod('saveTeam'),
   deleteTeam: remoteStorageMethod('deleteTeam'),
   readBracket: remoteStorageMethod('readBracket'),
+  readTrainingSubmissions: remoteStorageMethod('readTrainingSubmissions'),
+  updateTrainingSubmissionStatus: remoteStorageMethod('updateTrainingSubmissionStatus'),
   writeBracket: remoteStorageMethod('writeBracket')
 };

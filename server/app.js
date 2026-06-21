@@ -35,7 +35,9 @@ const {
   saveTeamChatMessage,
   updateTeamChatMessage,
   readTournamentSettings,
-  writeTournamentSettings
+  writeTournamentSettings,
+  readTrainingSubmissions,
+  updateTrainingSubmissionStatus
 } = require('./storage');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -660,6 +662,30 @@ function createServer({ client }) {
     return next();
   }
 
+
+
+  app.get('/api/training-submissions', requireAuth, async (req, res) => {
+    const user = await findUserById(req.session.userId);
+    if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+
+    const admin = isAdminUser(user);
+    const submissions = await readTrainingSubmissions({
+      limit: 160,
+      ...(admin ? {} : { playerDiscordId: user.discordId || '', playerId: user.id })
+    });
+
+    return res.json({ success: true, submissions, isAdmin: admin });
+  });
+
+  app.patch('/api/training-submissions/:id/status', requireAdmin, async (req, res) => {
+    const submission = await updateTrainingSubmissionStatus(req.params.id, {
+      status: req.body?.status,
+      reviewNote: req.body?.reviewNote,
+      reviewedBy: req.adminUser?.id || ''
+    });
+
+    return res.json({ success: true, submission });
+  });
 
   app.get('/api/database/status', requireAuth, async (_req, res) => {
     const database = await readDatabaseStatus();
