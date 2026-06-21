@@ -4661,3 +4661,44 @@ async function bootDashboard() {
 initCustomSelects(document);
 applyMusicSettings();
 bootDashboard();
+
+
+function installTrainingAnalysisButton() {
+  if (document.querySelector('[data-training-analysis-link="true"]')) return;
+
+  const href = '/pages/treinos.html';
+  const label = '🎥 Análise de Treinos';
+
+  const candidates = Array.from(document.querySelectorAll('a, button, .nav-item, .sidebar-btn, [data-section], [data-page]'));
+  const statsButton = candidates.find((el) => /estat/i.test((el.textContent || '').trim()));
+
+  const link = document.createElement('a');
+  link.href = href;
+  link.dataset.trainingAnalysisLink = 'true';
+  link.textContent = label;
+
+  if (statsButton) {
+    link.className = statsButton.className || 'sidebar-btn';
+    link.style.textDecoration = 'none';
+    link.style.display = getComputedStyle(statsButton).display === 'inline' ? 'inline-flex' : getComputedStyle(statsButton).display;
+    statsButton.insertAdjacentElement('afterend', link);
+    return;
+  }
+
+  const sidebar = document.querySelector('.sidebar, aside, nav, .side-menu, .dashboard-sidebar');
+  if (sidebar) {
+    link.className = 'sidebar-btn';
+    link.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;padding:12px 14px;border-radius:14px;text-decoration:none;color:inherit;background:rgba(139,92,246,.14);border:1px solid rgba(167,139,250,.24);font-weight:800;';
+    sidebar.appendChild(link);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installTrainingAnalysisButton);
+} else {
+  installTrainingAnalysisButton();
+}
+
+setTimeout(installTrainingAnalysisButton, 700);
+setTimeout(installTrainingAnalysisButton, 1800);
+
