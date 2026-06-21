@@ -214,6 +214,121 @@ function getDiscordCallbackUrl() {
   return process.env.DISCORD_CALLBACK_URL || `http://localhost:${Number(process.env.PORT || 3000)}/auth/discord/callback`;
 }
 
+let maintenanceCache = {
+  checkedAt: 0,
+  data: { enabled: false }
+};
+
+async function fetchMaintenanceState() {
+  const now = Date.now();
+
+  if (now - maintenanceCache.checkedAt < 4000) {
+    return maintenanceCache.data;
+  }
+
+  try {
+    const response = await fetch(`${BOT_API_URL}/public/maintenance`, {
+      headers: { Accept: 'application/json' }
+    });
+    const data = await response.json().catch(() => ({}));
+    maintenanceCache = {
+      checkedAt: now,
+      data: data.maintenance || { enabled: false }
+    };
+  } catch {
+    maintenanceCache = {
+      checkedAt: now,
+      data: { enabled: false }
+    };
+  }
+
+  return maintenanceCache.data;
+}
+
+function maintenanceHtml(state = {}) {
+  const message = String(state.message || 'Void Arena está atualizando. Voltamos em instantes.');
+  const eta = Number(state.etaMinutes || 3) || 3;
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Void Arena em manutenção</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top, rgba(130, 76, 255, .28), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(34, 211, 238, .16), transparent 36%),
+        #070711;
+      color: #f8f7ff;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    .card {
+      width: min(92vw, 560px);
+      padding: 34px;
+      border: 1px solid rgba(168, 85, 247, .35);
+      border-radius: 26px;
+      background: rgba(11, 12, 28, .82);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .42), 0 0 40px rgba(124, 58, 237, .15);
+      text-align: center;
+      backdrop-filter: blur(18px);
+    }
+    .orb {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+      box-shadow: 0 0 34px rgba(139, 92, 246, .55);
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: -0.04em;
+    }
+    p {
+      margin: 0 auto;
+      color: #c9c4e8;
+      line-height: 1.6;
+      font-size: 16px;
+      max-width: 460px;
+    }
+    .pill {
+      margin: 22px auto 0;
+      width: fit-content;
+      padding: 10px 14px;
+      border-radius: 999px;
+      color: #ddd6fe;
+      background: rgba(124, 58, 237, .16);
+      border: 1px solid rgba(167, 139, 250, .32);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="orb">🛠️</div>
+    <h1>Void Arena em manutenção</h1>
+    <p>${message}</p>
+    <div class="pill">Previsão: ${eta} min</div>
+  </main>
+</body>
+</html>`;
+}
+
 function createServer({ client }) {
   const app = express();
   app.set('trust proxy', 1);
@@ -234,6 +349,31 @@ function createServer({ client }) {
       }
     })
   );
+
+
+  app.get('/api/maintenance', async (_req, res) => {
+    const maintenance = await fetchMaintenanceState();
+    return res.json({ success: true, maintenance });
+  });
+
+  app.use(async (req, res, next) => {
+    if (
+      req.path === '/api/maintenance' ||
+      req.path.startsWith('/assets/') ||
+      req.path === '/favicon.png'
+    ) {
+      return next();
+    }
+
+    const maintenance = await fetchMaintenanceState();
+
+    if (maintenance?.enabled) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      return res.status(503).send(maintenanceHtml(maintenance));
+    }
+
+    return next();
+  });
 
   app.use(express.static(PUBLIC_DIR));
 
