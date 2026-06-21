@@ -4806,3 +4806,289 @@ if (openTrainingAnalysisBtn) {
   });
 }
 
+
+
+// =========================
+// Config do Site - v1 local
+// =========================
+const SITE_BUTTON_CONFIG_KEY = 'voidArena.siteButtonConfig.v1';
+
+const DEFAULT_SITE_BUTTONS = [
+  { id: 'openHowToBtn', emoji: '?', label: 'Como usar', order: 10, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openChatBtn', emoji: '💬', label: 'Chat', order: 20, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openScrimBtn', emoji: '⚔️', label: 'Scrim', order: 30, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openStatsBtn', emoji: '📊', label: 'Estatísticas', order: 40, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openTrainingAnalysisBtn', emoji: '🎥', label: 'Análise de Treinos', order: 50, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openTermsBtn', emoji: '📜', label: 'Termos', order: 900, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openSiteConfigBtn', emoji: '⚙️', label: 'Config do Site', order: 910, width: 100, height: 46, fontSize: 10, font: '' }
+];
+
+function loadSiteButtonConfig() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SITE_BUTTON_CONFIG_KEY) || '{}');
+    return {
+      buttons: Array.isArray(saved.buttons) ? saved.buttons : DEFAULT_SITE_BUTTONS,
+      customButtons: Array.isArray(saved.customButtons) ? saved.customButtons : []
+    };
+  } catch {
+    return { buttons: DEFAULT_SITE_BUTTONS, customButtons: [] };
+  }
+}
+
+function saveSiteButtonConfig(config) {
+  localStorage.setItem(SITE_BUTTON_CONFIG_KEY, JSON.stringify(config));
+}
+
+function sideRailContainer() {
+  return document.querySelector('#openHowToBtn')?.parentElement
+    || document.querySelector('#openTermsBtn')?.parentElement
+    || document.querySelector('.side-rail')
+    || document.querySelector('aside')
+    || document.querySelector('nav');
+}
+
+function normalizeButtonItem(item = {}) {
+  return {
+    id: String(item.id || `custom_${Date.now()}`).trim(),
+    emoji: String(item.emoji || '🔘').trim().slice(0, 4),
+    label: String(item.label || 'Novo botão').trim().slice(0, 40),
+    href: String(item.href || '').trim(),
+    order: Number(item.order || 100) || 100,
+    width: Number(item.width || 100) || 100,
+    height: Number(item.height || 46) || 46,
+    fontSize: Number(item.fontSize || 10) || 10,
+    font: String(item.font || '').trim()
+  };
+}
+
+function createCustomSidebarButton(item) {
+  const container = sideRailContainer();
+  if (!container) return null;
+
+  const button = document.createElement('button');
+  button.id = item.id;
+  button.type = 'button';
+  button.className = 'side-rail-btn';
+  button.dataset.customSiteButton = 'true';
+  button.innerHTML = `<span></span><strong></strong>`;
+
+  container.appendChild(button);
+  return button;
+}
+
+function applyButtonVisual(button, item) {
+  if (!button) return;
+
+  const emojiNode = button.querySelector('span') || button;
+  const labelNode = button.querySelector('strong') || button;
+
+  if (emojiNode !== button) emojiNode.textContent = item.emoji;
+  if (labelNode !== button) labelNode.textContent = item.label;
+  else button.textContent = `${item.emoji} ${item.label}`;
+
+  button.style.order = String(item.order);
+  button.style.width = `${Math.max(70, Math.min(140, item.width))}%`;
+  button.style.minHeight = `${Math.max(36, Math.min(76, item.height))}px`;
+  button.style.height = `${Math.max(36, Math.min(76, item.height))}px`;
+
+  if (labelNode && labelNode.style) {
+    labelNode.style.fontSize = `${Math.max(8, Math.min(15, item.fontSize))}px`;
+    labelNode.style.fontFamily = item.font || '';
+  }
+
+  if (item.href) {
+    button.onclick = () => {
+      window.location.href = item.href;
+    };
+  }
+}
+
+function applySiteButtonConfig() {
+  const config = loadSiteButtonConfig();
+  const container = sideRailContainer();
+
+  if (container) {
+    container.style.display = container.style.display || '';
+  }
+
+  const items = [
+    ...DEFAULT_SITE_BUTTONS.map((base) => normalizeButtonItem({
+      ...base,
+      ...(config.buttons || []).find((item) => item.id === base.id)
+    })),
+    ...(config.customButtons || []).map(normalizeButtonItem)
+  ];
+
+  items.forEach((item) => {
+    let button = document.getElementById(item.id);
+
+    if (!button && item.id.startsWith('custom_')) {
+      button = createCustomSidebarButton(item);
+    }
+
+    applyButtonVisual(button, item);
+  });
+}
+
+function siteConfigRow(item, index, custom = false) {
+  return `
+    <div class="site-config-row" data-index="${index}" data-custom="${custom ? '1' : '0'}">
+      <input data-field="emoji" value="${escapeHtml(item.emoji || '')}" placeholder="Emoji">
+      <input data-field="label" value="${escapeHtml(item.label || '')}" placeholder="Nome">
+      <input data-field="href" value="${escapeHtml(item.href || '')}" placeholder="Link opcional">
+      <input data-field="order" type="number" value="${Number(item.order || 100)}" title="Ordem">
+      <input data-field="height" type="number" value="${Number(item.height || 46)}" title="Altura">
+      <input data-field="width" type="number" value="${Number(item.width || 100)}" title="Largura %">
+      <input data-field="fontSize" type="number" value="${Number(item.fontSize || 10)}" title="Fonte">
+    </div>
+  `;
+}
+
+function buildSiteConfigModal() {
+  let backdrop = document.querySelector('#siteConfigBackdrop');
+  if (backdrop) return backdrop;
+
+  backdrop = document.createElement('div');
+  backdrop.id = 'siteConfigBackdrop';
+  backdrop.className = 'site-config-backdrop';
+  backdrop.innerHTML = `
+    <section class="site-config-panel" role="dialog" aria-modal="true">
+      <div class="site-config-head">
+        <h2>⚙️ Config do Site</h2>
+        <button class="site-config-btn" type="button" data-close-config>Fechar</button>
+      </div>
+      <div class="site-config-body">
+        <p class="site-config-help">
+          Ajuste nomes, emojis, ordem, tamanho, largura e fonte dos botões laterais.
+          Esta versão salva no seu navegador; depois migramos para o banco global.
+        </p>
+
+        <div id="siteConfigRows" class="site-config-grid"></div>
+
+        <div class="site-config-add">
+          <button class="site-config-btn" type="button" data-add-custom-button>+ Adicionar novo botão</button>
+          <button class="site-config-btn primary" type="button" data-save-config>Salvar alterações</button>
+          <button class="site-config-btn" type="button" data-reset-config>Resetar padrão</button>
+        </div>
+      </div>
+    </section>
+  `;
+
+  document.body.appendChild(backdrop);
+
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop || event.target.closest('[data-close-config]')) {
+      backdrop.classList.remove('is-open');
+    }
+
+    if (event.target.closest('[data-add-custom-button]')) {
+      const config = loadSiteButtonConfig();
+      config.customButtons = config.customButtons || [];
+      config.customButtons.push({
+        id: `custom_${Date.now()}`,
+        emoji: '🔘',
+        label: 'Novo botão',
+        href: '/pages/dashboard.html',
+        order: 800 + config.customButtons.length,
+        width: 100,
+        height: 46,
+        fontSize: 10,
+        font: ''
+      });
+      saveSiteButtonConfig(config);
+      renderSiteConfigRows();
+      applySiteButtonConfig();
+    }
+
+    if (event.target.closest('[data-save-config]')) {
+      saveConfigRowsFromModal();
+      applySiteButtonConfig();
+      backdrop.classList.remove('is-open');
+    }
+
+    if (event.target.closest('[data-reset-config]')) {
+      localStorage.removeItem(SITE_BUTTON_CONFIG_KEY);
+      renderSiteConfigRows();
+      applySiteButtonConfig();
+    }
+  });
+
+  return backdrop;
+}
+
+function renderSiteConfigRows() {
+  const config = loadSiteButtonConfig();
+  const rows = document.querySelector('#siteConfigRows');
+  if (!rows) return;
+
+  const baseButtons = DEFAULT_SITE_BUTTONS.map((base) => normalizeButtonItem({
+    ...base,
+    ...(config.buttons || []).find((item) => item.id === base.id)
+  }));
+
+  const customButtons = (config.customButtons || []).map(normalizeButtonItem);
+
+  rows.innerHTML = [
+    ...baseButtons.map((item, index) => siteConfigRow(item, index, false)),
+    ...customButtons.map((item, index) => siteConfigRow(item, index, true))
+  ].join('');
+}
+
+function saveConfigRowsFromModal() {
+  const base = [];
+  const custom = [];
+
+  document.querySelectorAll('.site-config-row').forEach((row) => {
+    const isCustom = row.dataset.custom === '1';
+    const index = Number(row.dataset.index || 0);
+    const source = isCustom
+      ? (loadSiteButtonConfig().customButtons || [])[index]
+      : DEFAULT_SITE_BUTTONS[index];
+
+    const item = normalizeButtonItem({ ...source });
+
+    row.querySelectorAll('input[data-field]').forEach((input) => {
+      const field = input.dataset.field;
+      if (['order', 'height', 'width', 'fontSize'].includes(field)) {
+        item[field] = Number(input.value || item[field]) || item[field];
+      } else {
+        item[field] = input.value;
+      }
+    });
+
+    if (isCustom) custom.push(item);
+    else base.push(item);
+  });
+
+  saveSiteButtonConfig({ buttons: base, customButtons: custom });
+}
+
+function openSiteConfigModal() {
+  const backdrop = buildSiteConfigModal();
+  renderSiteConfigRows();
+  backdrop.classList.add('is-open');
+}
+
+function wireSiteConfigButton() {
+  const button = document.querySelector('#openSiteConfigBtn');
+  if (!button || button.dataset.configWired === 'true') return;
+
+  button.dataset.configWired = 'true';
+  button.addEventListener('click', openSiteConfigModal);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    wireSiteConfigButton();
+    applySiteButtonConfig();
+  });
+} else {
+  wireSiteConfigButton();
+  applySiteButtonConfig();
+}
+
+setTimeout(() => {
+  wireSiteConfigButton();
+  applySiteButtonConfig();
+}, 800);
+
