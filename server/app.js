@@ -216,6 +216,7 @@ function getDiscordCallbackUrl() {
 
 function createServer({ client }) {
   const app = express();
+  app.set('trust proxy', 1);
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -228,7 +229,8 @@ function createServer({ client }) {
       cookie: {
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        secure: 'auto'
       }
     })
   );
@@ -2109,7 +2111,14 @@ function createServer({ client }) {
       req.session.userId = user.id;
       delete req.session.discordOAuthState;
 
-      return res.redirect('/pages/dashboard.html');
+      return req.session.save((sessionError) => {
+        if (sessionError) {
+          console.error('Erro ao salvar sessão Discord:', sessionError);
+          return res.redirect('/?auth=discord_error');
+        }
+
+        return res.redirect('/pages/dashboard.html');
+      });
     } catch (error) {
       console.error('Erro no login Discord:', error);
       return res.redirect('/?auth=discord_error');
