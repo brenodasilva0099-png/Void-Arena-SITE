@@ -22,6 +22,33 @@ function videoEndpoint(id) {
   return `/api/training-submissions/${encodeURIComponent(id)}/video`;
 }
 
+async function sendTrainingComment(id) {
+  const content = prompt('Comentário para enviar no privado do jogador:');
+
+  if (!content || !content.trim()) return;
+
+  const response = await fetch(`/api/training-submissions/${encodeURIComponent(id)}/comment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: content.trim() })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.success === false) {
+    alert(data.message || 'Não foi possível enviar o comentário.');
+    return;
+  }
+
+  if (data.deliveredToDiscord) {
+    alert('✅ Comentário enviado no privado do jogador.');
+  } else {
+    alert(`⚠️ Comentário salvo, mas não consegui entregar na DM. Motivo: ${data.dmError || 'DM fechada ou usuário indisponível.'}`);
+  }
+
+  await loadTrainings();
+}
+
 async function updateStatus(id, status) {
   const reviewNote = status === 'approved'
     ? 'Treino aprovado.'
@@ -140,10 +167,19 @@ function renderCard(item, isAdmin) {
         </div>
         <p>${escapeHtml(item.description || 'Sem descrição.')}</p>
         <p><small>${escapeHtml(date)}</small></p>
+        ${Array.isArray(item.comments) && item.comments.length ? `
+          <div class="training-comments">
+            <strong>Comentários enviados</strong>
+            ${item.comments.slice(-3).map((comment) => `
+              <p><small>${escapeHtml(comment.authorName || 'Equipe')}:</small> ${escapeHtml(comment.content || '')}</p>
+            `).join('')}
+          </div>
+        ` : ''}
         <div class="actions">
           ${hasVideo ? `<button class="btn" type="button" data-open-video="${escapeHtml(item.id)}">Abrir vídeo</button>` : ''}
           ${item.discordMessageId && item.discordChannelId ? `<a class="btn" href="https://discord.com/channels/${escapeHtml(item.guildId || '@me')}/${escapeHtml(item.discordChannelId)}/${escapeHtml(item.discordMessageId)}" target="_blank" rel="noopener">Ver no Discord</a>` : ''}
           ${isAdmin ? `
+            <button class="btn" type="button" data-comment="${escapeHtml(item.id)}">Comentário</button>
             <button class="btn" data-status="reviewed" data-id="${escapeHtml(item.id)}">Analisado</button>
             <button class="btn" data-status="approved" data-id="${escapeHtml(item.id)}">Aprovar</button>
             <button class="btn" data-status="rejected" data-id="${escapeHtml(item.id)}">Rejeitar</button>
@@ -185,6 +221,10 @@ async function loadTrainings() {
       const item = window.__trainingSubmissions.find((submission) => String(submission.id) === String(button.dataset.openVideo));
       if (item) openVideoModal(item);
     });
+  });
+
+  document.querySelectorAll('[data-comment]').forEach((button) => {
+    button.addEventListener('click', () => sendTrainingComment(button.dataset.comment));
   });
 }
 
