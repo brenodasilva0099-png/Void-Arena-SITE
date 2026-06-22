@@ -18,6 +18,10 @@ function labelStatus(status = '') {
   return labels[status] || status || 'Pendente';
 }
 
+function videoEndpoint(id) {
+  return `/api/training-submissions/${encodeURIComponent(id)}/video`;
+}
+
 async function updateStatus(id, status) {
   const reviewNote = status === 'approved'
     ? 'Treino aprovado.'
@@ -40,16 +44,95 @@ async function updateStatus(id, status) {
   await loadTrainings();
 }
 
+function ensureVideoModal() {
+  let modal = document.getElementById('videoModal');
+
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'videoModal';
+  modal.className = 'video-modal';
+  modal.innerHTML = `
+    <div class="video-modal-panel">
+      <div class="video-modal-head">
+        <strong id="videoModalTitle">🎥 Treino em vídeo</strong>
+        <button type="button" class="btn" data-close-video>Fechar</button>
+      </div>
+      <video id="videoModalPlayer" controls playsinline preload="metadata"></video>
+      <p id="videoModalHint" class="video-hint"></p>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal || event.target.closest('[data-close-video]')) {
+      closeVideoModal();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeVideoModal();
+  });
+
+  return modal;
+}
+
+function openVideoModal(item) {
+  const modal = ensureVideoModal();
+  const player = document.getElementById('videoModalPlayer');
+  const title = document.getElementById('videoModalTitle');
+  const hint = document.getElementById('videoModalHint');
+
+  const src = videoEndpoint(item.id);
+
+  title.textContent = `🎥 ${item.playerName || 'Treino em vídeo'}`;
+  hint.textContent = `${item.type || 'Treino'} • ${item.position || 'Posição'} • ${labelStatus(item.status)}`;
+
+  player.pause();
+  player.removeAttribute('src');
+  player.load();
+
+  player.src = src;
+  modal.classList.add('is-open');
+
+  const playPromise = player.play();
+  if (playPromise?.catch) {
+    playPromise.catch(() => {});
+  }
+}
+
+function closeVideoModal() {
+  const modal = document.getElementById('videoModal');
+  const player = document.getElementById('videoModalPlayer');
+
+  if (player) {
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+  }
+
+  if (modal) modal.classList.remove('is-open');
+}
+
 function renderCard(item, isAdmin) {
   const video = item.video || {};
-  const videoUrl = video.url || video.proxyUrl || '';
+  const hasVideo = Boolean(video.url || video.proxyUrl || video.attachmentUrl || video.downloadUrl);
   const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data não informada';
 
   return `
     <article class="card">
-      ${videoUrl ? `<video controls src="${escapeHtml(videoUrl)}"></video>` : ''}
+      <button class="video-preview" type="button" data-open-video="${escapeHtml(item.id)}" ${hasVideo ? '' : 'disabled'}>
+        <span class="video-preview-glow"></span>
+        <span class="video-preview-icon">${hasVideo ? '▶' : '🎥'}</span>
+        <span class="video-preview-info">
+          <strong>${hasVideo ? 'Reproduzir treino' : 'Vídeo indisponível'}</strong>
+          <small>${escapeHtml(item.type || 'Treino')} • ${escapeHtml(item.position || 'Posição')}</small>
+        </span>
+      </button>
+
       <div class="card-body">
-        <strong>${escapeHtml(item.playerName || 'Jogador')}</strong>
+        <strong class="player-name">${escapeHtml(item.playerName || 'Jogador')}</strong>
         <div class="meta">
           <span class="pill">${escapeHtml(item.type || 'Treino')}</span>
           <span class="pill">${escapeHtml(item.position || 'Posição')}</span>
@@ -58,7 +141,7 @@ function renderCard(item, isAdmin) {
         <p>${escapeHtml(item.description || 'Sem descrição.')}</p>
         <p><small>${escapeHtml(date)}</small></p>
         <div class="actions">
-          ${videoUrl ? `<a class="btn" href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener">Abrir vídeo</a>` : ''}
+          ${hasVideo ? `<button class="btn" type="button" data-open-video="${escapeHtml(item.id)}">Abrir vídeo</button>` : ''}
           ${item.discordMessageId && item.discordChannelId ? `<a class="btn" href="https://discord.com/channels/${escapeHtml(item.guildId || '@me')}/${escapeHtml(item.discordChannelId)}/${escapeHtml(item.discordMessageId)}" target="_blank" rel="noopener">Ver no Discord</a>` : ''}
           ${isAdmin ? `
             <button class="btn" data-status="reviewed" data-id="${escapeHtml(item.id)}">Analisado</button>
@@ -72,7 +155,7 @@ function renderCard(item, isAdmin) {
 }
 
 async function loadTrainings() {
-  const response = await fetch('/api/training-submissions');
+  const response = await fetch(`/api/training-submissions?t=${Date.now()}`);
   const data = await response.json().catch(() => ({}));
 
   if (response.status === 401) {
@@ -88,12 +171,24 @@ async function loadTrainings() {
   }
 
   const submissions = Array.isArray(data.submissions) ? data.submissions : [];
+  window.__trainingSubmissions = submissions;
+
   empty.hidden = submissions.length > 0;
   list.innerHTML = submissions.map((item) => renderCard(item, data.isAdmin)).join('');
 
   document.querySelectorAll('[data-status][data-id]').forEach((button) => {
     button.addEventListener('click', () => updateStatus(button.dataset.id, button.dataset.status));
   });
+
+  document.querySelectorAll('[data-open-video]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const item = window.__trainingSubmissions.find((submission) => String(submission.id) === String(button.dataset.openVideo));
+      if (item) openVideoModal(item);
+    });
+  });
 }
 
 loadTrainings();
+setInterval(() => {
+  if (!document.hidden) loadTrainings();
+}, 6000);

@@ -1,5 +1,6 @@
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { Readable } = require('node:stream');
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
@@ -675,6 +676,73 @@ function createServer({ client }) {
     });
 
     return res.json({ success: true, submissions, isAdmin: admin });
+  });
+
+
+  app.get('/api/training-submissions/:id/video', requireAuth, async (req, res) => {
+    const user = await findUserById(req.session.userId);
+    if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+
+    const admin = isAdminUser(user);
+    const submissions = await readTrainingSubmissions({ limit: 500 });
+    const submission = submissions.find((item) => String(item.id) === String(req.params.id));
+
+    if (!submission) {
+      return res.status(404).send('Vídeo não encontrado.');
+    }
+
+    const ownsSubmission =
+      String(submission.playerId || '') === String(user.id || '') ||
+      String(submission.playerDiscordId || '') === String(user.discordId || '');
+
+    if (!admin && !ownsSubmission) {
+      return res.status(403).send('Você não tem acesso a este vídeo.');
+    }
+
+    const video = submission.video || {};
+    const videoUrl = video.proxyUrl || video.url || video.attachmentUrl || video.downloadUrl || '';
+
+    if (!videoUrl) {
+      return res.status(404).send('URL do vídeo não encontrada.');
+    }
+
+    try {
+      const headers = {
+        'User-Agent': 'Void-Arena-Training-Proxy/1.0'
+      };
+
+      if (req.headers.range) {
+        headers.Range = req.headers.range;
+      }
+
+      const upstream = await fetch(videoUrl, { headers });
+
+      if (!upstream.ok && upstream.status !== 206) {
+        return res.status(upstream.status || 502).send('Não foi possível abrir o vídeo.');
+      }
+
+      const contentType = upstream.headers.get('content-type') || video.contentType || 'video/mp4';
+      const contentLength = upstream.headers.get('content-length');
+      const contentRange = upstream.headers.get('content-range');
+      const acceptRanges = upstream.headers.get('accept-ranges') || 'bytes';
+      const filename = String(video.name || video.filename || `treino-${submission.id}.mp4`).replace(/[^\w.\-() ]+/g, '_');
+
+      res.status(upstream.status === 206 ? 206 : 200);
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Accept-Ranges', acceptRanges);
+      res.setHeader('Cache-Control', 'private, max-age=120');
+
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+      if (contentRange) res.setHeader('Content-Range', contentRange);
+
+      if (!upstream.body) return res.end();
+
+      return Readable.fromWeb(upstream.body).pipe(res);
+    } catch (error) {
+      console.error('Erro no proxy de vídeo de treino:', error);
+      return res.status(502).send('Erro ao carregar vídeo.');
+    }
   });
 
   app.patch('/api/training-submissions/:id/status', requireAdmin, async (req, res) => {

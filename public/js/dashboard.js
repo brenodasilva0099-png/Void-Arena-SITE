@@ -5092,3 +5092,67 @@ setTimeout(() => {
   applySiteButtonConfig();
 }, 800);
 
+
+// PATCH FINAL — alinhamento visual fixo da sidebar esquerda
+function finalAlignLeftSidebarButtons() {
+  const ids = [
+    'openHowToBtn',
+    'openSiteChatBtn',
+    'openTeamChatBtn',
+    'openStatsBtn',
+    'openTrainingAnalysisBtn',
+    'openTermsBtn',
+    'openSiteConfigBtn'
+  ];
+
+  ids.forEach((id) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+
+    btn.style.setProperty('width', '100%', 'important');
+    btn.style.setProperty('height', '46px', 'important');
+    btn.style.setProperty('min-height', '46px', 'important');
+    btn.style.setProperty('max-height', '46px', 'important');
+    btn.style.setProperty('display', 'grid', 'important');
+    btn.style.setProperty('grid-template-columns', '24px minmax(0, 1fr) 18px', 'important');
+    btn.style.setProperty('align-items', 'center', 'important');
+    btn.style.setProperty('gap', '8px', 'important');
+    btn.style.setProperty('padding', '9px 10px', 'important');
+    btn.style.setProperty('box-sizing', 'border-box', 'important');
+    btn.style.setProperty('margin-left', '0', 'important');
+    btn.style.setProperty('margin-right', '0', 'important');
+
+    const icon = btn.querySelector('span');
+    const label = btn.querySelector('strong');
+
+    if (icon) {
+      icon.style.setProperty('width', '24px', 'important');
+      icon.style.setProperty('min-width', '24px', 'important');
+      icon.style.setProperty('display', 'inline-flex', 'important');
+      icon.style.setProperty('align-items', 'center', 'important');
+      icon.style.setProperty('justify-content', 'center', 'important');
+      icon.style.setProperty('grid-column', '1', 'important');
+    }
+
+    if (label) {
+      label.style.setProperty('grid-column', '2', 'important');
+      label.style.setProperty('justify-self', 'center', 'important');
+      label.style.setProperty('text-align', 'center', 'important');
+      label.style.setProperty('font-size', id === 'openTrainingAnalysisBtn' ? '9.5px' : '10px', 'important');
+      label.style.setProperty('line-height', '1.05', 'important');
+      label.style.setProperty('font-weight', '800', 'important');
+      label.style.setProperty('white-space', 'normal', 'important');
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', finalAlignLeftSidebarButtons);
+} else {
+  finalAlignLeftSidebarButtons();
+}
+
+setTimeout(finalAlignLeftSidebarButtons, 500);
+setTimeout(finalAlignLeftSidebarButtons, 1500);
+setInterval(finalAlignLeftSidebarButtons, 4000);
+
