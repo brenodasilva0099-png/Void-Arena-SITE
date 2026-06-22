@@ -114,11 +114,19 @@ function openVideoModal(item) {
   const src = videoEndpoint(item.id);
 
   title.textContent = `🎥 ${item.playerName || 'Treino em vídeo'}`;
-  hint.textContent = `${item.type || 'Treino'} • ${item.position || 'Posição'} • ${labelStatus(item.status)}`;
+  hint.textContent = `${item.type || 'Treino'} • ${item.position || 'Posição'} • ${labelStatus(item.status)} • Carregando pelo histórico do Discord...`;
 
   player.pause();
   player.removeAttribute('src');
   player.load();
+
+  player.onloadedmetadata = () => {
+    hint.textContent = `${item.type || 'Treino'} • ${item.position || 'Posição'} • ${labelStatus(item.status)} • Vídeo carregado`;
+  };
+
+  player.onerror = () => {
+    hint.textContent = 'Não consegui reproduzir esse formato no navegador. Use “Ver no Discord” ou envie em MP4/H.264.';
+  };
 
   player.src = src;
   modal.classList.add('is-open');
