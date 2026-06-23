@@ -835,12 +835,6 @@ function createServer({ client }) {
   });
 
 
-      return res.json({ success: true, application: data.result });
-    } catch (error) {
-      return res.status(400).json({ success: false, message: error.message });
-    }
-  });
-
   app.get('/api/training-submissions', requireAuth, async (req, res) => {
     const user = await findUserById(req.session.userId);
     if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
