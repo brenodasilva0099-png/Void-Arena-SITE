@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscrição Hollow Nexus • Void Arena</title>
+  <link rel="icon" href="/favicon.png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050713;
+      --card: rgba(13, 15, 35, .92);
+      --border: rgba(167,139,250,.22);
+      --text: #f8f7ff;
+      --muted: #c9c4e8;
+      --primary: #8b5cf6;
+      --cyan: #22d3ee;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, Segoe UI, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(139,92,246,.22), transparent 32%),
+        radial-gradient(circle at 85% 30%, rgba(34,211,238,.16), transparent 30%),
+        linear-gradient(135deg, #050713, #071522);
+      padding: 34px 18px;
+    }
+
+    .wrap {
+      width: min(980px, 100%);
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: clamp(32px, 5vw, 56px);
+      margin: 0 0 8px;
+      letter-spacing: -.06em;
+    }
+
+    p { color: var(--muted); line-height: 1.55; }
+
+    .btn {
+      border: 1px solid rgba(167,139,250,.34);
+      background: rgba(124,58,237,.22);
+      color: #fff;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      border-color: transparent;
+    }
+
+    form {
+      background:
+        radial-gradient(circle at top left, rgba(139,92,246,.18), transparent 34%),
+        var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: clamp(18px, 3vw, 30px);
+      box-shadow: 0 26px 90px rgba(0,0,0,.38);
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .field {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(167,139,250,.14);
+    }
+
+    label, legend {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .required { color: #fb7185; }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid rgba(167,139,250,.24);
+      background: rgba(3,4,12,.48);
+      color: #fff;
+      border-radius: 16px;
+      padding: 14px;
+      outline: none;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(34,211,238,.72);
+      box-shadow: 0 0 0 4px rgba(34,211,238,.10);
+    }
+
+    .options {
+      display: grid;
+      gap: 10px;
+    }
+
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(167,139,250,.10);
+      cursor: pointer;
+    }
+
+    .option input {
+      width: auto;
+      accent-color: var(--primary);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-weight: 800;
+    }
+
+    .ok { color: #86efac; }
+    .err { color: #fda4af; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>📋 Inscrição Hollow Nexus</h1>
+        <p>Bem-vindo à seleção da Hollow Nexus! Para participar da avaliação, preencha todas as informações abaixo.</p>
+      </div>
+      <a class="btn" href="/pages/dashboard.html">Voltar</a>
+    </header>
+
+    <form id="applicationForm">
+      <div class="grid">
+        <div class="field">
+          <label>Nome Real / Código de amizade da Steam <span class="required">*</span></label>
+          <input name="realNameSteamCode" required>
+        </div>
+
+        <div class="field">
+          <label>Idade <span class="required">*</span></label>
+          <input name="age" required>
+        </div>
+
+        <fieldset class="field">
+          <legend>Posição Principal <span class="required">*</span></legend>
+          <div class="options" data-radio="primaryPosition"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Posição Secundária <span class="required">*</span></legend>
+          <div class="options" data-radio="secondaryPosition"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Estilo de Jogo <span class="required">*</span></legend>
+          <div class="options" data-radio="playStyle"></div>
+        </fieldset>
+
+        <div class="field">
+          <label>Tempo de experiência no jogo / Horas jogadas <span class="required">*</span></label>
+          <input name="experienceHours" required>
+        </div>
+
+        <div class="field">
+          <label>Já participou de algum time? Se sim, qual? <span class="required">*</span></label>
+          <textarea name="previousTeam" required></textarea>
+        </div>
+
+        <div class="field">
+          <label>Informe seus horários disponíveis em cada dia <span class="required">*</span></label>
+          <textarea name="availability" required placeholder="Exemplo:
+Segunda: 19h às 23h
+Quarta: 20h às 22h
+Sexta: 18h às 00h"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Quais são seus pontos fortes pessoais e in-game? <span class="required">*</span></label>
+          <textarea name="strengths" required></textarea>
+        </div>
+
+        <div class="field">
+          <label>Quais são seus pontos fracos pessoais e em game? <span class="required">*</span></label>
+          <textarea name="weaknesses" required></textarea>
+        </div>
+
+        <div class="field">
+          <label>Por que deseja entrar para a Hollow Nexus? <span class="required">*</span></label>
+          <textarea name="reason" required></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Enviar inscrição</button>
+        <a class="btn" href="/pages/dashboard.html">Cancelar</a>
+      </div>
+
+      <p id="status" class="status"></p>
+    </form>
+  </main>
+
+  <script src="/js/inscricao.js"></script>
+</body>
+</html>

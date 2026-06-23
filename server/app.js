@@ -665,6 +665,46 @@ function createServer({ client }) {
 
 
 
+
+  app.get('/api/player-applications', requireAdmin, async (_req, res) => {
+    try {
+      const data = await callBotInternalApi('/internal/storage/readPlayerApplications', {
+        method: 'POST',
+        body: JSON.stringify({ args: [{ limit: 300 }] })
+      });
+
+      return res.json({ success: true, applications: data.result || [] });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/player-applications', requireAuth, async (req, res) => {
+    const user = await findUserById(req.session.userId);
+    if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+
+    try {
+      const payload = {
+        ...(req.body || {}),
+        source: 'site',
+        userId: user.id,
+        discordId: user.discordId || '',
+        discordTag: user.profile?.username || user.name || '',
+        userName: user.profile?.displayName || user.profile?.username || user.name || 'Jogador',
+        userAvatar: user.avatar || user.profile?.avatar || ''
+      };
+
+      const data = await callBotInternalApi('/internal/storage/savePlayerApplication', {
+        method: 'POST',
+        body: JSON.stringify({ args: [payload] })
+      });
+
+      return res.json({ success: true, application: data.result });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
   app.get('/api/training-submissions', requireAuth, async (req, res) => {
     const user = await findUserById(req.session.userId);
     if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
