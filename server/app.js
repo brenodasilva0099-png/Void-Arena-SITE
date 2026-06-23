@@ -213,6 +213,10 @@ function safeUser(user) {
   };
 }
 
+function getGoogleCallbackUrl() {
+  return process.env.GOOGLE_CALLBACK_URL || `http://localhost:${Number(process.env.PORT || 3000)}/auth/google/callback`;
+}
+
 function getDiscordCallbackUrl() {
   return process.env.DISCORD_CALLBACK_URL || `http://localhost:${Number(process.env.PORT || 3000)}/auth/discord/callback`;
 }
@@ -595,6 +599,92 @@ function createServer({ client }) {
     return res.json({ success: true, user: safeUser(user) });
   });
 
+
+  app.get('/auth/google', (req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = getGoogleCallbackUrl();
+
+    if (!clientId) {
+      return res.status(501).send('Login Google ainda não configurado. Defina GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_CALLBACK_URL no Render.');
+    }
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      prompt: 'select_account'
+    });
+
+    return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  });
+
+  app.get('/auth/google/callback', async (req, res) => {
+    const code = String(req.query.code || '');
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = getGoogleCallbackUrl();
+
+    if (!code || !clientId || !clientSecret) {
+      return res.status(400).send('Callback Google inválido ou variáveis Google ausentes.');
+    }
+
+    try {
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code'
+        })
+      });
+
+      const tokenData = await tokenResponse.json();
+
+      if (!tokenResponse.ok) {
+        throw new Error(tokenData.error_description || tokenData.error || 'Falha no login Google.');
+      }
+
+      const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+
+      const profile = await userInfoResponse.json();
+
+      if (!userInfoResponse.ok || !profile.email || !profile.email_verified) {
+        throw new Error('Conta Google não verificada.');
+      }
+
+      const email = String(profile.email || '').toLowerCase();
+      let user = await findUserByEmail(email);
+
+      user = await saveUser({
+        ...(user || {}),
+        id: user?.id || crypto.randomUUID(),
+        name: profile.name || user?.name || email,
+        email,
+        avatar: profile.picture || user?.avatar || null,
+        provider: user?.provider || 'google',
+        googleId: profile.sub || user?.googleId || '',
+        socials: user?.socials || {},
+        profile: normalizeUserProfile({
+          ...(user?.profile || {}),
+          username: profile.name || user?.profile?.username || email
+        }),
+        createdAt: user?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      req.session.userId = user.id;
+      req.session.save(() => res.redirect('/pages/inscricao.html'));
+    } catch (error) {
+      return res.status(500).send(`Erro no login Google: ${error.message}`);
+    }
+  });
+
   app.post('/api/auth/register', async (req, res) => {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -668,12 +758,11 @@ function createServer({ client }) {
 
   app.get('/api/player-applications', requireAdmin, async (_req, res) => {
     try {
-      const data = await callBotInternalApi('/internal/storage/readPlayerApplications', {
-        method: 'POST',
-        body: JSON.stringify({ args: [{ limit: 300 }] })
+      const data = await callBotInternalApi('/internal/player-applications', {
+        method: 'GET'
       });
 
-      return res.json({ success: true, applications: data.result || [] });
+      return res.json({ success: true, applications: data.applications || [] });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message });
     }
@@ -694,10 +783,57 @@ function createServer({ client }) {
         userAvatar: user.avatar || user.profile?.avatar || ''
       };
 
-      const data = await callBotInternalApi('/internal/storage/savePlayerApplication', {
+      const data = await callBotInternalApi('/internal/player-applications/create', {
         method: 'POST',
-        body: JSON.stringify({ args: [payload] })
+        body: JSON.stringify(payload)
       });
+
+      return res.json({ success: true, application: data.application });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.patch('/api/player-applications/:id/status', requireAdmin, async (req, res) => {
+    try {
+      const data = await callBotInternalApi(`/internal/player-applications/${encodeURIComponent(req.params.id)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: req.body?.status,
+          notes: req.body?.notes
+        })
+      });
+
+      return res.json(data);
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/player-applications/:id/comment', requireAdmin, async (req, res) => {
+    const content = String(req.body?.content || '').trim();
+
+    if (!content) {
+      return res.status(400).json({ success: false, message: 'Escreva uma mensagem.' });
+    }
+
+    try {
+      const data = await callBotInternalApi(`/internal/player-applications/${encodeURIComponent(req.params.id)}/comment`, {
+        method: 'POST',
+        body: JSON.stringify({
+          content,
+          authorId: req.adminUser?.id || '',
+          authorDiscordId: req.adminUser?.discordId || '',
+          authorName: req.adminUser?.profile?.username || req.adminUser?.name || 'Equipe Hollow Nexus'
+        })
+      });
+
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
 
       return res.json({ success: true, application: data.result });
     } catch (error) {

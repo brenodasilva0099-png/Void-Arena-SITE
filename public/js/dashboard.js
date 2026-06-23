@@ -5156,3 +5156,11 @@ setTimeout(finalAlignLeftSidebarButtons, 500);
 setTimeout(finalAlignLeftSidebarButtons, 1500);
 setInterval(finalAlignLeftSidebarButtons, 4000);
 
+
+
+const openFormsBtn = document.querySelector('#openFormsBtn');
+if (openFormsBtn) {
+  openFormsBtn.addEventListener('click', () => {
+    window.location.href = '/pages/formularios.html';
+  });
+}

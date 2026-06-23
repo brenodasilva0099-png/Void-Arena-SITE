@@ -1,3 +1,34 @@
+async function checkApplicationAuth() {
+  const form = document.getElementById('applicationForm');
+
+  try {
+    const response = await fetch('/api/me');
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data.success === false) {
+      const gate = document.createElement('section');
+      gate.className = 'field';
+      gate.innerHTML = `
+        <h2>Entre para enviar sua inscrição</h2>
+        <p>Para evitar formulário falso, faça login com uma conta verificada antes de enviar.</p>
+        <div class="actions">
+          <a class="btn primary" href="/auth/discord">Entrar com Discord</a>
+          <a class="btn" href="/auth/google">Entrar com Google</a>
+        </div>
+      `;
+
+      form.replaceWith(gate);
+      return null;
+    }
+
+    return data.user;
+  } catch {
+    return null;
+  }
+}
+
+checkApplicationAuth();
+
 const positions = ['Goleiro', 'Fixo', 'Ala Defensivo', 'Ala Ofensivo', 'Pivô'];
 const styles = ['Defensivo', 'Equilibrado', 'Ofensivo'];
 
