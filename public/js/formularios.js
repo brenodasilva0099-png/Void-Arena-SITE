@@ -73,6 +73,28 @@ function field(title, value, full = false) {
   `;
 }
 
+function avatarMarkup(item = {}) {
+  const name = item.userName || item.discordTag || 'Jogador';
+  const letter = String(name || 'J').trim().charAt(0).toUpperCase() || 'J';
+  const avatar = item.userAvatar || item.avatar || item.profileAvatar || '';
+
+  if (avatar) {
+    return `
+      <div class="application-avatar-wrap">
+        <img class="application-avatar" src="${escapeHtml(avatar)}" alt="Foto de ${escapeHtml(name)}" loading="lazy">
+        <span class="application-status">${escapeHtml(statusLabel(item.status))}</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="application-avatar-wrap">
+      <div class="application-avatar application-avatar-fallback">${escapeHtml(letter)}</div>
+      <span class="application-status">${escapeHtml(statusLabel(item.status))}</span>
+    </div>
+  `;
+}
+
 function renderCard(item) {
   const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida';
   const comments = Array.isArray(item.comments) ? item.comments : [];
@@ -83,8 +105,9 @@ function renderCard(item) {
         <div>
           <h2>${escapeHtml(item.userName || item.discordTag || 'Jogador')}</h2>
           <p>${escapeHtml(date)} • Origem: ${escapeHtml(item.source || 'site')}</p>
+          <span class="pill compact-status">${escapeHtml(statusLabel(item.status))}</span>
         </div>
-        <span class="pill">${escapeHtml(statusLabel(item.status))}</span>
+        ${avatarMarkup(item)}
       </div>
 
       <div class="card-body">

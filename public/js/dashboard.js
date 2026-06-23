@@ -5164,3 +5164,24 @@ if (openFormsBtn) {
     window.location.href = '/pages/formularios.html';
   });
 }
+
+
+// PATCH Void Arena — força nome oficial do bot/painel
+function forceVoidArenaBrandName() {
+  const botName = document.querySelector('#botDisplayName');
+  if (botName) botName.textContent = 'Void Arena';
+
+  const title = document.querySelector('title');
+  if (title) title.textContent = 'Painel | Void Arena';
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', forceVoidArenaBrandName);
+} else {
+  forceVoidArenaBrandName();
+}
+
+setTimeout(forceVoidArenaBrandName, 300);
+setTimeout(forceVoidArenaBrandName, 1200);
+setInterval(forceVoidArenaBrandName, 5000);
+

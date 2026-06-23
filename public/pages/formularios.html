@@ -88,7 +88,64 @@
       padding: 24px;
       color: #c9c4e8;
     }
-    @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+
+    .compact-status {
+      margin-top: 8px;
+      font-size: 11px;
+      padding: 6px 9px;
+    }
+
+    .application-avatar-wrap {
+      position: relative;
+      width: 92px;
+      min-width: 92px;
+      height: 92px;
+      display: grid;
+      place-items: center;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(139,92,246,.36), transparent 55%),
+        rgba(139,92,246,.10);
+      border: 1px solid rgba(167,139,250,.28);
+      box-shadow: 0 0 32px rgba(139,92,246,.14);
+    }
+
+    .application-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,.18);
+      background: rgba(3,4,12,.8);
+      box-shadow: 0 0 24px rgba(34,211,238,.16);
+    }
+
+    .application-avatar-fallback {
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      font-weight: 950;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(139,92,246,.92), rgba(34,211,238,.74));
+    }
+
+    .application-status {
+      position: absolute;
+      left: 50%;
+      bottom: -10px;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 950;
+      color: #ddd6fe;
+      background: rgba(24,18,52,.96);
+      border: 1px solid rgba(167,139,250,.35);
+      box-shadow: 0 10px 20px rgba(0,0,0,.22);
+    }
+
+    @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } .application-avatar-wrap { width: 76px; min-width: 76px; height: 76px; } }
   </style>
 </head>
 <body>
