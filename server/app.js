@@ -484,7 +484,7 @@ function createServer({ client }) {
     const db = await readDatabaseStatus().catch((error) => ({ error: error.message }));
     res.json({
       success: true,
-      service: 'Void Arena / Abyss Tourment Game',
+      service: 'Void Arena',
       status: 'ok',
       version: '4.9_option_2_bot_api_database',
       uptime: process.uptime(),
@@ -521,7 +521,7 @@ function createServer({ client }) {
       ? `${username}#${apiBotUser.discriminator}`
       : freshUser?.tag || client?.user?.tag || username;
     const applicationName = apiApplication?.name || application?.name || null;
-    const displayName = applicationName || username || 'Abyss Tourment Game';
+    const displayName = 'Void Arena';
     const botId = apiBotUser?.id || freshUser?.id || client?.user?.id || null;
     const avatarHash = apiBotUser?.avatar || freshUser?.avatar || null;
     const avatar = avatarHash && botId
@@ -1161,6 +1161,9 @@ function createServer({ client }) {
       startAt: event.startAt || '',
       status: event.status || 'open',
       description: event.description || '',
+      logo: event.logo || '',
+      banner: event.banner || '',
+      accentColor: event.accentColor || '#8b5cf6',
       registrations: registeredTeams,
       registeredTeams: registeredTeams.map((registration) => registration.team),
       registeredCount: registeredTeams.length,
@@ -2587,6 +2590,57 @@ function createServer({ client }) {
   app.get('*', (_req, res) => {
     res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
   });
+
+
+  app.post('/api/events/:eventId/registration-request', requireAuth, async (req, res) => {
+    const user = await findUserById(req.session.userId);
+    if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+
+    const eventId = String(req.params.eventId || '').trim();
+    const teamId = String(req.body?.teamId || '').trim();
+
+    if (!eventId || !teamId) {
+      return res.status(400).json({ success: false, message: 'Evento ou time inválido.' });
+    }
+
+    try {
+      const teams = await readTeams();
+      const team = teams.find((item) => String(item.id) === teamId);
+
+      if (!team) {
+        return res.status(404).json({ success: false, message: 'Time não encontrado.' });
+      }
+
+      if (!isAdminUser(user) && !userCanRepresentTeam(user, team)) {
+        return res.status(403).json({ success: false, message: 'Apenas o dono/capitão/responsável pode validar esse time.' });
+      }
+
+      const data = await callBotInternalApi('/internal/event-registration-requests/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          eventId,
+          teamId,
+          teamName: team.name || '',
+          teamTag: team.tag || '',
+          userId: user.id,
+          responsibleDiscordId: user.discordId || '',
+          responsibleName: user.profile?.username || user.name || '',
+          validationChannelId: '1519857078024540270'
+        })
+      });
+
+      return res.json({
+        success: true,
+        ...data,
+        message: data.alreadyRegistered
+          ? 'Esse time já está inscrito no evento.'
+          : 'Pedido de validação criado. Vá para o canal de validação no Discord e preencha o formulário.'
+      });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
 
   return app;
 }

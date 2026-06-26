@@ -51,10 +51,10 @@ async function sendTrainingComment(id) {
 
 async function updateStatus(id, status) {
   const reviewNote = status === 'approved'
-    ? 'Treino aprovado.'
+    ? 'Partida aprovado.'
     : status === 'rejected'
-      ? 'Treino rejeitado.'
-      : 'Treino marcado como analisado.';
+      ? 'Partida rejeitado.'
+      : 'Partida marcado como analisado.';
 
   const response = await fetch(`/api/training-submissions/${encodeURIComponent(id)}/status`, {
     method: 'PATCH',
@@ -64,7 +64,7 @@ async function updateStatus(id, status) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.success === false) {
-    alert(data.message || 'Não foi possível atualizar o treino.');
+    alert(data.message || 'Não foi possível atualizar o partida.');
     return;
   }
 
@@ -82,7 +82,7 @@ function ensureVideoModal() {
   modal.innerHTML = `
     <div class="video-modal-panel">
       <div class="video-modal-head">
-        <strong id="videoModalTitle">🎥 Treino em vídeo</strong>
+        <strong id="videoModalTitle">🎥 Partida em vídeo</strong>
         <button type="button" class="btn" data-close-video>Fechar</button>
       </div>
       <video id="videoModalPlayer" controls playsinline preload="metadata"></video>
@@ -113,15 +113,15 @@ function openVideoModal(item) {
 
   const src = videoEndpoint(item.id);
 
-  title.textContent = `🎥 ${item.playerName || 'Treino em vídeo'}`;
-  hint.textContent = `${item.type || 'Treino'} • ${item.position || 'Posição'} • ${labelStatus(item.status)} • Carregando pelo histórico do Discord...`;
+  title.textContent = `🎥 ${item.playerName || 'Partida em vídeo'}`;
+  hint.textContent = `${item.type || 'Partida'} • ${item.position || 'Posição'} • ${labelStatus(item.status)} • Carregando pelo histórico do Discord...`;
 
   player.pause();
   player.removeAttribute('src');
   player.load();
 
   player.onloadedmetadata = () => {
-    hint.textContent = `${item.type || 'Treino'} • ${item.position || 'Posição'} • ${labelStatus(item.status)} • Vídeo carregado`;
+    hint.textContent = `${item.type || 'Partida'} • ${item.position || 'Posição'} • ${labelStatus(item.status)} • Vídeo carregado`;
   };
 
   player.onerror = () => {
@@ -161,15 +161,15 @@ function renderCard(item, isAdmin) {
         <span class="video-preview-glow"></span>
         <span class="video-preview-icon">${hasVideo ? '▶' : '🎥'}</span>
         <span class="video-preview-info">
-          <strong>${hasVideo ? 'Reproduzir treino' : 'Vídeo indisponível'}</strong>
-          <small>${escapeHtml(item.type || 'Treino')} • ${escapeHtml(item.position || 'Posição')}</small>
+          <strong>${hasVideo ? 'Reproduzir partida' : 'Vídeo indisponível'}</strong>
+          <small>${escapeHtml(item.type || 'Partida')} • ${escapeHtml(item.position || 'Posição')}</small>
         </span>
       </button>
 
       <div class="card-body">
         <strong class="player-name">${escapeHtml(item.playerName || 'Jogador')}</strong>
         <div class="meta">
-          <span class="pill">${escapeHtml(item.type || 'Treino')}</span>
+          <span class="pill">${escapeHtml(item.type || 'Partida')}</span>
           <span class="pill">${escapeHtml(item.position || 'Posição')}</span>
           <span class="pill status-${escapeHtml(item.status)}">${escapeHtml(labelStatus(item.status))}</span>
         </div>
@@ -210,7 +210,7 @@ async function loadTrainings() {
   if (!response.ok || data.success === false) {
     list.innerHTML = '';
     empty.hidden = false;
-    empty.textContent = data.message || 'Erro ao carregar treinos.';
+    empty.textContent = data.message || 'Erro ao carregar partidas.';
     return;
   }
 

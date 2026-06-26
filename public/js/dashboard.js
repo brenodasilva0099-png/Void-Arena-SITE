@@ -536,7 +536,9 @@ function renderMainEventSummary(event = mainEvent()) {
   const title = event?.title || event?.name || 'Evento';
   const limit = Number(event?.teamLimit || 16);
   const min = Number(event?.minimumTeams || 4);
-  mainEventTitle.textContent = `🏟 ${title}`;
+  mainEventTitle.innerHTML = event?.logo
+    ? `<span class="event-title-logo"><img src="${escapeHtml(event.logo)}" alt="" loading="lazy"></span>${escapeHtml(title)}`
+    : `🏟 ${escapeHtml(title)}`;
   if (mainEventDescription) mainEventDescription.textContent = event?.description || 'Configure a descrição do evento para orientar capitães e jogadores.';
   if (eventModeValue) eventModeValue.textContent = formatEventMode(event);
   if (eventFormatValue) eventFormatValue.textContent = event?.matchFormat || 'MD3';
@@ -817,22 +819,25 @@ async function registerTeamInMainEvent(teamId) {
     eventRegisterStatus.className = 'auth-message';
   }
 
-  const data = await apiJson(`/api/events/${encodeURIComponent(event.id)}/register`, {
+  const data = await apiJson(`/api/events/${encodeURIComponent(event.id)}/registration-request`, {
     method: 'POST',
     body: JSON.stringify({ teamId })
   });
 
-  const index = currentEvents.findIndex((item) => item.id === data.event?.id);
-  if (index >= 0) currentEvents[index] = data.event;
-  else if (data.event) currentEvents.push(data.event);
-  renderPlayerHomeData();
-
   if (eventRegisterStatus) {
-    eventRegisterStatus.textContent = data.alreadyRegistered ? 'Esse time já estava inscrito.' : 'Time inscrito no evento com sucesso.';
+    eventRegisterStatus.textContent = data.alreadyRegistered
+      ? 'Esse time já está inscrito.'
+      : 'Pedido criado. Vá ao canal de validação no Discord e preencha o formulário para o time aparecer no evento.';
     eventRegisterStatus.className = 'auth-message success';
   }
 
-  setTimeout(closeEventRegisterModal, 550);
+  if (data.discordUrl) {
+    setTimeout(() => {
+      window.open(data.discordUrl, '_blank', 'noopener,noreferrer');
+    }, 650);
+  }
+
+  setTimeout(closeEventRegisterModal, 1200);
 }
 
 
@@ -849,7 +854,11 @@ function openEventEditorModal(eventData = null) {
   form.elements.minimumTeams.value = String(eventData?.minimumTeams || 4);
   form.elements.startAt.value = eventData?.startAt || '';
   form.elements.structure.value = eventData?.structure || '';
+  injectEventMediaFields();
   form.elements.description.value = eventData?.description || '';
+  if (form.elements.logo) form.elements.logo.value = eventData?.logo || '';
+  if (form.elements.banner) form.elements.banner.value = eventData?.banner || '';
+  if (form.elements.accentColor) form.elements.accentColor.value = eventData?.accentColor || '#8b5cf6';
   initCustomSelects(form);
   refreshCustomSelects(form);
   if (eventEditorTitle) eventEditorTitle.textContent = eventData ? 'Editar evento' : 'Novo evento';
@@ -878,7 +887,10 @@ async function saveEventEditor(event) {
     minimumTeams: Number(form.get('minimumTeams') || 4),
     startAt: String(form.get('startAt') || '').trim(),
     structure: String(form.get('structure') || '').trim(),
-    description: String(form.get('description') || '').trim()
+    description: String(form.get('description') || '').trim(),
+    logo: String(form.get('logo') || '').trim(),
+    banner: String(form.get('banner') || '').trim(),
+    accentColor: String(form.get('accentColor') || '#8b5cf6').trim()
   };
 
   try {
@@ -4818,7 +4830,7 @@ const DEFAULT_SITE_BUTTONS = [
   { id: 'openChatBtn', emoji: '💬', label: 'Chat', order: 20, width: 100, height: 46, fontSize: 10, font: '' },
   { id: 'openScrimBtn', emoji: '⚔️', label: 'Scrim', order: 30, width: 100, height: 46, fontSize: 10, font: '' },
   { id: 'openStatsBtn', emoji: '📊', label: 'Estatísticas', order: 40, width: 100, height: 46, fontSize: 10, font: '' },
-  { id: 'openTrainingAnalysisBtn', emoji: '🎥', label: 'Análise de Treinos', order: 50, width: 100, height: 46, fontSize: 10, font: '' },
+  { id: 'openTrainingAnalysisBtn', emoji: '🎥', label: 'Análise de Partidas', order: 50, width: 100, height: 46, fontSize: 10, font: '' },
   { id: 'openTermsBtn', emoji: '📜', label: 'Termos', order: 900, width: 100, height: 46, fontSize: 10, font: '' },
   { id: 'openSiteConfigBtn', emoji: '⚙️', label: 'Config do Site', order: 910, width: 100, height: 46, fontSize: 10, font: '' }
 ];
@@ -5185,3 +5197,65 @@ setTimeout(forceVoidArenaBrandName, 300);
 setTimeout(forceVoidArenaBrandName, 1200);
 setInterval(forceVoidArenaBrandName, 5000);
 
+
+
+
+// PATCH Void Arena — trava nome oficial e evita alternar com nome antigo
+function forceVoidArenaOfficialName() {
+  const botName = document.querySelector('#botDisplayName');
+  if (botName) botName.textContent = 'Void Arena';
+  document.title = document.title.replace('Abyss Tourment Game', 'Void Arena');
+}
+forceVoidArenaOfficialName();
+setInterval(forceVoidArenaOfficialName, 2500);
+
+
+
+function injectEventMediaFields() {
+  if (!eventEditorForm || eventEditorForm.querySelector('[name="logo"]')) return;
+
+  const descriptionField = eventEditorForm.querySelector('[name="description"]');
+  const anchor = descriptionField?.closest('.field, label, div') || descriptionField?.parentElement || eventEditorForm.lastElementChild;
+
+  const html = `
+    <div class="field event-media-fields">
+      <label>Logo/thumbnail do evento</label>
+      <input name="logo" type="url" placeholder="https://.../logo.png">
+      <small>Use uma imagem quadrada ou circular, igual a do Coliseu.</small>
+    </div>
+    <div class="field event-media-fields">
+      <label>Banner do evento</label>
+      <input name="banner" type="url" placeholder="https://.../banner.png">
+    </div>
+    <div class="field event-media-fields">
+      <label>Cor de destaque</label>
+      <input name="accentColor" type="text" value="#8b5cf6" placeholder="#8b5cf6">
+    </div>
+  `;
+
+  if (anchor) anchor.insertAdjacentHTML('afterend', html);
+}
+
+injectEventMediaFields();
+
+const style = document.createElement('style');
+style.textContent = `
+  .event-title-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    overflow: hidden;
+    display: inline-grid;
+    place-items: center;
+    margin-right: 10px;
+    vertical-align: middle;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(167,139,250,.24);
+  }
+  .event-title-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+document.head.appendChild(style);
