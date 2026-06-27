@@ -5259,3 +5259,140 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+
+
+// PATCH v4.14 — permissões por cargo + realtime WebSocket
+let currentRolePermissions = null;
+
+function permissionAllowed(key) {
+  if (!currentRolePermissions) return true;
+  if (currentRolePermissions.isOwner) return true;
+  return Boolean(currentRolePermissions.permissions?.[key]);
+}
+
+function setPermissionVisibility(element, key) {
+  if (!element) return;
+  element.hidden = !permissionAllowed(key);
+}
+
+async function loadRolePermissionsForDashboard() {
+  try {
+    const response = await fetch('/api/me/permissions');
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok || data.success === false) return;
+
+    currentRolePermissions = data;
+
+    setPermissionVisibility(document.querySelector('#openFormsBtn'), 'forms');
+    setPermissionVisibility(document.querySelector('#openCreateEventBtn'), 'events');
+    setPermissionVisibility(document.querySelector('#editMainEventBtn'), 'events');
+    setPermissionVisibility(document.querySelector('#openTrainingAnalysisBtn'), 'matches');
+    setPermissionVisibility(document.querySelector('#openStatsBtn'), 'stats');
+    setPermissionVisibility(document.querySelector('#openBracketScreenBtn'), 'bracket');
+    setPermissionVisibility(document.querySelector('#openBracketFromHomeBtn'), 'bracket');
+
+    const configBtn = document.querySelector('#openSiteConfigBtn');
+    if (configBtn) configBtn.hidden = !data.isOwner;
+  } catch {}
+}
+
+const permissionsBtn = document.querySelector('#openSiteConfigBtn');
+if (permissionsBtn) {
+  permissionsBtn.addEventListener('click', () => {
+    window.location.href = '/pages/permissoes.html';
+  });
+}
+
+let realtimeSocket = null;
+let realtimeReconnectTimer = null;
+let realtimeRefreshLock = false;
+
+async function realtimeRefreshVoidArena(reason = 'realtime') {
+  if (realtimeRefreshLock) return;
+  realtimeRefreshLock = true;
+
+  try {
+    if (typeof refreshDashboardRealtime === 'function') {
+      await refreshDashboardRealtime();
+    }
+
+    if (typeof loadEvents === 'function') {
+      await loadEvents();
+    }
+
+    if (typeof loadTeamsAndBracket === 'function') {
+      await loadTeamsAndBracket();
+    }
+
+    if (typeof renderPlayerHomeData === 'function') {
+      renderPlayerHomeData();
+    }
+
+    if (typeof loadRolePermissionsForDashboard === 'function' && reason === 'permissions:update') {
+      await loadRolePermissionsForDashboard();
+    }
+  } catch (error) {
+    console.warn('Realtime Void Arena falhou:', error.message);
+  } finally {
+    realtimeRefreshLock = false;
+  }
+}
+
+function connectVoidArenaRealtime() {
+  if (!('WebSocket' in window)) return;
+
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${protocol}//${location.host}/realtime`;
+
+  try {
+    realtimeSocket = new WebSocket(url);
+
+    realtimeSocket.addEventListener('open', () => {
+      clearTimeout(realtimeReconnectTimer);
+      console.log('[Void Arena] realtime conectado');
+    });
+
+    realtimeSocket.addEventListener('message', (event) => {
+      let data = {};
+
+      try {
+        data = JSON.parse(event.data || '{}');
+      } catch {
+        return;
+      }
+
+      if (data.type === 'realtime:connected') return;
+
+      const shouldRefresh = [
+        'dashboard:update',
+        'events:update',
+        'teams:update',
+        'event-registration:approved',
+        'event-registration:proof-submitted',
+        'permissions:update'
+      ].includes(data.type);
+
+      if (shouldRefresh) {
+        realtimeRefreshVoidArena(data.type);
+      }
+    });
+
+    realtimeSocket.addEventListener('close', () => {
+      clearTimeout(realtimeReconnectTimer);
+      realtimeReconnectTimer = setTimeout(connectVoidArenaRealtime, 2500);
+    });
+
+    realtimeSocket.addEventListener('error', () => {
+      try { realtimeSocket.close(); } catch {}
+    });
+  } catch {
+    clearTimeout(realtimeReconnectTimer);
+    realtimeReconnectTimer = setTimeout(connectVoidArenaRealtime, 4000);
+  }
+}
+
+loadRolePermissionsForDashboard();
+connectVoidArenaRealtime();
+setInterval(loadRolePermissionsForDashboard, 30000);
+

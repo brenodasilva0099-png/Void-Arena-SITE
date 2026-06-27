@@ -177,6 +177,18 @@ function normalizeUserProfile(raw = {}) {
 const ADMIN_EMAILS = String(process.env.ADMIN_EMAILS || 'brenodasilva0099@gmail.com').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
 const ADMIN_DISCORD_IDS = String(process.env.ADMIN_DISCORD_IDS || '1235713276277559326').split(',').map((item) => item.trim()).filter(Boolean);
 const ADMIN_USER_IDS = String(process.env.ADMIN_USER_IDS || '').split(',').map((item) => item.trim()).filter(Boolean);
+const OWNER_EMAILS = String(process.env.OWNER_EMAILS || process.env.ADMIN_EMAILS || '').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
+const OWNER_DISCORD_IDS = String(process.env.OWNER_DISCORD_IDS || process.env.ADMIN_DISCORD_IDS || '').split(',').map((item) => item.trim()).filter(Boolean);
+const OWNER_USER_IDS = String(process.env.OWNER_USER_IDS || '').split(',').map((item) => item.trim()).filter(Boolean);
+
+function isOwnerUser(user) {
+  if (!user) return false;
+  const email = String(user.email || '').trim().toLowerCase();
+  const discordId = String(user.discordId || '').trim();
+  const userId = String(user.id || '').trim();
+
+  return OWNER_EMAILS.includes(email) || OWNER_DISCORD_IDS.includes(discordId) || OWNER_USER_IDS.includes(userId);
+}
 
 function isAdminUser(user) {
   if (!user) return false;
@@ -206,6 +218,7 @@ function safeUser(user) {
     provider: user.provider || 'email',
     discordId: user.discordId || null,
     isAdmin: isAdminUser(user),
+    isOwner: isOwnerUser(user),
     socials: normalizeUserSocials(user.socials || {}),
     profile: normalizeUserProfile(user.profile || {}),
     createdAt: user.createdAt,
@@ -383,6 +396,26 @@ function createServer({ client }) {
   });
 
   app.use(express.static(PUBLIC_DIR));
+
+  app.post('/internal/realtime/broadcast', (req, res) => {
+    const token = req.headers['x-site-realtime-token'] || req.headers['x-bot-api-key'] || req.headers['x-internal-token'];
+    const expected = process.env.SITE_REALTIME_TOKEN || BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
+
+    if (expected && token !== expected) {
+      return res.status(401).json({ success: false, message: 'Token realtime inválido.' });
+    }
+
+    const event = {
+      type: req.body?.type || 'dashboard:update',
+      payload: req.body?.payload || {},
+      source: req.body?.source || 'bot',
+      createdAt: req.body?.createdAt || new Date().toISOString()
+    };
+
+    const result = req.app.locals.realtime?.broadcast?.(event) || { sent: 0, event };
+
+    return res.json({ success: true, ...result });
+  });
 
   function discordAvatarUrl(user, size = 128) {
     if (!user?.id || !user?.avatar) return null;
@@ -752,6 +785,108 @@ function createServer({ client }) {
 
     return next();
   }
+
+  async function requireOwner(req, res, next) {
+    const user = await findUserById(req.session.userId);
+
+    if (!user || !isOwnerUser(user)) {
+      return res.status(403).json({ success: false, message: 'Apenas o DONO pode usar essa área.' });
+    }
+
+    req.ownerUser = user;
+    return next();
+  }
+
+  const PERMISSION_KEYS = ['forms', 'events', 'matches', 'stats', 'bracket', 'teams', 'backup', 'config'];
+
+  function emptyPermissions() {
+    return Object.fromEntries(PERMISSION_KEYS.map((key) => [key, false]));
+  }
+
+  function allPermissions() {
+    return Object.fromEntries(PERMISSION_KEYS.map((key) => [key, true]));
+  }
+
+  async function permissionsForUser(user = {}) {
+    if (isOwnerUser(user)) {
+      return { isOwner: true, permissions: allPermissions(), roles: [] };
+    }
+
+    const permissions = emptyPermissions();
+    const discordId = String(user.discordId || '').trim();
+
+    if (!discordId) {
+      return { isOwner: false, permissions, roles: [] };
+    }
+
+    const [rolePermissionsData, memberRolesData] = await Promise.all([
+      callBotInternalApi('/internal/storage/readRolePermissions', {
+        method: 'POST',
+        body: JSON.stringify({ args: [] })
+      }).catch(() => ({ result: {} })),
+      callBotInternalApi(`/internal/discord/member-roles/${encodeURIComponent(discordId)}`, {
+        method: 'GET'
+      }).catch(() => ({ roles: [] }))
+    ]);
+
+    const rolePermissions = rolePermissionsData.result || {};
+    const roles = Array.isArray(memberRolesData.roles) ? memberRolesData.roles : [];
+
+    roles.forEach((role) => {
+      const config = rolePermissions[role.id];
+      if (!config) return;
+
+      PERMISSION_KEYS.forEach((key) => {
+        if (config[key]) permissions[key] = true;
+      });
+    });
+
+    return { isOwner: false, permissions, roles };
+  }
+
+  app.get('/api/me/permissions', requireAuth, async (req, res) => {
+    const user = await findUserById(req.session.userId);
+    if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+
+    const data = await permissionsForUser(user);
+    return res.json({ success: true, ...data });
+  });
+
+  app.get('/api/owner/role-permissions', requireOwner, async (_req, res) => {
+    const [permissionData, mentions] = await Promise.all([
+      callBotInternalApi('/internal/storage/readRolePermissions', {
+        method: 'POST',
+        body: JSON.stringify({ args: [] })
+      }).catch(() => ({ result: {} })),
+      callBotInternalApi('/internal/discord/mentions', {
+        method: 'GET'
+      }).catch(() => ({ roles: [] }))
+    ]);
+
+    return res.json({
+      success: true,
+      permissions: permissionData.result || {},
+      roles: mentions.roles || [],
+      permissionKeys: PERMISSION_KEYS
+    });
+  });
+
+  app.put('/api/owner/role-permissions', requireOwner, async (req, res) => {
+    const permissions = req.body?.permissions || {};
+
+    const data = await callBotInternalApi('/internal/storage/writeRolePermissions', {
+      method: 'POST',
+      body: JSON.stringify({ args: [permissions] })
+    });
+
+    req.app.locals.realtime?.broadcast?.({
+      type: 'permissions:update',
+      payload: {},
+      source: 'site'
+    });
+
+    return res.json({ success: true, permissions: data.result || {} });
+  });
 
 
 
