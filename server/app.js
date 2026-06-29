@@ -486,7 +486,7 @@ function createServer({ client }) {
   }
 
   async function fetchDiscordGuildBrandFromBot() {
-    const botUrl = String(process.env.BOT_API_URL || 'https://void-arena-bot.onrender.com').replace(//$/, '');
+    const botUrl = String(process.env.BOT_API_URL || 'https://void-arena-bot.onrender.com').replace(/\/$/, '');
 
     try {
       const response = await fetch(`${botUrl}/public/guild-brand?t=${Date.now()}`, {
