@@ -174,24 +174,31 @@ function normalizeUserProfile(raw = {}) {
   };
 }
 
-const ADMIN_EMAILS = String(process.env.ADMIN_EMAILS || 'brenodasilva0099@gmail.com').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
-const ADMIN_DISCORD_IDS = String(process.env.ADMIN_DISCORD_IDS || '1235713276277559326').split(',').map((item) => item.trim()).filter(Boolean);
-const ADMIN_USER_IDS = String(process.env.ADMIN_USER_IDS || '').split(',').map((item) => item.trim()).filter(Boolean);
-const OWNER_EMAILS = String(process.env.OWNER_EMAILS || process.env.ADMIN_EMAILS || '').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
-const OWNER_DISCORD_IDS = String(process.env.OWNER_DISCORD_IDS || process.env.ADMIN_DISCORD_IDS || '').split(',').map((item) => item.trim()).filter(Boolean);
-const OWNER_USER_IDS = String(process.env.OWNER_USER_IDS || '').split(',').map((item) => item.trim()).filter(Boolean);
+const DEFAULT_OWNER_EMAILS = ['abyss.projectdev@gmail.com', 'brenodasilva0099@gmail.com'];
+const DEFAULT_OWNER_DISCORD_IDS = ['1235713276277559326'];
+
+function splitUniqueEnvList(...values) {
+  return Array.from(new Set(values.flatMap((value) => Array.isArray(value) ? value : String(value || '').split(',')).map((item) => String(item || '').trim()).filter(Boolean)));
+}
+
+const OWNER_EMAILS = splitUniqueEnvList(process.env.OWNER_EMAILS, process.env.ADMIN_EMAILS, DEFAULT_OWNER_EMAILS).map((item) => item.toLowerCase());
+const OWNER_DISCORD_IDS = splitUniqueEnvList(process.env.OWNER_DISCORD_IDS, process.env.ADMIN_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
+const OWNER_USER_IDS = splitUniqueEnvList(process.env.OWNER_USER_IDS, process.env.ADMIN_USER_IDS);
+const ADMIN_EMAILS = splitUniqueEnvList(process.env.ADMIN_EMAILS, process.env.OWNER_EMAILS, DEFAULT_OWNER_EMAILS).map((item) => item.toLowerCase());
+const ADMIN_DISCORD_IDS = splitUniqueEnvList(process.env.ADMIN_DISCORD_IDS, process.env.OWNER_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
+const ADMIN_USER_IDS = splitUniqueEnvList(process.env.ADMIN_USER_IDS, process.env.OWNER_USER_IDS);
 
 function isOwnerUser(user) {
   if (!user) return false;
   const email = String(user.email || '').trim().toLowerCase();
   const discordId = String(user.discordId || '').trim();
   const userId = String(user.id || '').trim();
-
   return OWNER_EMAILS.includes(email) || OWNER_DISCORD_IDS.includes(discordId) || OWNER_USER_IDS.includes(userId);
 }
 
 function isAdminUser(user) {
   if (!user) return false;
+  if (isOwnerUser(user)) return true;
   const email = String(user.email || '').trim().toLowerCase();
   const discordId = String(user.discordId || '').trim();
   const userId = String(user.id || '').trim();
@@ -1372,7 +1379,13 @@ function createServer({ client }) {
       body: JSON.stringify({
         bracket,
         settings,
-        teams: teams.map(sanitizeTeam),
+        teams: teams.map((team) => ({
+          ...sanitizeTeam(team),
+          ownerUserId: team.ownerUserId || '',
+          players: Array.isArray(team.players) ? team.players : [],
+          reserves: Array.isArray(team.reserves) ? team.reserves : [],
+          playerAccounts: team.playerAccounts || {}
+        })),
         users: users.map((user) => ({
           id: user.id,
           name: user.name,
