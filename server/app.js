@@ -970,6 +970,11 @@ function createServer({ client }) {
   });
 
 
+  app.get('/api/match-results', requireAuth, async (_req, res) => {
+    const results = await readResultRecords();
+    return res.json({ success: true, results: results.sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()) });
+  });
+
   app.get('/api/training-submissions', requireAuth, async (req, res) => {
     const user = await findUserById(req.session.userId);
     if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
@@ -1256,6 +1261,129 @@ function createServer({ client }) {
       ...(Array.isArray(team.players) ? team.players : []),
       ...(Array.isArray(team.reserves) ? team.reserves : [])
     ].map(normalizeIdentity).filter(Boolean);
+  }
+
+
+  function requireSiteInternalToken(req, res, next) {
+    const expected = process.env.SITE_REALTIME_TOKEN || BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
+    if (!expected) return next();
+    const token = req.headers['x-site-realtime-token'] || req.headers['x-bot-api-key'] || req.headers['x-internal-token'] || req.headers.authorization?.replace(/^Bearer\s+/i, '');
+    if (token !== expected) return res.status(401).json({ success: false, message: 'Token interno invÃ¡lido.' });
+    return next();
+  }
+
+  function parseResultRecord(message = {}) {
+    try {
+      const raw = String(message.content || '');
+      if (!raw.startsWith('RESULT_JSON:')) return null;
+      const result = JSON.parse(raw.slice('RESULT_JSON:'.length));
+      return { ...result, messageId: message.id, createdAt: result.createdAt || message.createdAt, updatedAt: message.updatedAt || message.createdAt };
+    } catch {
+      return null;
+    }
+  }
+
+  async function readResultRecords() {
+    const messages = await readChatMessages({ channelId: 'results-main', limit: 500 });
+    return messages.map(parseResultRecord).filter(Boolean);
+  }
+
+  async function saveResultRecord(result = {}) {
+    const content = `RESULT_JSON:${JSON.stringify(result).slice(0, 1850)}`;
+    if (result.messageId) {
+      return updateChatMessage(result.messageId, { content }, { channelId: 'results-main', source: 'system' });
+    }
+    return saveChatMessage({
+      channelId: 'results-main',
+      source: 'system',
+      authorId: 'void-arena-results',
+      authorName: 'Resultados Void Arena',
+      content,
+      attachments: [],
+      createdAt: result.createdAt || new Date().toISOString()
+    });
+  }
+
+  function scoreWinner(result = {}) {
+    const scoreA = Number(result.finalScoreA ?? result.scoreA ?? 0);
+    const scoreB = Number(result.finalScoreB ?? result.scoreB ?? 0);
+    const teamAId = String(result.match?.teamA?.id || '').trim();
+    const teamBId = String(result.match?.teamB?.id || '').trim();
+    if (scoreA > scoreB) return teamAId;
+    if (scoreB > scoreA) return teamBId;
+    return '';
+  }
+
+  function computeResultStatus(result = {}) {
+    const submissions = Array.isArray(result.submissions) ? result.submissions : [];
+    const staff = submissions.find((item) => item.isStaff);
+    if (staff) {
+      return { status: 'validated', final: staff };
+    }
+
+    const captains = submissions.filter((item) => item.authorDiscordId);
+    if (captains.length >= 2) {
+      const a = captains[captains.length - 2];
+      const b = captains[captains.length - 1];
+      const same = Number(a.scoreA) === Number(b.scoreA)
+        && Number(a.scoreB) === Number(b.scoreB)
+        && Number(a.playedGames) === Number(b.playedGames)
+        && Number(a.remainingGames) === Number(b.remainingGames);
+
+      return same ? { status: 'validated', final: b } : { status: 'conflict', final: null };
+    }
+
+    return { status: 'pending', final: submissions[submissions.length - 1] || null };
+  }
+
+  async function applyResultToBracket(result = {}) {
+    const winnerTeamId = String(result.winnerTeamId || '').trim();
+    const roundKey = String(result.match?.roundKey || result.roundKey || '').trim();
+    const matchIndex = Number(result.match?.matchIndex ?? result.matchIndex ?? 0) || 0;
+
+    if (!winnerTeamId) return { applied: false, reason: 'Resultado sem vencedor.' };
+
+    const teams = await readTeams();
+    const bracket = await readBracket();
+    const next = {
+      slots: Array.isArray(bracket.slots) ? [...bracket.slots] : [],
+      quarters: Array.isArray(bracket.quarters) ? [...bracket.quarters] : [],
+      semis: Array.isArray(bracket.semis) ? [...bracket.semis] : [],
+      finals: Array.isArray(bracket.finals) ? [...bracket.finals] : [],
+      matchProgress: normalizeMatchProgressBody(bracket.matchProgress || {}),
+      generatedAt: bracket.generatedAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (roundKey === 'slots') next.quarters[matchIndex] = winnerTeamId;
+    else if (roundKey === 'quarters') next.semis[Math.floor(matchIndex / 2)] = winnerTeamId;
+    else if (roundKey === 'semis') next.finals[matchIndex < 2 ? 0 : 1] = winnerTeamId;
+    else if (roundKey === 'finals') return { applied: false, reason: 'Final validada; nÃ£o existe prÃ³xima fase.' };
+    else return { applied: false, reason: 'Rodada invÃ¡lida.' };
+
+    const saved = await writeBracket(next);
+    return { applied: true, bracket: normalizeBracketForResponse(saved, teams) };
+  }
+
+  async function syncResultHubsForBracket(bracket = {}, settings = {}, source = 'site') {
+    const [teams, users] = await Promise.all([readTeams(), readUsers()]);
+    return callBotInternalApi('/internal/results/sync-hubs', {
+      method: 'POST',
+      body: JSON.stringify({
+        bracket,
+        settings,
+        teams: teams.map(sanitizeTeam),
+        users: users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          discordId: user.discordId || '',
+          avatar: user.avatar || null,
+          profile: normalizeUserProfile(user.profile || {})
+        })),
+        resultsChannelId: '1521257495727706234',
+        source
+      })
+    }).catch((error) => ({ success: false, message: error.message, created: 0, errors: [{ message: error.message }] }));
   }
 
   function userCanRepresentTeam(user = {}, team = {}) {
@@ -2603,6 +2731,82 @@ function createServer({ client }) {
       success: true,
       bracket: normalizeBracketForResponse(bracket, teams)
     });
+  });
+
+  app.post('/internal/results/submit', requireSiteInternalToken, async (req, res) => {
+    try {
+      const payload = req.body || {};
+      const hubId = `${payload.roundKey || payload.match?.roundKey || 'slots'}_${Number(payload.matchIndex ?? payload.match?.matchIndex ?? 0) || 0}`;
+      const records = await readResultRecords();
+      let result = records.find((item) => item.hubId === hubId) || null;
+
+      const submission = {
+        authorDiscordId: String(payload.authorDiscordId || '').trim(),
+        authorName: String(payload.authorName || 'CapitÃ£o').trim().slice(0, 120),
+        scoreA: Number(payload.scoreA || 0) || 0,
+        scoreB: Number(payload.scoreB || 0) || 0,
+        playedGames: Number(payload.playedGames || 0) || 0,
+        remainingGames: Number(payload.remainingGames || 0) || 0,
+        proof: payload.proof || null,
+        isStaff: Boolean(payload.isStaff),
+        createdAt: payload.createdAt || new Date().toISOString()
+      };
+
+      if (!result) {
+        result = {
+          id: `result_${hubId}`,
+          hubId,
+          match: payload.match || {},
+          submissions: [],
+          status: 'pending',
+          finalScoreA: null,
+          finalScoreB: null,
+          playedGames: 0,
+          remainingGames: 0,
+          proof: null,
+          winnerTeamId: '',
+          advanced: false,
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      const key = submission.authorDiscordId || submission.authorName;
+      const existingIndex = result.submissions.findIndex((item) => (item.authorDiscordId || item.authorName) === key);
+      if (existingIndex >= 0) result.submissions[existingIndex] = submission;
+      else result.submissions.push(submission);
+
+      const computed = computeResultStatus(result);
+      result.status = computed.status;
+      if (computed.final) {
+        result.finalScoreA = Number(computed.final.scoreA || 0);
+        result.finalScoreB = Number(computed.final.scoreB || 0);
+        result.playedGames = Number(computed.final.playedGames || 0);
+        result.remainingGames = Number(computed.final.remainingGames || 0);
+        result.proof = computed.final.proof || null;
+        result.winnerTeamId = scoreWinner(result);
+      }
+
+      let bracketApply = { applied: false };
+      if (result.status === 'validated' && result.winnerTeamId && !result.advanced) {
+        bracketApply = await applyResultToBracket(result);
+        result.advanced = Boolean(bracketApply.applied);
+        result.advancedAt = bracketApply.applied ? new Date().toISOString() : null;
+      }
+
+      result.updatedAt = new Date().toISOString();
+      const savedMessage = await saveResultRecord(result);
+      result.messageId = savedMessage.id || result.messageId || '';
+
+      req.app.locals.realtime?.broadcast?.({
+        type: 'match-result:update',
+        payload: { result, bracket: bracketApply.bracket || null },
+        source: 'bot'
+      });
+
+      return res.json({ success: true, result, bracketApply });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
   });
 
   app.post('/api/auth/logout', (req, res) => {

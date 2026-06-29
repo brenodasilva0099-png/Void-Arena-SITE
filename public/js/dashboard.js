@@ -55,6 +55,10 @@ const closeHowToBtn = document.querySelector('#closeHowToBtn');
 const openSiteChatBtn = document.querySelector('#openSiteChatBtn');
 const openStatsBtn = document.querySelector('#openStatsBtn');
 const openTrainingAnalysisBtn = document.querySelector('#openTrainingAnalysisBtn');
+const openResultsBtn = document.querySelector('#openResultsBtn');
+const resultsModal = document.querySelector('#resultsModal');
+const closeResultsBtn = document.querySelector('#closeResultsBtn');
+const resultsContent = document.querySelector('#resultsContent');
 const statsNotificationBadge = document.querySelector('#statsNotificationBadge');
 const statsChatModal = document.querySelector('#statsChatModal');
 const closeStatsChatBtn = document.querySelector('#closeStatsChatBtn');
@@ -4207,6 +4211,69 @@ function renderRankings(type = 'teams') {
   `;
 }
 
+
+function resultStatusLabel(status = '') {
+  return { pending: 'Aguardando confirmaÃ§Ã£o', validated: 'Validado', conflict: 'Conflito', rejected: 'Recusado' }[String(status || '').toLowerCase()] || 'Pendente';
+}
+function resultProofHtml(result = {}) {
+  const proof = result.proof || {};
+  const url = proof.url || proof.proxyUrl || '';
+  if (!url) return '<span class="muted-text">Sem print</span>';
+  const isImage = String(proof.contentType || '').startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(proof.name || url);
+  return isImage
+    ? `<a class="chat-attachment chat-attachment-image" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHtml(url)}" alt="${escapeHtml(proof.name || 'Print do resultado')}" loading="lazy" /></a>`
+    : `<a class="mini-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Abrir comprovante â†—</a>`;
+}
+function renderResults(results = []) {
+  if (!resultsContent) return;
+  if (!results.length) {
+    resultsContent.innerHTML = '<div class="empty-teams large-empty"><strong>Nenhum resultado enviado ainda.</strong><p>Quando os capitÃ£es enviarem resultados pelo Discord, eles aparecem aqui automaticamente.</p></div>';
+    return;
+  }
+  resultsContent.innerHTML = results.map((result) => {
+    const match = result.match || {};
+    const a = match.teamA || {};
+    const b = match.teamB || {};
+    const score = result.finalScoreA !== null && result.finalScoreA !== undefined ? `${result.finalScoreA} x ${result.finalScoreB}` : 'Aguardando';
+    return `
+      <article class="my-team-card result-card">
+        <div class="my-team-main">
+          <div class="my-team-title">
+            <span class="mini-badge">${escapeHtml(resultStatusLabel(result.status))}</span>
+            <h3>${escapeHtml(a.name || 'Time A')} ${escapeHtml(score)} ${escapeHtml(b.name || 'Time B')}</h3>
+            <p>${escapeHtml(match.roundLabel || match.roundKey || 'Rodada')} ${Number(match.matchNumber || 0) || ''} â€¢ ${escapeHtml(match.matchFormat || 'MD1')}</p>
+          </div>
+        </div>
+        <div class="lobby-meta">
+          <span><strong>Jogadas</strong><b>${Number(result.playedGames || 0)}</b></span>
+          <span><strong>Faltam</strong><b>${Number(result.remainingGames || 0)}</b></span>
+          <span><strong>AvanÃ§o</strong><b>${result.advanced ? 'Aplicado' : result.winnerTeamId ? 'Pendente' : '-'}</b></span>
+        </div>
+        <div class="match-history-list">
+          <div class="match-history-item"><strong>Print</strong><span>${resultProofHtml(result)}</span></div>
+          <div class="match-history-item"><strong>ConfirmaÃ§Ãµes</strong><span>${Array.isArray(result.submissions) ? result.submissions.length : 0}</span></div>
+        </div>
+      </article>
+    `;
+  }).join('');
+  hydrateChatAttachmentFallbacks(resultsContent);
+}
+async function openResultsModal() {
+  if (!resultsModal || !resultsContent) return;
+  resultsModal.hidden = false;
+  resultsContent.innerHTML = '<div class="chat-empty-state">Carregando resultados...</div>';
+  try {
+    const data = await apiJson('/api/match-results');
+    renderResults(data.results || []);
+  } catch (error) {
+    resultsContent.innerHTML = `<div class="empty-teams large-empty"><strong>NÃ£o foi possÃ­vel carregar os resultados.</strong><p>${escapeHtml(error.message)}</p></div>`;
+  }
+}
+function closeResultsModal() {
+  if (resultsModal) resultsModal.hidden = true;
+}
+
+
 async function openRankingsModal() {
   if (!rankingsModal) return;
   rankingsModal.hidden = false;
@@ -4260,6 +4327,10 @@ openManualFromConfigBtn?.addEventListener('click', () => {
   closeTournamentConfig();
   openBracketEditor();
 });
+
+openResultsBtn?.addEventListener('click', openResultsModal);
+closeResultsBtn?.addEventListener('click', closeResultsModal);
+resultsModal?.addEventListener('click', (event) => { if (event.target === resultsModal) closeResultsModal(); });
 
 openRankingsBtn?.addEventListener('click', openRankingsModal);
 closeRankingsBtn?.addEventListener('click', closeRankingsModal);
