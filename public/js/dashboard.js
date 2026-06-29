@@ -5181,10 +5181,10 @@ if (openFormsBtn) {
 // PATCH Void Arena — força nome oficial do bot/painel
 function forceVoidArenaBrandName() {
   const botName = document.querySelector('#botDisplayName');
-  if (botName) botName.textContent = 'Void Arena';
+  if (botName) botName.textContent = 'Hollow Nexus';
 
   const title = document.querySelector('title');
-  if (title) title.textContent = 'Painel | Void Arena';
+  if (title) title.textContent = 'Painel | Hollow Nexus';
 }
 
 if (document.readyState === 'loading') {
@@ -5203,8 +5203,8 @@ setInterval(forceVoidArenaBrandName, 5000);
 // PATCH Void Arena — trava nome oficial e evita alternar com nome antigo
 function forceVoidArenaOfficialName() {
   const botName = document.querySelector('#botDisplayName');
-  if (botName) botName.textContent = 'Void Arena';
-  document.title = document.title.replace('Abyss Tourment Game', 'Void Arena');
+  if (botName) botName.textContent = 'Hollow Nexus';
+  document.title = 'Painel | Hollow Nexus';
 }
 forceVoidArenaOfficialName();
 setInterval(forceVoidArenaOfficialName, 2500);
