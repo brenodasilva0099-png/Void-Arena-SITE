@@ -3,14 +3,16 @@ require('dotenv').config();
 const http = require('node:http');
 const { createServer } = require('../server/app');
 const { createRealtimeServer } = require('../server/realtime');
+const { applyFinalFixes } = require('../server/finalFixes');
 
 const PORT = Number(process.env.PORT || 3000);
 
 // Site/API isolado. Na opção 2, o site não escreve no JSON local.
 // Todo banco/storage é acessado pela API interna protegida do bot via BOT_API_URL + BOT_API_KEY.
 const app = createServer({ client: null });
-const server = http.createServer(app);
+applyFinalFixes(app);
 
+const server = http.createServer(app);
 createRealtimeServer(server, { app });
 
 server.listen(PORT, () => {
