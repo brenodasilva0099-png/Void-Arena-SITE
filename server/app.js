@@ -485,6 +485,23 @@ function createServer({ client }) {
     }
   }
 
+  async function fetchDiscordGuildBrandFromBot() {
+    const botUrl = String(process.env.BOT_API_URL || 'https://void-arena-bot.onrender.com').replace(//$/, '');
+
+    try {
+      const response = await fetch(`${botUrl}/public/guild-brand?t=${Date.now()}`, {
+        headers: { Accept: 'application/json' }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success === false) return null;
+
+      return data.guild || null;
+    } catch {
+      return null;
+    }
+  }
+
   async function refreshDiscordProfile(user) {
     if (!user?.discordId || !client?.users?.fetch) return user;
 
@@ -537,10 +554,10 @@ function createServer({ client }) {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
 
+    const guildBrand = await fetchDiscordGuildBrandFromBot();
     const apiBotUser = await fetchDiscordBotUserFromApi();
     const apiApplication = await fetchDiscordApplicationFromApi();
 
-    const online = Boolean(client?.user || apiBotUser);
     let freshUser = client?.user || null;
     let application = null;
 
@@ -561,24 +578,27 @@ function createServer({ client }) {
       ? `${username}#${apiBotUser.discriminator}`
       : freshUser?.tag || client?.user?.tag || username;
     const applicationName = apiApplication?.name || application?.name || null;
-    const displayName = 'Void Arena';
     const botId = apiBotUser?.id || freshUser?.id || client?.user?.id || null;
-    const avatarHash = apiBotUser?.avatar || freshUser?.avatar || null;
-    const avatar = avatarHash && botId
-      ? discordAvatarUrl({ id: botId, avatar: avatarHash }, 256)
-      : null;
+    const serverName = guildBrand?.name || 'Hollow Nexus';
+    const guildIcon = guildBrand?.icon || null;
+    const avatar = guildIcon || '/assets/logo.png';
 
-    res.json({
+    return res.json({
       success: true,
-      online,
-      name: displayName,
+      online: Boolean(client?.user || apiBotUser || guildBrand),
+      name: serverName,
       username,
       applicationName,
-      displayName,
+      serverName,
+      guildName: serverName,
+      displayName: serverName,
       tag,
       id: botId,
-      guilds: client?.guilds?.cache?.size || 0,
+      guildId: guildBrand?.id || null,
+      guilds: client?.guilds?.cache?.size || (guildBrand ? 1 : 0),
       avatar,
+      guildIcon,
+      botAvatar: null,
       fetchedAt: new Date().toISOString()
     });
   });

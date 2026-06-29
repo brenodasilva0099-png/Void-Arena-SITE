@@ -330,19 +330,29 @@ async function loadBotProfile() {
     const response = await fetch(`/api/bot?t=${Date.now()}`, { cache: 'no-store' });
     const data = await response.json();
 
-    if (data.avatar) {
-      const freshAvatar = withCacheBuster(data.avatar, data.fetchedAt || Date.now());
+    const displayName = data.guildName || data.serverName || 'Hollow Nexus';
+    const avatarUrl = data.guildIcon || data.avatar || '/assets/logo.png';
+
+    if (avatarUrl) {
+      const freshAvatar = withCacheBuster(avatarUrl, data.fetchedAt || Date.now());
       document.querySelectorAll('.bot-brand-avatar img, .brand-image img').forEach((img) => {
-        if (img.src !== freshAvatar) img.src = freshAvatar;
+        if (img.getAttribute('src') !== freshAvatar) img.src = freshAvatar;
+        img.alt = 'Ãcone ' + displayName;
       });
     }
 
-    const displayName = data.applicationName || data.displayName || data.name || data.username || (data.tag ? String(data.tag).split('#')[0] : '');
-    if (displayName && botDisplayName) {
+    if (botDisplayName) {
       botDisplayName.textContent = displayName;
       document.title = `Painel | ${displayName}`;
+      const eyebrow = botDisplayName.closest('.topbar-title')?.querySelector('.eyebrow');
+      if (eyebrow) eyebrow.textContent = 'Servidor';
     }
-  } catch {}
+  } catch {
+    if (botDisplayName) {
+      botDisplayName.textContent = 'Hollow Nexus';
+      document.title = 'Painel | Hollow Nexus';
+    }
+  }
 }
 
 function startBotProfileAutoRefresh() {
