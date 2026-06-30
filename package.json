@@ -1,6 +1,6 @@
 {
   "name": "void-arena-site",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "Void Arena 5.0.2: sincronização real de HUBs, chaveamento/resultados conectados e módulos novos sem depender do painel antigo.",
   "main": "site/index.js",
   "scripts": {

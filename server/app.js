@@ -1316,7 +1316,9 @@ function createServer({ client }) {
   }
 
   async function saveResultRecord(result = {}) {
-    const content = `RESULT_JSON:${JSON.stringify(result).slice(0, 1850)}`;
+    // 5.0.3: resultados agora guardam histórico da série inteira.
+    // Não truncar: esse registro é interno, não mensagem pública do Discord.
+    const content = `RESULT_JSON:${JSON.stringify(result)}`;
     if (result.messageId) {
       return updateChatMessage(result.messageId, { content }, { channelId: 'results-main', source: 'system' });
     }
@@ -1331,36 +1333,135 @@ function createServer({ client }) {
     });
   }
 
-  function scoreWinner(result = {}) {
-    const scoreA = Number(result.finalScoreA ?? result.scoreA ?? 0);
-    const scoreB = Number(result.finalScoreB ?? result.scoreB ?? 0);
-    const teamAId = String(result.match?.teamA?.id || '').trim();
-    const teamBId = String(result.match?.teamB?.id || '').trim();
-    if (scoreA > scoreB) return teamAId;
-    if (scoreB > scoreA) return teamBId;
+  function resultMaxGames(match = {}) {
+    const format = String(match.matchFormat || '').trim();
+    const found = format.match(/MD(\d+)/i);
+    const number = found ? Number(found[1]) || 1 : Number(match.maxGames || 1) || 1;
+    return Math.max(1, Math.min(9, number));
+  }
+
+  function resultWinsNeeded(bestOf = 1) {
+    return Math.floor(Number(bestOf || 1) / 2) + 1;
+  }
+
+  function scoreWinnerFromScore(match = {}, scoreA = 0, scoreB = 0) {
+    const teamAId = String(match?.teamA?.id || '').trim();
+    const teamBId = String(match?.teamB?.id || '').trim();
+    if (Number(scoreA) > Number(scoreB)) return teamAId;
+    if (Number(scoreB) > Number(scoreA)) return teamBId;
     return '';
   }
 
-  function computeResultStatus(result = {}) {
-    const submissions = Array.isArray(result.submissions) ? result.submissions : [];
+  function scoreWinner(result = {}) {
+    if (result.winnerTeamId) return String(result.winnerTeamId || '');
+    return scoreWinnerFromScore(result.match || {}, result.finalScoreA || 0, result.finalScoreB || 0);
+  }
+
+  function normalizeSeriesSubmission(payload = {}) {
+    return {
+      authorDiscordId: String(payload.authorDiscordId || '').trim(),
+      authorName: String(payload.authorName || 'Capitão').trim().slice(0, 120),
+      scoreA: Number(payload.scoreA || 0) || 0,
+      scoreB: Number(payload.scoreB || 0) || 0,
+      proof: payload.proof || null,
+      isStaff: Boolean(payload.isStaff),
+      createdAt: payload.createdAt || new Date().toISOString()
+    };
+  }
+
+  function computeGameStatus(game = {}, match = {}) {
+    const submissions = Array.isArray(game.submissions) ? game.submissions : [];
     const staff = submissions.find((item) => item.isStaff);
-    if (staff) {
-      return { status: 'validated', final: staff };
+    const selected = staff || null;
+
+    if (selected) {
+      return {
+        status: 'validated',
+        final: selected,
+        winnerTeamId: scoreWinnerFromScore(match, selected.scoreA, selected.scoreB)
+      };
     }
 
     const captains = submissions.filter((item) => item.authorDiscordId);
     if (captains.length >= 2) {
       const a = captains[captains.length - 2];
       const b = captains[captains.length - 1];
-      const same = Number(a.scoreA) === Number(b.scoreA)
-        && Number(a.scoreB) === Number(b.scoreB)
-        && Number(a.playedGames) === Number(b.playedGames)
-        && Number(a.remainingGames) === Number(b.remainingGames);
-
-      return same ? { status: 'validated', final: b } : { status: 'conflict', final: null };
+      const same = Number(a.scoreA) === Number(b.scoreA) && Number(a.scoreB) === Number(b.scoreB);
+      return same
+        ? { status: 'validated', final: b, winnerTeamId: scoreWinnerFromScore(match, b.scoreA, b.scoreB) }
+        : { status: 'conflict', final: null, winnerTeamId: '' };
     }
 
-    return { status: 'pending', final: submissions[submissions.length - 1] || null };
+    return { status: 'pending', final: submissions[submissions.length - 1] || null, winnerTeamId: '' };
+  }
+
+  function recomputeSeries(result = {}) {
+    const match = result.match || {};
+    const bestOf = resultMaxGames(match);
+    const needed = resultWinsNeeded(bestOf);
+    const teamAId = String(match?.teamA?.id || '').trim();
+    const teamBId = String(match?.teamB?.id || '').trim();
+    const games = (Array.isArray(result.games) ? result.games : [])
+      .map((game) => ({
+        ...game,
+        gameNumber: Math.max(1, Math.min(bestOf, Number(game.gameNumber || 1) || 1)),
+        submissions: Array.isArray(game.submissions) ? game.submissions : []
+      }))
+      .sort((a, b) => Number(a.gameNumber) - Number(b.gameNumber));
+
+    let seriesScoreA = 0;
+    let seriesScoreB = 0;
+    let hasConflict = false;
+    let lastProof = null;
+
+    for (const game of games) {
+      const computed = computeGameStatus(game, match);
+      game.status = computed.status;
+      game.updatedAt = new Date().toISOString();
+      if (computed.final) {
+        game.finalScoreA = Number(computed.final.scoreA || 0);
+        game.finalScoreB = Number(computed.final.scoreB || 0);
+        game.proof = computed.final.proof || game.proof || null;
+        lastProof = game.proof || lastProof;
+      }
+      game.winnerTeamId = computed.winnerTeamId || '';
+      if (game.status === 'validated') {
+        if (game.winnerTeamId === teamAId) seriesScoreA += 1;
+        if (game.winnerTeamId === teamBId) seriesScoreB += 1;
+      }
+      if (game.status === 'conflict') hasConflict = true;
+    }
+
+    const playedGames = seriesScoreA + seriesScoreB;
+    const winnerTeamId = seriesScoreA >= needed ? teamAId : seriesScoreB >= needed ? teamBId : '';
+    const status = winnerTeamId ? 'validated' : hasConflict ? 'conflict' : playedGames > 0 ? 'partial' : (games.length ? 'pending' : 'pending');
+    const currentGameNumber = winnerTeamId
+      ? Math.min(bestOf, Math.max(1, playedGames))
+      : Math.max(1, Math.min(bestOf, (games.find((game) => game.status === 'conflict')?.gameNumber) || playedGames + 1));
+
+    return {
+      ...result,
+      games,
+      bestOf,
+      winsNeeded: needed,
+      seriesScoreA,
+      seriesScoreB,
+      finalScoreA: seriesScoreA,
+      finalScoreB: seriesScoreB,
+      playedGames,
+      remainingGames: Math.max(0, bestOf - playedGames),
+      winsRemaining: Math.max(0, needed - Math.max(seriesScoreA, seriesScoreB)),
+      currentGameNumber,
+      status,
+      proof: lastProof || result.proof || null,
+      winnerTeamId,
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function computeResultStatus(result = {}) {
+    const computed = recomputeSeries(result);
+    return { status: computed.status, final: null, result: computed };
   }
 
   async function applyResultToBracket(result = {}) {
@@ -2766,36 +2867,52 @@ function createServer({ client }) {
     });
   });
 
+  app.post('/internal/results/state', requireSiteInternalToken, async (req, res) => {
+    try {
+      const payload = req.body || {};
+      const hubId = String(payload.hubId || `${payload.roundKey || payload.match?.roundKey || 'slots'}_${Number(payload.matchIndex ?? payload.match?.matchIndex ?? 0) || 0}`).trim();
+      const records = await readResultRecords();
+      const result = records.find((item) => String(item.hubId || '') === hubId) || null;
+      return res.json({ success: true, result });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
   app.post('/internal/results/submit', requireSiteInternalToken, async (req, res) => {
     try {
       const payload = req.body || {};
-      const hubId = `${payload.roundKey || payload.match?.roundKey || 'slots'}_${Number(payload.matchIndex ?? payload.match?.matchIndex ?? 0) || 0}`;
+      const round = payload.roundKey || payload.match?.roundKey || 'slots';
+      const index = Number(payload.matchIndex ?? payload.match?.matchIndex ?? 0) || 0;
+      const hubId = `${round}_${index}`;
       const records = await readResultRecords();
       let result = records.find((item) => item.hubId === hubId) || null;
+      const match = payload.match || result?.match || {};
+      const bestOf = resultMaxGames(match);
+      const gameNumber = Math.max(1, Math.min(bestOf, Number(payload.gameNumber || result?.currentGameNumber || 1) || 1));
+      const submission = normalizeSeriesSubmission(payload);
 
-      const submission = {
-        authorDiscordId: String(payload.authorDiscordId || '').trim(),
-        authorName: String(payload.authorName || 'CapitÃ£o').trim().slice(0, 120),
-        scoreA: Number(payload.scoreA || 0) || 0,
-        scoreB: Number(payload.scoreB || 0) || 0,
-        playedGames: Number(payload.playedGames || 0) || 0,
-        remainingGames: Number(payload.remainingGames || 0) || 0,
-        proof: payload.proof || null,
-        isStaff: Boolean(payload.isStaff),
-        createdAt: payload.createdAt || new Date().toISOString()
-      };
+      if (submission.scoreA === submission.scoreB) {
+        return res.status(400).json({ success: false, message: 'Resultado empatado não fecha uma partida.' });
+      }
 
       if (!result) {
         result = {
           id: `result_${hubId}`,
           hubId,
-          match: payload.match || {},
+          match,
+          games: [],
           submissions: [],
           status: 'pending',
-          finalScoreA: null,
-          finalScoreB: null,
+          bestOf,
+          winsNeeded: resultWinsNeeded(bestOf),
+          seriesScoreA: 0,
+          seriesScoreB: 0,
+          finalScoreA: 0,
+          finalScoreB: 0,
           playedGames: 0,
-          remainingGames: 0,
+          remainingGames: bestOf,
+          currentGameNumber: 1,
           proof: null,
           winnerTeamId: '',
           advanced: false,
@@ -2803,21 +2920,36 @@ function createServer({ client }) {
         };
       }
 
-      const key = submission.authorDiscordId || submission.authorName;
-      const existingIndex = result.submissions.findIndex((item) => (item.authorDiscordId || item.authorName) === key);
-      if (existingIndex >= 0) result.submissions[existingIndex] = submission;
-      else result.submissions.push(submission);
+      result.match = match;
+      result.bestOf = bestOf;
+      result.winsNeeded = resultWinsNeeded(bestOf);
+      result.games = Array.isArray(result.games) ? result.games : [];
+      result.submissions = Array.isArray(result.submissions) ? result.submissions : [];
 
-      const computed = computeResultStatus(result);
-      result.status = computed.status;
-      if (computed.final) {
-        result.finalScoreA = Number(computed.final.scoreA || 0);
-        result.finalScoreB = Number(computed.final.scoreB || 0);
-        result.playedGames = Number(computed.final.playedGames || 0);
-        result.remainingGames = Number(computed.final.remainingGames || 0);
-        result.proof = computed.final.proof || null;
-        result.winnerTeamId = scoreWinner(result);
+      let game = result.games.find((item) => Number(item.gameNumber) === gameNumber);
+      if (!game) {
+        game = {
+          id: `${hubId}_game_${gameNumber}`,
+          gameNumber,
+          submissions: [],
+          status: 'pending',
+          finalScoreA: null,
+          finalScoreB: null,
+          proof: null,
+          winnerTeamId: '',
+          createdAt: new Date().toISOString()
+        };
+        result.games.push(game);
       }
+
+      const key = submission.authorDiscordId || submission.authorName;
+      const existingIndex = game.submissions.findIndex((item) => (item.authorDiscordId || item.authorName) === key);
+      if (existingIndex >= 0) game.submissions[existingIndex] = submission;
+      else game.submissions.push(submission);
+
+      result.submissions.push({ ...submission, gameNumber });
+      result.submissions = result.submissions.slice(-40);
+      result = recomputeSeries(result);
 
       let bracketApply = { applied: false };
       if (result.status === 'validated' && result.winnerTeamId && !result.advanced) {

@@ -27,3 +27,9 @@ Esta versão não tenta adicionar sistema novo. O objetivo é organizar a base p
 ## Importante
 
 O `server/app.js` legado ainda existe porque ele tem muitas rotas antigas. A etapa 5.0 apenas estabiliza e começa a separação. As próximas etapas podem mover cada rota para arquivos menores sem misturar tudo novamente.
+
+## 5.0.3
+- HUB única por confronto.
+- Série MD1/MD3/MD5 com placar por jogo.
+- Avanço no chaveamento apenas quando a série fecha.
+- Resultados aparecem no site com histórico por partida.
