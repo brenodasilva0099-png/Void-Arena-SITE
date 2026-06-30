@@ -2,10 +2,11 @@ const { removeRoutes } = require('../utils/expressRoutes');
 const { registerOrganizedRouteOverrides } = require('../routes/organized.routes');
 
 function registerOrganizedRoutes(app) {
-  // O app legado ainda registra rotas antigas dentro de server/app.js.
-  // Nesta etapa 5.0, removemos só as rotas críticas e registramos versões organizadas.
   removeRoutes(app, [
     ['get', '/api/bot'],
+    ['get', '/api/dashboard/snapshot'],
+    ['get', '/api/teams'],
+    ['get', '/api/match-results'],
     ['put', '/api/tournament/settings'],
     ['post', '/api/bracket/generate'],
     ['put', '/api/bracket'],
@@ -14,7 +15,7 @@ function registerOrganizedRoutes(app) {
   ]);
 
   registerOrganizedRouteOverrides(app);
-  console.log('✅ Void Arena 5.0: rotas organizadas aplicadas.');
+  console.log('✅ Void Arena 5.1: estrutura nova assumiu as rotas principais.');
 }
 
 module.exports = { registerOrganizedRoutes };

@@ -1295,7 +1295,7 @@ function createServer({ client }) {
     const expected = process.env.SITE_REALTIME_TOKEN || BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
     if (!expected) return next();
     const token = req.headers['x-site-realtime-token'] || req.headers['x-bot-api-key'] || req.headers['x-internal-token'] || req.headers.authorization?.replace(/^Bearer\s+/i, '');
-    if (token !== expected) return res.status(401).json({ success: false, message: 'Token interno invÃ¡lido.' });
+    if (token !== expected) return res.status(401).json({ success: false, message: 'Token interno inválido.' });
     return next();
   }
 
@@ -1464,6 +1464,27 @@ function createServer({ client }) {
     return { status: computed.status, final: null, result: computed };
   }
 
+  function nextSlotTargetForResult(matchIndex = 0, bracket = {}) {
+    const slots = Array.isArray(bracket.slots) ? bracket.slots : [];
+    const filled = slots.filter(Boolean).length;
+    const slotSize = slots.length > 16 ? 32 : 16;
+
+    if (slotSize === 16 && filled <= 4) {
+      return { round: 'finals', index: matchIndex < 4 ? 0 : 1 };
+    }
+
+    if (slotSize === 16 && filled <= 8) {
+      const map = { 0: 0, 1: 1, 4: 2, 5: 3 };
+      return { round: 'semis', index: map[matchIndex] ?? Math.min(3, matchIndex) };
+    }
+
+    if (slotSize === 16) {
+      return { round: 'quarters', index: matchIndex };
+    }
+
+    return { round: 'round16', index: Math.max(0, Math.min(15, matchIndex)) };
+  }
+
   async function applyResultToBracket(result = {}) {
     const winnerTeamId = String(result.winnerTeamId || '').trim();
     const roundKey = String(result.match?.roundKey || result.roundKey || '').trim();
@@ -1474,7 +1495,10 @@ function createServer({ client }) {
     const teams = await readTeams();
     const bracket = await readBracket();
     const next = {
+      slotSize: bracket.slotSize || (Array.isArray(bracket.slots) && bracket.slots.length > 16 ? 32 : 16),
+      teamLimit: bracket.teamLimit || (Array.isArray(bracket.slots) ? bracket.slots.filter(Boolean).length : 16),
       slots: Array.isArray(bracket.slots) ? [...bracket.slots] : [],
+      round16: Array.isArray(bracket.round16) ? [...bracket.round16] : [],
       quarters: Array.isArray(bracket.quarters) ? [...bracket.quarters] : [],
       semis: Array.isArray(bracket.semis) ? [...bracket.semis] : [],
       finals: Array.isArray(bracket.finals) ? [...bracket.finals] : [],
@@ -1483,11 +1507,15 @@ function createServer({ client }) {
       updatedAt: new Date().toISOString()
     };
 
-    if (roundKey === 'slots') next.quarters[matchIndex] = winnerTeamId;
+    if (roundKey === 'slots') {
+      const target = nextSlotTargetForResult(matchIndex, bracket);
+      next[target.round][target.index] = winnerTeamId;
+    }
+    else if (roundKey === 'round16') next.quarters[Math.floor(matchIndex / 2)] = winnerTeamId;
     else if (roundKey === 'quarters') next.semis[Math.floor(matchIndex / 2)] = winnerTeamId;
     else if (roundKey === 'semis') next.finals[matchIndex < 2 ? 0 : 1] = winnerTeamId;
-    else if (roundKey === 'finals') return { applied: false, reason: 'Final validada; nÃ£o existe prÃ³xima fase.' };
-    else return { applied: false, reason: 'Rodada invÃ¡lida.' };
+    else if (roundKey === 'finals') return { applied: false, reason: 'Final validada; não existe próxima fase.' };
+    else return { applied: false, reason: 'Rodada inválida.' };
 
     const saved = await writeBracket(next);
     return { applied: true, bracket: normalizeBracketForResponse(saved, teams) };
@@ -2243,12 +2271,16 @@ function createServer({ client }) {
   }
 
   function normalizeBracketForResponse(bracket, teams) {
+    const slotSize = Array.isArray(bracket.slots) && bracket.slots.length > 16 ? 32 : 16;
     return {
-      slots: normalizeBracketArray(bracket.slots, teams, 16),
+      slotSize,
+      teamLimit: Number(bracket.teamLimit || 0) || (Array.isArray(bracket.slots) ? bracket.slots.filter(Boolean).length : slotSize),
+      slots: normalizeBracketArray(bracket.slots, teams, slotSize),
+      round16: normalizeBracketArray(bracket.round16, teams, 16),
       quarters: normalizeBracketArray(bracket.quarters, teams, 8),
       semis: normalizeBracketArray(bracket.semis, teams, 4),
       finals: normalizeBracketArray(bracket.finals, teams, 2),
-      matchProgress: bracket.matchProgress || { slots: [], quarters: [], semis: [], finals: [] },
+      matchProgress: bracket.matchProgress || { slots: [], round16: [], quarters: [], semis: [], finals: [] },
       generatedAt: bracket.generatedAt || null,
       updatedAt: bracket.updatedAt || null
     };
@@ -2284,7 +2316,8 @@ function createServer({ client }) {
     };
 
     return {
-      slots: normalize(raw.slots, 16),
+      slots: normalize(raw.slots, Array.isArray(raw.slots) && raw.slots.length > 16 ? 32 : 16),
+      round16: normalize(raw.round16, 16),
       quarters: normalize(raw.quarters, 8),
       semis: normalize(raw.semis, 4),
       finals: normalize(raw.finals, 2)

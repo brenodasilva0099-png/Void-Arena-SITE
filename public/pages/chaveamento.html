@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chaveamento | Void Arena</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
 </head>
@@ -37,7 +38,7 @@
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.0.2</p>
+          <p class="va-eyebrow">Void Arena 5.1</p>
           <h1 class="va-title">Chaveamento</h1>
           <p class="va-subtitle">Chaveamento separado com o visual premium antigo integrado na estrutura nova.</p>
         </div>
@@ -55,7 +56,7 @@
       <button id="generateBracketBtn" class="va-btn primary" type="button">Gerar automático</button>
       <button id="reloadBracketBtn" class="va-btn" type="button">Recarregar</button>
       <button id="syncHubsBtn" class="va-btn" type="button">Sincronizar HUBs</button>
-      <a class="va-btn" href="/pages/painel-completo.html">Editor completo</a>
+      
     </div>
     <div id="bracketStatus" class="va-status">Carregando...</div>
   </article>
@@ -79,7 +80,7 @@
         <select name="structure"><option value="single_elimination">Mata-mata</option><option value="groups">Grupos</option><option value="groups_playoffs">Grupos + playoffs</option></select>
       </label>
       <label>Limite de times
-        <select name="teamLimit"><option value="4">4 times</option><option value="8">8 times</option><option value="16">16 times</option><option value="32">32 times</option></select>
+        <select name="teamLimit"><option value="4">4 times</option><option value="8">8 times</option><option value="12">12 times</option><option value="16">16 times</option><option value="20">20 times</option><option value="24">24 times</option><option value="28">28 times</option><option value="32">32 times</option></select>
       </label>
       <label>Quantidade de grupos
         <select name="groupCount"><option value="2">2 grupos</option><option value="4">4 grupos</option><option value="8">8 grupos</option></select>
@@ -127,6 +128,7 @@
         </div>
       </div>
     </section>
+    <div id="adaptiveBracket" class="va-adaptive-bracket"></div>
   </article>
 </section>
 

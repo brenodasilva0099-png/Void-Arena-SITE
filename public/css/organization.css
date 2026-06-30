@@ -102,3 +102,55 @@ body.va-organized-body {
 .va-team-item img, .va-event-item img { width: 42px; height: 42px; border-radius: 13px; object-fit: cover; border: 1px solid var(--va-border); }
 .va-team-item > span, .va-orb { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: rgba(139,92,246,.18); border: 1px solid var(--va-border); color: var(--va-cyan); font-weight: 1000; }
 @media (max-width: 980px) { .va-hero-card, .va-section-head { flex-direction: column; } .va-actions-right { justify-content: flex-start; } .va-form-grid, .va-kpi-grid { grid-template-columns: 1fr; } .va-integrated-bracket .bracket-board { min-width: 1080px; } }
+
+/* Void Arena 5.1 - consolidação visual/profile/resultados */
+.va-user-pill.is-clickable { cursor: pointer; gap: 10px; transition: border-color .2s ease, transform .2s ease, background .2s ease; }
+.va-user-pill.is-clickable:hover { transform: translateY(-1px); border-color: rgba(139, 92, 246, .65); background: rgba(139, 92, 246, .12); }
+.va-user-pill-avatar { width: 30px; height: 30px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg, rgba(139,92,246,.4), rgba(34,211,238,.25)); font-weight: 800; }
+.va-user-pill-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.va-profile-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(3, 6, 23, .76); backdrop-filter: blur(14px); display: grid; place-items: center; padding: 24px; }
+.va-profile-overlay[hidden] { display: none; }
+.va-profile-modal { width: min(760px, 96vw); max-height: 92vh; overflow: auto; position: relative; border: 1px solid rgba(139,92,246,.34); border-radius: 28px; background: linear-gradient(135deg, rgba(10, 10, 22, .98), rgba(23, 12, 48, .96)); box-shadow: 0 28px 90px rgba(0,0,0,.55); padding: 26px; }
+.va-profile-close { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: white; font-size: 22px; cursor: pointer; }
+.va-profile-head { display: flex; gap: 18px; align-items: center; margin-bottom: 22px; }
+.va-profile-avatar-big { width: 92px; height: 92px; border-radius: 28px; overflow: hidden; display: grid; place-items: center; background: radial-gradient(circle at 30% 20%, rgba(34,211,238,.36), rgba(139,92,246,.28) 45%, rgba(8,8,18,.9)); border: 1px solid rgba(255,255,255,.18); font-size: 38px; font-weight: 900; }
+.va-profile-avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+.va-profile-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.va-profile-form label { display: grid; gap: 7px; color: rgba(255,255,255,.78); font-size: 13px; font-weight: 700; }
+.va-profile-form input, .va-profile-form textarea { width: 100%; border-radius: 14px; border: 1px solid rgba(255,255,255,.12); background: rgba(3,6,23,.55); color: white; padding: 11px 12px; outline: none; }
+.va-profile-form textarea { min-height: 82px; resize: vertical; }
+.va-profile-actions, #vaProfileStatus { grid-column: 1 / -1; }
+.va-profile-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.va-team-card, .va-player-card, .va-result-card { border: 1px solid rgba(255,255,255,.10); border-radius: 22px; background: rgba(255,255,255,.045); padding: 16px; }
+.va-team-card { cursor: pointer; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.va-team-card:hover { transform: translateY(-2px); border-color: rgba(34,211,238,.35); background: rgba(34,211,238,.065); }
+.va-team-card-head { display: flex; gap: 14px; align-items: center; }
+.va-team-logo, .va-player-avatar, .va-result-logo { width: 48px; height: 48px; border-radius: 16px; overflow: hidden; display: grid; place-items: center; background: rgba(139,92,246,.24); font-weight: 900; }
+.va-team-logo img, .va-player-avatar img, .va-result-logo img { width: 100%; height: 100%; object-fit: cover; }
+.va-team-roster, .va-result-games { display: grid; gap: 8px; margin-top: 14px; }
+.va-player-row, .va-result-game-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 14px; background: rgba(0,0,0,.16); color: rgba(255,255,255,.82); }
+.va-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 800; background: rgba(139,92,246,.18); color: #ddd6fe; border: 1px solid rgba(139,92,246,.26); }
+.va-badge.ok { background: rgba(34,197,94,.16); color: #bbf7d0; border-color: rgba(34,197,94,.28); }
+.va-badge.warn { background: rgba(245,158,11,.16); color: #fde68a; border-color: rgba(245,158,11,.30); }
+.va-badge.err { background: rgba(239,68,68,.16); color: #fecaca; border-color: rgba(239,68,68,.30); }
+.va-adaptive-bracket { margin-top: 18px; display: grid; gap: 12px; }
+.va-adaptive-round { border: 1px solid rgba(255,255,255,.10); border-radius: 20px; padding: 14px; background: rgba(0,0,0,.16); }
+.va-adaptive-round h3 { margin: 0 0 12px; }
+.va-match-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.va-match-card { border: 1px solid rgba(255,255,255,.10); border-radius: 16px; padding: 10px; background: rgba(255,255,255,.045); }
+.va-match-card strong { display: block; margin-bottom: 8px; color: white; }
+.va-match-team { display: flex; align-items: center; gap: 8px; padding: 6px 0; color: rgba(255,255,255,.82); }
+.va-modal-shell { position: fixed; inset: 0; z-index: 9000; background: rgba(0,0,0,.72); display: grid; place-items: center; padding: 22px; }
+.va-modal-shell[hidden] { display: none; }
+.va-modal-card { width: min(840px, 96vw); max-height: 90vh; overflow: auto; border-radius: 26px; border: 1px solid rgba(255,255,255,.14); background: #0a0a18; padding: 22px; box-shadow: 0 24px 80px rgba(0,0,0,.5); }
+.va-modal-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+.va-modal-close { border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.08); color: white; border-radius: 999px; width: 34px; height: 34px; cursor: pointer; }
+.va-proof-img { width: min(260px, 100%); max-height: 160px; object-fit: cover; border-radius: 14px; border: 1px solid rgba(255,255,255,.14); display: block; margin-top: 8px; }
+.va-mini-link { color: #67e8f9; font-weight: 800; text-decoration: none; }
+@media (max-width: 720px) { .va-profile-form { grid-template-columns: 1fr; } .va-profile-head { align-items: flex-start; } }
+.va-inline-team-logo { width: 22px; height: 22px; border-radius: 8px; display: inline-grid; place-items: center; overflow: hidden; background: rgba(255,255,255,.10); margin-right: 6px; font-size: 11px; font-weight: 900; vertical-align: middle; }
+.va-inline-team-logo img { width: 100%; height: 100%; object-fit: cover; }
+.va-kpi-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.va-score-big { display: block; margin-top: 8px; font-size: 24px; color: white; text-align: right; }
+.va-result-side { min-width: 120px; text-align: right; }
+.va-card.full .va-list { display: grid; gap: 14px; }
