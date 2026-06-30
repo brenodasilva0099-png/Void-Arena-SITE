@@ -78,7 +78,7 @@
     const data = await VoidArena.request('/api/dashboard/snapshot');
     fillSettings(data.settings || {});
     render(data.bracket || {});
-    setStatus('Chaveamento carregado.', 'ok');
+    setStatus('Chaveamento carregado na estrutura 5.0.2.', 'ok');
   }
   async function saveSettings() {
     setStatus('Salvando configurações do torneio...');
@@ -100,15 +100,10 @@
   async function syncHubs() {
     setStatus('Sincronizando HUBs pelo BOT...');
     try {
-      const data = await VoidArena.request('/api/bracket', { method: 'PUT', body: JSON.stringify({
-        slots: currentBracket.slots.map((t) => t?.id || t || null),
-        quarters: currentBracket.quarters.map((t) => t?.id || t || null),
-        semis: currentBracket.semis.map((t) => t?.id || t || null),
-        finals: currentBracket.finals.map((t) => t?.id || t || null),
-        matchProgress: currentBracket.matchProgress || {}
-      }) });
-      if (data.bracket) render(data.bracket);
-      setStatus(data.resultHubs?.success === false ? `HUBs não sincronizaram: ${data.resultHubs.message}` : 'HUBs sincronizadas.', data.resultHubs?.success === false ? 'err' : 'ok');
+      const data = await VoidArena.request('/api/result-hubs/sync', { method: 'POST', body: '{}' });
+      const result = data.resultHubs || {};
+      const detail = `${result.created || 0} criadas • ${result.reused || 0} atualizadas • ${result.totalMatches || 0} confrontos${result.errors?.length ? ` • ${result.errors.length} erro(s)` : ''}`;
+      setStatus(result.success === false ? `HUBs não sincronizaram: ${result.message || detail}` : `HUBs sincronizadas: ${detail}.`, result.success === false || result.errors?.length ? 'err' : 'ok');
     } catch (error) { setStatus(`❌ ${error.message}`, 'err'); }
   }
   document.getElementById('reloadBracketBtn')?.addEventListener('click', load);

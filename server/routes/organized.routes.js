@@ -113,6 +113,20 @@ function registerOrganizedRouteOverrides(app) {
     }
   });
 
+
+  app.post('/api/result-hubs/sync', requireOwner, async (_req, res) => {
+    try {
+      const [bracket, settings] = await Promise.all([
+        storage.readBracket(),
+        storage.readTournamentSettings().catch(() => ({}))
+      ]);
+      const resultHubs = await syncResultHubs(bracket, settings);
+      return res.json({ success: resultHubs.success !== false, resultHubs });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
   app.get('/api/owner/role-permissions', requireOwner, async (_req, res) => {
     try {
       const [permissionsData, mentions] = await Promise.all([

@@ -1,7 +1,7 @@
 {
   "name": "void-arena-site",
-  "version": "5.0.1",
-  "description": "Void Arena 5.0.1: estrutura separada com módulos antigos integrados, chaveamento premium e backups pelo BOT.",
+  "version": "5.0.2",
+  "description": "Void Arena 5.0.2: sincronização real de HUBs, chaveamento/resultados conectados e módulos novos sem depender do painel antigo.",
   "main": "site/index.js",
   "scripts": {
     "start": "node site/index.js",

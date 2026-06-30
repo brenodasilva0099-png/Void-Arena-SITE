@@ -22,6 +22,20 @@
     render(data.results || data.records || []);
     statusEl.textContent = 'Resultados carregados.'; statusEl.className = 'va-status ok';
   }
+  async function syncHubs() {
+    statusEl.textContent = 'Sincronizando HUBs no Discord...';
+    statusEl.className = 'va-status';
+    try {
+      const data = await VoidArena.request('/api/result-hubs/sync', { method: 'POST', body: '{}' });
+      const result = data.resultHubs || {};
+      statusEl.textContent = `✅ HUBs: ${result.created || 0} criadas • ${result.reused || 0} atualizadas • ${result.totalMatches || 0} confrontos${result.errors?.length ? ` • ${result.errors.length} erro(s)` : ''}.`;
+      statusEl.className = result.errors?.length ? 'va-status err' : 'va-status ok';
+    } catch (error) {
+      statusEl.textContent = `❌ ${error.message}`;
+      statusEl.className = 'va-status err';
+    }
+  }
   document.getElementById('reloadResultsBtn')?.addEventListener('click', load);
+  document.getElementById('syncResultsHubsBtn')?.addEventListener('click', syncHubs);
   VoidArena.bootLayout('resultados').then(load).catch((error) => { statusEl.textContent = `❌ ${error.message}`; statusEl.className = 'va-status err'; });
 }());
