@@ -15,7 +15,7 @@ const server = http.createServer(app);
 createRealtimeServer(server, { app });
 
 server.listen(PORT, () => {
-  console.log(`🌐 Site Void Arena 5.0 rodando em: http://localhost:${PORT}`);
+  console.log(`🌐 Site Void Arena 5.1.1 rodando em: http://localhost:${PORT}`);
   console.log('⚡ Realtime WebSocket ativo em: /realtime');
 });
 

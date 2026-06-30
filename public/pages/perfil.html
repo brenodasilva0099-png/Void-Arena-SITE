@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfil | Void Arena</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+</head>
+<body class="va-organized-body" data-page="perfil">
+  <div class="va-shell">
+<aside class="va-sidebar">
+  <div class="va-brand">
+    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
+    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+  </div>
+  <nav class="va-nav">
+    <div class="va-nav-title">Principal</div>
+    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
+    <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
+    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
+    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
+    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
+    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
+    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
+    <div class="va-nav-title">Comunicação</div>
+    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
+    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
+    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
+    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
+    <div class="va-nav-title">Admin</div>
+    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
+    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
+    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
+    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+  </nav>
+</aside>
+    <main class="va-main">
+      <header class="va-topbar">
+        <div>
+          <p class="va-eyebrow">Void Arena 5.1.1.1</p>
+          <h1 class="va-title">Meu perfil</h1>
+          <p class="va-subtitle">Edite como você aparece nos times, resultados, rankings e perfil público.</p>
+        </div>
+        <a class="va-btn" href="/pages/dashboard.html">Voltar</a>
+      </header>
+      <section class="va-grid">
+        <article class="va-card va-profile-preview-card">
+          <div class="va-profile-page-avatar" id="profileAvatarPreview">?</div>
+          <h2 id="profilePreviewName">Perfil</h2>
+          <p class="va-muted" id="profilePreviewMeta">Carregando...</p>
+          <div class="va-checklist">
+            <span>👤 Público</span><span>🛡️ Times</span><span>📊 Rankings</span><span>🎮 Resultados</span>
+          </div>
+        </article>
+        <article class="va-card va-profile-page-card">
+          <h2>Configurações do perfil</h2>
+          <p>Esses dados ficam salvos no seu usuário e aparecem nos perfis públicos quando disponíveis.</p>
+          <form id="profilePageForm" class="va-form-grid two">
+            <label>Nome público<input name="username" maxlength="60" /></label>
+            <label>Nome real<input name="realName" maxlength="80" /></label>
+            <label>País / região<input name="country" maxlength="60" /></label>
+            <label>Posição principal<input name="primaryPosition" maxlength="60" /></label>
+            <label>Posição secundária<input name="secondaryPosition" maxlength="60" /></label>
+            <label>Steam<input name="steam" maxlength="160" /></label>
+            <label>TikTok<input name="tiktok" maxlength="160" /></label>
+            <label>YouTube<input name="youtube" maxlength="160" /></label>
+            <label>Twitter/X<input name="twitter" maxlength="160" /></label>
+            <label>Bio<textarea name="bio" maxlength="220"></textarea></label>
+          </form>
+          <div class="va-actions">
+            <button id="saveProfileBtn" class="va-btn primary" type="button">Salvar perfil</button>
+            <a class="va-btn" href="/pages/dashboard.html">Cancelar</a>
+          </div>
+          <div id="profileStatus" class="va-status">Carregando...</div>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/pages/perfil.js"></script>
+</body>
+</html>

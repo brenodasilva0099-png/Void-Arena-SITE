@@ -11,7 +11,9 @@ function registerOrganizedRoutes(app) {
     ['post', '/api/bracket/generate'],
     ['put', '/api/bracket'],
     ['get', '/api/owner/role-permissions'],
-    ['put', '/api/owner/role-permissions']
+    ['put', '/api/owner/role-permissions'],
+    ['post', '/internal/results/submit'],
+    ['post', '/internal/results/state']
   ]);
 
   registerOrganizedRouteOverrides(app);

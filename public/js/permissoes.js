@@ -13,108 +13,65 @@ const keys = [
   ['backup', 'Backup'],
   ['config', 'Config']
 ];
-
 let permissions = {};
 let roles = [];
-
-function escapeHtml(value = '') {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-  }[char]));
-}
-
+function esc(value = '') { return VoidArena.escapeHtml(value); }
 function render() {
   if (!roles.length) {
     permissionRows.innerHTML = `
-      <div class="role-row">
-        <div class="role-name">Nenhum cargo carregado</div>
-        <div>Confira se o bot está online e com permissão de ver cargos.</div>
-      </div>
-    `;
+      <div class="va-item">
+        <strong>Nenhum cargo carregado</strong>
+        <p class="va-muted">O BOT não retornou cargos ainda. Confira se o BOT está Live no Render, no servidor certo e com permissão de ver cargos. Você também pode configurar pelo botão Permissões do .painel-controle.</p>
+      </div>`;
     return;
   }
-
   permissionRows.innerHTML = roles.map((role) => `
-    <div class="role-row" data-role-id="${escapeHtml(role.id)}">
-      <div class="role-name">
-        <span>${escapeHtml(role.name)}</span>
+    <div class="va-permission-role" data-role-id="${esc(role.id)}">
+      <div class="va-permission-role-head">
+        <strong>${esc(role.name)}</strong>
+        <span class="va-badge">${esc(role.guildName || 'Discord')}</span>
       </div>
-      ${keys.map(([key, label]) => `
-        <label data-label="${escapeHtml(label)}">
-          <input type="checkbox" data-role-id="${escapeHtml(role.id)}" data-permission="${escapeHtml(key)}" ${permissions?.[role.id]?.[key] ? 'checked' : ''}>
-        </label>
-      `).join('')}
-    </div>
-  `).join('');
+      <div class="va-permission-checks">
+        ${keys.map(([key, label]) => `<label><input type="checkbox" data-role-id="${esc(role.id)}" data-permission="${esc(key)}" ${permissions?.[role.id]?.[key] ? 'checked' : ''}>${esc(label)}</label>`).join('')}
+      </div>
+    </div>`).join('');
 }
-
 async function load() {
   statusEl.textContent = 'Carregando permissões...';
-  statusEl.className = 'status';
-
+  statusEl.className = 'va-status';
   try {
-    const response = await fetch('/api/owner/role-permissions');
-    const data = await response.json().catch(() => ({}));
-
-    if (response.status === 401) {
-      location.href = '/';
-      return;
-    }
-
-    if (!response.ok || data.success === false) {
-      throw new Error(data.message || 'Não foi possível carregar permissões.');
-    }
-
+    const data = await VoidArena.request('/api/owner/role-permissions');
     permissions = data.permissions || {};
     roles = Array.isArray(data.roles) ? data.roles : [];
-
     render();
-
-    statusEl.textContent = 'Permissões carregadas.';
-    statusEl.className = 'status ok';
+    const suffix = roles.length ? `${roles.length} cargo(s) carregado(s).` : 'Nenhum cargo retornado pelo BOT.';
+    statusEl.textContent = data.message ? `${suffix} ${data.message}` : suffix;
+    statusEl.className = roles.length ? 'va-status ok' : 'va-status err';
   } catch (error) {
     statusEl.textContent = `❌ ${error.message}`;
-    statusEl.className = 'status err';
+    statusEl.className = 'va-status err';
   }
 }
-
 async function save() {
   const next = {};
-
   document.querySelectorAll('input[data-role-id][data-permission]').forEach((input) => {
     const roleId = input.dataset.roleId;
     const key = input.dataset.permission;
-
     next[roleId] = next[roleId] || {};
     next[roleId][key] = input.checked;
   });
-
   statusEl.textContent = 'Salvando permissões...';
-  statusEl.className = 'status';
-
+  statusEl.className = 'va-status';
   try {
-    const response = await fetch('/api/owner/role-permissions', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ permissions: next })
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok || data.success === false) {
-      throw new Error(data.message || 'Não foi possível salvar permissões.');
-    }
-
+    const data = await VoidArena.request('/api/owner/role-permissions', { method: 'PUT', body: JSON.stringify({ permissions: next }) });
     permissions = data.permissions || next;
-    statusEl.textContent = '✅ Permissões salvas.';
-    statusEl.className = 'status ok';
+    statusEl.textContent = 'Permissões salvas.';
+    statusEl.className = 'va-status ok';
   } catch (error) {
     statusEl.textContent = `❌ ${error.message}`;
-    statusEl.className = 'status err';
+    statusEl.className = 'va-status err';
   }
 }
-
 saveBtn.addEventListener('click', save);
 reloadBtn.addEventListener('click', load);
-
-load();
+VoidArena.bootLayout('permissoes').then(load).catch((error) => { statusEl.textContent = `❌ ${error.message}`; statusEl.className = 'va-status err'; });

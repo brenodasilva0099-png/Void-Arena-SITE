@@ -1,108 +1,68 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Permissões • Void Arena</title>
-  <link rel="icon" href="/favicon.png">
-  <style>
-    :root { color-scheme: dark; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, system-ui, Segoe UI, sans-serif;
-      color: #fff;
-      background:
-        radial-gradient(circle at 18% 12%, rgba(139,92,246,.22), transparent 34%),
-        radial-gradient(circle at 85% 36%, rgba(34,211,238,.14), transparent 28%),
-        #050713;
-      padding: 34px 18px;
-    }
-    .wrap { width: min(1160px, 100%); margin: 0 auto; }
-    header { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 24px; }
-    h1 { margin: 0; font-size: clamp(32px, 5vw, 54px); letter-spacing: -.06em; }
-    p { color: #c9c4e8; line-height: 1.5; }
-    .btn {
-      border: 1px solid rgba(167,139,250,.32);
-      background: rgba(124,58,237,.18);
-      color: #fff;
-      border-radius: 14px;
-      padding: 11px 14px;
-      text-decoration: none;
-      font-weight: 900;
-      cursor: pointer;
-    }
-    .btn.primary { background: linear-gradient(135deg, #8b5cf6, #22d3ee); border: 0; }
-    .panel {
-      border: 1px solid rgba(167,139,250,.22);
-      border-radius: 26px;
-      background: rgba(12,14,34,.88);
-      overflow: hidden;
-      box-shadow: 0 22px 70px rgba(0,0,0,.32);
-    }
-    .role-row {
-      display: grid;
-      grid-template-columns: minmax(180px, 260px) repeat(8, minmax(90px, 1fr));
-      gap: 1px;
-      border-bottom: 1px solid rgba(167,139,250,.12);
-      background: rgba(167,139,250,.12);
-    }
-    .role-row > div, .role-row > label {
-      background: rgba(8,9,22,.96);
-      padding: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-    .role-row .role-name { justify-content: flex-start; text-align: left; font-weight: 900; }
-    .head > div { color: #a5f3fc; font-weight: 950; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-    input[type="checkbox"] { width: 18px; height: 18px; accent-color: #8b5cf6; }
-    .actions { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
-    .status { margin-top: 14px; font-weight: 900; }
-    .ok { color: #86efac; }
-    .err { color: #fda4af; }
-    @media (max-width: 980px) {
-      .role-row { grid-template-columns: 1fr 1fr; }
-      .head { display: none; }
-      .role-row > label { justify-content: space-between; }
-      .role-row > label::before { content: attr(data-label); color: #a5f3fc; font-weight: 900; }
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Permissões | Void Arena</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
 </head>
-<body>
-  <main class="wrap">
-    <header>
-      <div>
-        <h1>⚙️ Permissões</h1>
-        <p>Área exclusiva do DONO. Escolha quais cargos do Discord podem acessar botões e funções do site.</p>
-      </div>
-      <a class="btn" href="/pages/dashboard.html">Voltar</a>
-    </header>
-
-    <section id="panel" class="panel">
-      <div class="role-row head">
-        <div>Cargo</div>
-        <div>Formulários</div>
-        <div>Eventos</div>
-        <div>Análise</div>
-        <div>Estatísticas</div>
-        <div>Chaveamento</div>
-        <div>Times</div>
-        <div>Backup</div>
-        <div>Config</div>
-      </div>
-      <div id="permissionRows"></div>
-    </section>
-
-    <div class="actions">
-      <button id="saveBtn" class="btn primary" type="button">Salvar permissões</button>
-      <button id="reloadBtn" class="btn" type="button">Recarregar cargos</button>
-    </div>
-
-    <p id="status" class="status"></p>
-  </main>
-
+<body class="va-organized-body" data-page="permissoes">
+  <div class="va-shell">
+<aside class="va-sidebar">
+  <div class="va-brand">
+    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
+    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+  </div>
+  <nav class="va-nav">
+    <div class="va-nav-title">Principal</div>
+    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
+    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
+    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
+    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
+    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
+    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
+    <div class="va-nav-title">Comunicação</div>
+    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
+    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
+    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
+    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
+    <div class="va-nav-title">Admin</div>
+    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
+    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
+    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
+    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+  </nav>
+</aside>
+    <main class="va-main">
+      <header class="va-topbar">
+        <div>
+          <p class="va-eyebrow">Void Arena 5.1.1</p>
+          <h1 class="va-title">Permissões</h1>
+          <p class="va-subtitle">Configure quais cargos do Discord podem acessar cada área do site.</p>
+        </div>
+        <div class="va-user-pill"><span data-user-name>...</span></div>
+      </header>
+      <section class="va-grid">
+        <article class="va-card full">
+          <div class="va-section-head">
+            <div>
+              <h2>Cargos do Discord</h2>
+              <p>O site busca os cargos direto no BOT. Se aparecer vazio, clique em recarregar depois que o BOT estiver Live.</p>
+            </div>
+            <div class="va-actions va-actions-right">
+              <button id="reloadBtn" class="va-btn" type="button">Recarregar cargos</button>
+              <button id="saveBtn" class="va-btn primary" type="button">Salvar permissões</button>
+            </div>
+          </div>
+          <div id="permissionRows" class="va-permission-grid"></div>
+          <div id="status" class="va-status">Carregando...</div>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
   <script src="/js/permissoes.js"></script>
 </body>
 </html>

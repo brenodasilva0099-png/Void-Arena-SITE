@@ -4,7 +4,8 @@
   const settingsForm = document.getElementById('tournamentSettingsForm');
   const adaptiveEl = document.getElementById('adaptiveBracket');
   let currentBracket = { slots: [], round16: [], quarters: [], semis: [], finals: [], matchProgress: {} };
-  let currentSettings = { tournamentName: 'Rematch Championship', matchFormat: 'MD1', teamLimit: 16, groupCount: 4, structure: 'single_elimination', autoCreateMatchChannels: true, discordMatchCategoryId: '' };
+  let currentSettings = { activeEventId: '', tournamentName: 'Rematch Championship', matchFormat: 'MD1', teamLimit: 16, groupCount: 4, structure: 'single_elimination', autoCreateMatchChannels: true, discordMatchCategoryId: '' };
+  let currentEvents = [];
 
   function safe(value) { return VoidArena.escapeHtml(value || ''); }
   function teamName(team, fallback) { return team?.name || team?.tag || fallback; }
@@ -19,9 +20,23 @@
     if (statusEl) { statusEl.textContent = message; statusEl.className = `va-status ${type}`.trim(); }
     if (miniStatusEl) miniStatusEl.textContent = message.replace(/^❌\s*/, '');
   }
+  function fillEventSelect(events = []) {
+    currentEvents = Array.isArray(events) ? events : [];
+    const field = settingsForm?.elements?.activeEventId;
+    if (!field) return;
+    const selected = String(currentSettings.activeEventId || '');
+    field.innerHTML = '<option value="">Usar todos os times cadastrados</option>' + currentEvents.map((event) => {
+      const id = String(event.id || '');
+      const title = VoidArena.escapeHtml(event.title || event.name || 'Evento');
+      const count = Array.isArray(event.registrations) ? event.registrations.length : (event.registeredCount || 0);
+      return `<option value="${VoidArena.escapeHtml(id)}">${title} • ${count}/${event.teamLimit || 0} times</option>`;
+    }).join('');
+    field.value = selected;
+  }
   function fillSettings(settings = {}) {
     currentSettings = { ...currentSettings, ...(settings || {}) };
     if (!settingsForm) return;
+    fillEventSelect(currentEvents);
     Object.entries(currentSettings).forEach(([key, value]) => {
       const field = settingsForm.elements[key];
       if (!field) return;
@@ -35,6 +50,7 @@
   }
   function collectSettings() {
     return {
+      activeEventId: String(settingsForm.elements.activeEventId?.value || '').trim(),
       tournamentName: String(settingsForm.elements.tournamentName.value || 'Rematch Championship').trim(),
       matchFormat: settingsForm.elements.matchFormat.value || 'MD1',
       structure: settingsForm.elements.structure.value || 'single_elimination',
@@ -115,6 +131,7 @@
   async function load() {
     setStatus('Carregando chaveamento...');
     const data = await VoidArena.request('/api/dashboard/snapshot');
+    currentEvents = data.events || [];
     fillSettings(data.settings || {});
     render(data.bracket || {});
     setStatus('Chaveamento carregado na estrutura nova.', 'ok');
@@ -143,6 +160,7 @@
       const result = data.resultHubs || {};
       const detail = `${result.created || 0} criadas • ${result.reused || 0} atualizadas • ${result.totalMatches || 0} confrontos${result.errors?.length ? ` • ${result.errors.length} erro(s)` : ''}`;
       setStatus(result.success === false ? `HUBs não sincronizaram: ${result.message || detail}` : `HUBs sincronizadas: ${detail}.`, result.success === false || result.errors?.length ? 'err' : 'ok');
+      await load();
     } catch (error) { setStatus(`❌ ${error.message}`, 'err'); }
   }
   document.getElementById('reloadBracketBtn')?.addEventListener('click', load);

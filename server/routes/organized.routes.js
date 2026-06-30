@@ -104,6 +104,143 @@ function enrichTeam(team = {}, users = []) {
   };
 }
 
+
+function resultMaxGames(match = {}) {
+  const format = String(match.matchFormat || '').trim();
+  const found = format.match(/MD(\d+)/i);
+  const number = found ? Number(found[1]) || 1 : Number(match.maxGames || 1) || 1;
+  return Math.max(1, Math.min(9, number));
+}
+
+function resultWinsNeeded(bestOf = 1) {
+  const n = Number(bestOf || 1) || 1;
+  return n % 2 === 0 ? Math.floor(n / 2) + 1 : Math.floor(n / 2) + 1;
+}
+
+function scoreWinnerFromScore(match = {}, scoreA = 0, scoreB = 0) {
+  const teamAId = String(match?.teamA?.id || '').trim();
+  const teamBId = String(match?.teamB?.id || '').trim();
+  if (Number(scoreA) > Number(scoreB)) return teamAId;
+  if (Number(scoreB) > Number(scoreA)) return teamBId;
+  return '';
+}
+
+function normalizeSeriesSubmission(payload = {}) {
+  return {
+    authorDiscordId: String(payload.authorDiscordId || '').trim(),
+    authorName: String(payload.authorName || 'Capitão').trim().slice(0, 120),
+    scoreA: Number(payload.scoreA || 0) || 0,
+    scoreB: Number(payload.scoreB || 0) || 0,
+    proof: payload.proof || null,
+    isStaff: Boolean(payload.isStaff),
+    createdAt: payload.createdAt || new Date().toISOString()
+  };
+}
+
+function computeGameStatus(game = {}, match = {}) {
+  const submissions = Array.isArray(game.submissions) ? game.submissions : [];
+  const staff = submissions.find((item) => item.isStaff);
+  if (staff) return { status: 'validated', final: staff, winnerTeamId: scoreWinnerFromScore(match, staff.scoreA, staff.scoreB) };
+  const captains = submissions.filter((item) => item.authorDiscordId);
+  if (captains.length >= 2) {
+    const a = captains[captains.length - 2];
+    const b = captains[captains.length - 1];
+    const same = Number(a.scoreA) === Number(b.scoreA) && Number(a.scoreB) === Number(b.scoreB);
+    return same ? { status: 'validated', final: b, winnerTeamId: scoreWinnerFromScore(match, b.scoreA, b.scoreB) } : { status: 'conflict', final: null, winnerTeamId: '' };
+  }
+  return { status: 'pending', final: submissions[submissions.length - 1] || null, winnerTeamId: '' };
+}
+
+function recomputeSeries(result = {}) {
+  const match = result.match || {};
+  const bestOf = resultMaxGames(match);
+  const needed = resultWinsNeeded(bestOf);
+  const teamAId = String(match?.teamA?.id || '').trim();
+  const teamBId = String(match?.teamB?.id || '').trim();
+  const games = (Array.isArray(result.games) ? result.games : [])
+    .map((game) => ({ ...game, gameNumber: Math.max(1, Math.min(bestOf, Number(game.gameNumber || 1) || 1)), submissions: Array.isArray(game.submissions) ? game.submissions : [] }))
+    .sort((a, b) => Number(a.gameNumber) - Number(b.gameNumber));
+  let seriesScoreA = 0;
+  let seriesScoreB = 0;
+  let hasConflict = false;
+  let lastProof = null;
+  for (const game of games) {
+    const computed = computeGameStatus(game, match);
+    game.status = computed.status;
+    game.updatedAt = new Date().toISOString();
+    if (computed.final) {
+      game.finalScoreA = Number(computed.final.scoreA || 0);
+      game.finalScoreB = Number(computed.final.scoreB || 0);
+      game.proof = computed.final.proof || game.proof || null;
+      lastProof = game.proof || lastProof;
+    }
+    game.winnerTeamId = computed.winnerTeamId || '';
+    if (game.status === 'validated') {
+      if (game.winnerTeamId === teamAId) seriesScoreA += 1;
+      if (game.winnerTeamId === teamBId) seriesScoreB += 1;
+    }
+    if (game.status === 'conflict') hasConflict = true;
+  }
+  const playedGames = seriesScoreA + seriesScoreB;
+  let winnerTeamId = '';
+  if (seriesScoreA >= needed) winnerTeamId = teamAId;
+  if (seriesScoreB >= needed) winnerTeamId = teamBId;
+  if (!winnerTeamId && bestOf % 2 === 0 && playedGames >= bestOf && seriesScoreA !== seriesScoreB) {
+    winnerTeamId = seriesScoreA > seriesScoreB ? teamAId : teamBId;
+  }
+  const status = winnerTeamId ? 'validated' : hasConflict ? 'conflict' : playedGames > 0 ? 'partial' : 'pending';
+  const currentGameNumber = winnerTeamId ? Math.min(bestOf, Math.max(1, playedGames)) : Math.max(1, Math.min(bestOf, (games.find((game) => game.status === 'conflict')?.gameNumber) || playedGames + 1));
+  return { ...result, games, bestOf, winsNeeded: needed, seriesScoreA, seriesScoreB, finalScoreA: seriesScoreA, finalScoreB: seriesScoreB, playedGames, remainingGames: Math.max(0, bestOf - playedGames), winsRemaining: Math.max(0, needed - Math.max(seriesScoreA, seriesScoreB)), currentGameNumber, status, proof: lastProof || result.proof || null, winnerTeamId, updatedAt: new Date().toISOString() };
+}
+
+async function saveResultRecord(result = {}) {
+  const content = `RESULT_JSON:${JSON.stringify(result)}`;
+  if (result.messageId) return storage.updateChatMessage(result.messageId, { content }, { channelId: RESULT_CHANNEL, source: 'system' });
+  return storage.saveChatMessage({ channelId: RESULT_CHANNEL, source: 'system', authorId: 'void-arena-results', authorName: 'Resultados Void Arena', content, attachments: [], createdAt: result.createdAt || new Date().toISOString() });
+}
+
+function nextSlotTargetForResult(matchIndex = 0, bracket = {}) {
+  const slots = Array.isArray(bracket.slots) ? bracket.slots : [];
+  const filled = slots.filter(Boolean).length;
+  const slotSize = slots.length > 16 ? 32 : 16;
+  if (slotSize === 16 && filled <= 4) return { round: 'finals', index: matchIndex < 4 ? 0 : 1 };
+  if (slotSize === 16 && filled <= 8) {
+    const map = { 0: 0, 1: 1, 4: 2, 5: 3 };
+    return { round: 'semis', index: map[matchIndex] ?? Math.min(3, matchIndex) };
+  }
+  if (slotSize === 16) return { round: 'quarters', index: matchIndex };
+  return { round: 'round16', index: Math.max(0, Math.min(15, matchIndex)) };
+}
+
+async function applyResultToBracket(result = {}) {
+  const winnerTeamId = String(result.winnerTeamId || '').trim();
+  const roundKey = String(result.match?.roundKey || result.roundKey || '').trim();
+  const matchIndex = Number(result.match?.matchIndex ?? result.matchIndex ?? 0) || 0;
+  if (!winnerTeamId) return { applied: false, reason: 'Resultado sem vencedor.' };
+  const [teams, users, bracket] = await Promise.all([storage.readTeams(), readUsersSafe(), storage.readBracket()]);
+  const next = {
+    slotSize: bracket.slotSize || (Array.isArray(bracket.slots) && bracket.slots.length > 16 ? 32 : 16),
+    teamLimit: bracket.teamLimit || (Array.isArray(bracket.slots) ? bracket.slots.filter(Boolean).length : 16),
+    slots: Array.isArray(bracket.slots) ? [...bracket.slots] : [],
+    round16: Array.isArray(bracket.round16) ? [...bracket.round16] : [],
+    quarters: Array.isArray(bracket.quarters) ? [...bracket.quarters] : [],
+    semis: Array.isArray(bracket.semis) ? [...bracket.semis] : [],
+    finals: Array.isArray(bracket.finals) ? [...bracket.finals] : [],
+    matchProgress: bracket.matchProgress || {},
+    eventId: bracket.eventId || '',
+    generatedAt: bracket.generatedAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  if (roundKey === 'slots') { const target = nextSlotTargetForResult(matchIndex, bracket); next[target.round][target.index] = winnerTeamId; }
+  else if (roundKey === 'round16') next.quarters[Math.floor(matchIndex / 2)] = winnerTeamId;
+  else if (roundKey === 'quarters') next.semis[Math.floor(matchIndex / 2)] = winnerTeamId;
+  else if (roundKey === 'semis') next.finals[matchIndex < 2 ? 0 : 1] = winnerTeamId;
+  else if (roundKey === 'finals') return { applied: false, reason: 'Final validada; não existe próxima fase.' };
+  else return { applied: false, reason: 'Rodada inválida.' };
+  const saved = await storage.writeBracket(next);
+  return { applied: true, bracket: normalizeBracketForResponse(saved, teams, users) };
+}
+
 function registerOrganizedRouteOverrides(app) {
   app.get('/api/brand/server', async (_req, res) => {
     const guild = await fetchGuildBrand();
@@ -197,6 +334,7 @@ function registerOrganizedRouteOverrides(app) {
       const allowedFormats = new Set(['MD1', 'MD2', 'MD3', 'MD5']);
       const allowedStructures = new Set(['single_elimination', 'groups', 'groups_playoffs']);
       const payload = {
+        activeEventId: String(req.body.activeEventId || '').trim(),
         tournamentName: String(req.body.tournamentName || 'Rematch Championship').trim().slice(0, 60),
         matchFormat: allowedFormats.has(String(req.body.matchFormat)) ? String(req.body.matchFormat) : 'MD1',
         structure: allowedStructures.has(String(req.body.structure)) ? String(req.body.structure) : 'single_elimination',
@@ -214,15 +352,20 @@ function registerOrganizedRouteOverrides(app) {
 
   app.post('/api/bracket/generate', requireOwner, async (_req, res) => {
     try {
-      const [teams, users, settings] = await Promise.all([storage.readTeams(), storage.readUsers(), storage.readTournamentSettings()]);
+      const [teams, users, settings, events] = await Promise.all([storage.readTeams(), storage.readUsers(), storage.readTournamentSettings(), storage.readEvents().catch(() => [])]);
       if (!teams.length) return res.status(400).json({ success: false, message: 'Cadastre pelo menos um time antes de gerar.' });
       const limit = normalizeTeamLimit(settings.teamLimit || 16);
-      const selectedTeams = teams.slice(0, limit);
+      const activeEvent = Array.isArray(events) ? events.find((event) => String(event.id || '') === String(settings.activeEventId || '')) : null;
+      const registeredIds = new Set((activeEvent?.registrations || []).map((registration) => String(registration.teamId || '')).filter(Boolean));
+      const sourceTeams = registeredIds.size ? teams.filter((team) => registeredIds.has(String(team.id || ''))) : teams;
+      const selectedTeams = sourceTeams.slice(0, limit);
+      if (!selectedTeams.length) return res.status(400).json({ success: false, message: 'O evento selecionado ainda não tem times aprovados.' });
       const groups = generateGroups(selectedTeams, settings);
       const generated = generateAdaptiveBracket(selectedTeams, limit);
       const bracket = await storage.writeBracket({
         slotSize: generated.slotSize,
         teamLimit: limit,
+        eventId: settings.activeEventId || '',
         slots: generated.slots,
         round16: generated.round16,
         quarters: [],
@@ -271,10 +414,11 @@ function registerOrganizedRouteOverrides(app) {
   app.get('/api/owner/role-permissions', requireOwner, async (_req, res) => {
     try {
       const [permissionsData, mentions] = await Promise.all([
-        callBot('/internal/storage/readRolePermissions', { method: 'POST', body: JSON.stringify({ args: [] }) }).then((data) => data.result || {}),
-        callBot('/internal/discord/mentions', { method: 'GET' }).catch(() => ({ roles: [] }))
+        callBot('/internal/storage/readRolePermissions', { method: 'POST', body: JSON.stringify({ args: [] }) }).then((data) => data.result || {}).catch(() => ({})),
+        callBot('/internal/discord/mentions', { method: 'GET' }).catch((error) => ({ roles: [], message: error.message }))
       ]);
-      return res.json({ success: true, permissions: permissionsData || {}, roles: Array.isArray(mentions.roles) ? mentions.roles : [] });
+      const roles = Array.isArray(mentions.roles) ? mentions.roles : [];
+      return res.json({ success: true, permissions: permissionsData || {}, roles, message: roles.length ? '' : (mentions.message || 'BOT online, mas nenhum cargo foi retornado.') });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
@@ -298,7 +442,9 @@ function registerOrganizedRouteOverrides(app) {
       const data = await callBot('/internal/health', { method: 'GET' });
       return res.json(data);
     } catch (error) {
-      return res.status(503).json({ success: false, message: error.message });
+      const database = await storage.readDatabaseStatus().catch((dbError) => ({ error: dbError.message }));
+      const guild = await fetchGuildBrand().catch(() => null);
+      return res.json({ success: true, degraded: true, message: `Ponte interna direta indisponível: ${error.message}`, online: Boolean(guild), guilds: guild ? 1 : 0, database });
     }
   });
 
@@ -331,6 +477,68 @@ function registerOrganizedRouteOverrides(app) {
       return res.status(500).json({ success: false, message: error.message });
     }
   });
+
+  app.post('/internal/results/state', async (req, res) => {
+    try {
+      const payload = req.body || {};
+      const hubId = String(payload.hubId || `${payload.roundKey || payload.match?.roundKey || 'slots'}_${Number(payload.matchIndex ?? payload.match?.matchIndex ?? 0) || 0}`).trim();
+      const records = await readResultRecords();
+      const result = records.find((item) => String(item.hubId || '') === hubId) || null;
+      return res.json({ success: true, result });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/internal/results/submit', async (req, res) => {
+    try {
+      const payload = req.body || {};
+      const round = payload.roundKey || payload.match?.roundKey || 'slots';
+      const index = Number(payload.matchIndex ?? payload.match?.matchIndex ?? 0) || 0;
+      const hubId = `${round}_${index}`;
+      const records = await readResultRecords();
+      let result = records.find((item) => item.hubId === hubId) || null;
+      const match = payload.match || result?.match || {};
+      const bestOf = resultMaxGames(match);
+      const gameNumber = Math.max(1, Math.min(bestOf, Number(payload.gameNumber || result?.currentGameNumber || 1) || 1));
+      const submission = normalizeSeriesSubmission(payload);
+      if (submission.scoreA === submission.scoreB) return res.status(400).json({ success: false, message: 'Resultado empatado não fecha uma partida.' });
+      if (!result) {
+        result = { id: `result_${hubId}`, hubId, roundKey: round, matchIndex: index, match, games: [], submissions: [], status: 'pending', bestOf, winsNeeded: resultWinsNeeded(bestOf), seriesScoreA: 0, seriesScoreB: 0, playedGames: 0, remainingGames: bestOf, currentGameNumber: 1, proof: null, winnerTeamId: '', advanced: false, createdAt: new Date().toISOString() };
+      }
+      result.match = match;
+      result.bestOf = bestOf;
+      result.winsNeeded = resultWinsNeeded(bestOf);
+      result.games = Array.isArray(result.games) ? result.games : [];
+      result.submissions = Array.isArray(result.submissions) ? result.submissions : [];
+      let game = result.games.find((item) => Number(item.gameNumber) === gameNumber);
+      if (!game) {
+        game = { id: `${hubId}_game_${gameNumber}`, gameNumber, submissions: [], status: 'pending', finalScoreA: null, finalScoreB: null, proof: null, winnerTeamId: '', createdAt: new Date().toISOString() };
+        result.games.push(game);
+      }
+      const key = submission.authorDiscordId || submission.authorName;
+      const existingIndex = game.submissions.findIndex((item) => (item.authorDiscordId || item.authorName) === key);
+      if (existingIndex >= 0) game.submissions[existingIndex] = submission;
+      else game.submissions.push(submission);
+      result.submissions.push({ ...submission, gameNumber });
+      result.submissions = result.submissions.slice(-60);
+      result = recomputeSeries(result);
+      let bracketApply = { applied: false };
+      if (result.status === 'validated' && result.winnerTeamId && !result.advanced) {
+        bracketApply = await applyResultToBracket(result);
+        result.advanced = Boolean(bracketApply.applied);
+        result.advancedAt = bracketApply.applied ? new Date().toISOString() : null;
+      }
+      result.updatedAt = new Date().toISOString();
+      const savedMessage = await saveResultRecord(result);
+      result.messageId = savedMessage.id || result.messageId || '';
+      req.app.locals.realtime?.broadcast?.({ type: 'match-result:update', payload: { result, bracket: bracketApply.bracket || null }, source: 'bot' });
+      return res.json({ success: true, result, bracketApply });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
 }
 
 module.exports = { registerOrganizedRouteOverrides };

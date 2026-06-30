@@ -154,3 +154,25 @@ body.va-organized-body {
 .va-score-big { display: block; margin-top: 8px; font-size: 24px; color: white; text-align: right; }
 .va-result-side { min-width: 120px; text-align: right; }
 .va-card.full .va-list { display: grid; gap: 14px; }
+
+
+/* Void Arena 5.1.1 - topbar compacta, página de perfil e permissões novas */
+.va-user-pill.is-compact { display: inline-flex; align-items: center; gap: 9px; max-width: 230px; padding: 7px 10px 7px 7px; }
+.va-user-pill.is-compact .va-user-pill-avatar { width: 32px; height: 32px; flex: 0 0 32px; }
+.va-user-pill.is-compact .va-user-pill-name { max-width: 150px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.va-profile-page-card { grid-column: span 7; }
+.va-profile-preview-card { grid-column: span 5; }
+.va-profile-page-avatar { width: 116px; height: 116px; border-radius: 30px; overflow: hidden; display: grid; place-items: center; border: 1px solid var(--va-border-strong); background: radial-gradient(circle at 25% 15%, rgba(34,211,238,.32), rgba(139,92,246,.24), rgba(3,6,23,.75)); font-size: 46px; font-weight: 1000; box-shadow: 0 20px 60px rgba(0,0,0,.32); }
+.va-profile-page-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.va-form-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.va-form-grid textarea { min-height: 92px; resize: vertical; border: 1px solid rgba(34, 211, 238, .28); background: rgba(5, 9, 25, .88); color: var(--va-text); border-radius: 14px; padding: 12px 13px; font: inherit; font-weight: 700; outline: none; }
+.va-permission-grid { display: grid; gap: 12px; margin-top: 16px; }
+.va-permission-role { padding: 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.045); }
+.va-permission-role-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; }
+.va-permission-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.va-permission-checks label { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--va-border); background: rgba(139,92,246,.08); color: var(--va-muted); font-weight: 800; }
+.va-permission-checks input { accent-color: #8b5cf6; }
+.va-result-card { position: relative; overflow: hidden; }
+.va-result-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--va-purple), var(--va-cyan)); opacity: .8; }
+.va-result-game-row { align-items: center; }
+@media (max-width: 900px) { .va-profile-page-card, .va-profile-preview-card { grid-column: 1 / -1; } .va-form-grid.two { grid-template-columns: 1fr; } }
