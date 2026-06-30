@@ -137,6 +137,46 @@ function registerOrganizedRouteOverrides(app) {
       return res.status(400).json({ success: false, message: error.message });
     }
   });
+
+  app.get('/api/bot/internal-health', requireOwner, async (_req, res) => {
+    try {
+      const data = await callBot('/internal/health', { method: 'GET' });
+      return res.json(data);
+    } catch (error) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
+  });
+
+  app.get('/api/backups/github/latest', requireOwner, async (_req, res) => {
+    try {
+      const data = await callBot('/internal/backup/github/latest', { method: 'GET' });
+      return res.json(data);
+    } catch (error) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/backups/github/export', requireOwner, async (req, res) => {
+    try {
+      const data = await callBot('/internal/backup/github/export', {
+        method: 'POST',
+        body: JSON.stringify({ reason: req.body?.reason || 'site-manual' })
+      });
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/backups/github/restore-latest', requireOwner, async (_req, res) => {
+    try {
+      const data = await callBot('/internal/backup/github/restore-latest', { method: 'POST', body: '{}' });
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
 }
 
 module.exports = { registerOrganizedRouteOverrides };

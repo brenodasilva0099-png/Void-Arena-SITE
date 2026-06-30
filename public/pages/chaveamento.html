@@ -9,7 +9,6 @@
 </head>
 <body class="va-organized-body" data-page="chaveamento">
   <div class="va-shell">
-
 <aside class="va-sidebar">
   <div class="va-brand">
     <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
@@ -36,29 +35,99 @@
     <a data-nav-key="legado" href="/pages/painel-completo.html">🧰 Painel completo</a>
   </nav>
 </aside>
-
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.0</p>
+          <p class="va-eyebrow">Void Arena 5.0.1</p>
           <h1 class="va-title">Chaveamento</h1>
-          <p class="va-subtitle">Página exclusiva para gerar e visualizar confrontos.</p>
+          <p class="va-subtitle">Chaveamento separado com o visual premium antigo integrado na estrutura nova.</p>
         </div>
         <div class="va-user-pill">Logado como <span data-user-name>...</span></div>
       </header>
 
 <section class="va-grid">
-  <article class="va-card full">
-    <h2>Chaveamento oficial</h2>
-    <p>Área dedicada apenas ao chaveamento. A geração usa a permissão de dono/admin e sincroniza as HUBs de resultados no bot.</p>
-    <div class="va-actions">
-      <button id="generateBracketBtn" class="va-btn primary" type="button">Gerar chaveamento</button>
+  <article class="va-card full va-hero-card">
+    <div>
+      <p class="va-eyebrow">Chaveamento oficial</p>
+      <h2>Modelo visual integrado</h2>
+      <p>Visual antigo premium integrado na estrutura nova. Gerar chaveamento também sincroniza as HUBs de resultados no bot.</p>
+    </div>
+    <div class="va-actions va-actions-right">
+      <button id="generateBracketBtn" class="va-btn primary" type="button">Gerar automático</button>
       <button id="reloadBracketBtn" class="va-btn" type="button">Recarregar</button>
+      <button id="syncHubsBtn" class="va-btn" type="button">Sincronizar HUBs</button>
+      <a class="va-btn" href="/pages/painel-completo.html">Editor completo</a>
     </div>
     <div id="bracketStatus" class="va-status">Carregando...</div>
   </article>
-  <article class="va-card full">
-    <div id="bracketGrid" class="va-bracket"></div>
+
+  <article class="va-card full va-config-card" id="bracketConfigCard">
+    <div class="va-section-head">
+      <div>
+        <h2>Configuração rápida</h2>
+        <p>Use aqui para ajustar formato, limite, grupos e criação automática de canais no Discord.</p>
+      </div>
+      <button id="saveSettingsBtn" class="va-btn primary" type="button">Salvar modelo</button>
+    </div>
+    <form id="tournamentSettingsForm" class="va-form-grid">
+      <label>Nome do torneio
+        <input name="tournamentName" type="text" maxlength="60" placeholder="Rematch Championship" />
+      </label>
+      <label>Formato
+        <select name="matchFormat"><option>MD1</option><option>MD2</option><option>MD3</option><option>MD5</option></select>
+      </label>
+      <label>Estrutura
+        <select name="structure"><option value="single_elimination">Mata-mata</option><option value="groups">Grupos</option><option value="groups_playoffs">Grupos + playoffs</option></select>
+      </label>
+      <label>Limite de times
+        <select name="teamLimit"><option value="4">4 times</option><option value="8">8 times</option><option value="16">16 times</option><option value="32">32 times</option></select>
+      </label>
+      <label>Quantidade de grupos
+        <select name="groupCount"><option value="2">2 grupos</option><option value="4">4 grupos</option><option value="8">8 grupos</option></select>
+      </label>
+      <label>Categoria Discord dos canais
+        <input name="discordMatchCategoryId" type="text" placeholder="Usar servidor/categoria padrão" />
+      </label>
+      <label class="va-check-row">
+        <input name="autoCreateMatchChannels" type="checkbox" />
+        <span>Criar canais privados automaticamente no Discord</span>
+      </label>
+    </form>
+  </article>
+
+  <article class="va-card full va-bracket-card">
+    <section class="bracket-stage va-integrated-bracket" aria-labelledby="bracketTitle">
+      <div class="bracket-header">
+        <h1 id="bracketTitle">Chaveamento</h1>
+        <span id="bracketMiniStatus"></span>
+      </div>
+      <div class="bracket-board">
+        <div id="boardTournamentName" class="board-tournament-name">Rematch Championship</div>
+        <div id="boardMatchFormatLabel" class="board-match-format-label">MD1 • 16 TIMES</div>
+        <div class="bracket-side bracket-left" aria-label="Lado esquerdo do chaveamento">
+          <div class="round-label top-label">Oitavas</div><div class="round-label mid-label">Quartas</div><div class="round-label final-label">Semifinal</div>
+          <div class="team-slot slot-l-1" data-slot="0"><span>Vaga 01</span></div><div class="team-slot slot-l-2" data-slot="1"><span>Vaga 02</span></div><div class="team-slot slot-l-3" data-slot="2"><span>Vaga 03</span></div><div class="team-slot slot-l-4" data-slot="3"><span>Vaga 04</span></div>
+          <div class="team-slot slot-l-5" data-slot="4"><span>Vaga 05</span></div><div class="team-slot slot-l-6" data-slot="5"><span>Vaga 06</span></div><div class="team-slot slot-l-7" data-slot="6"><span>Vaga 07</span></div><div class="team-slot slot-l-8" data-slot="7"><span>Vaga 08</span></div>
+          <div class="advance-slot adv-l-1" data-round="quarters" data-index="0"><span>A definir 01</span></div><div class="advance-slot adv-l-2" data-round="quarters" data-index="1"><span>A definir 02</span></div><div class="advance-slot adv-l-3" data-round="quarters" data-index="2"><span>A definir 03</span></div><div class="advance-slot adv-l-4" data-round="quarters" data-index="3"><span>A definir 04</span></div>
+          <div class="advance-slot semi-l-1" data-round="semis" data-index="0"><span>A definir 01</span></div><div class="advance-slot semi-l-2" data-round="semis" data-index="1"><span>A definir 02</span></div>
+          <span class="connector c-l-1"></span><span class="connector c-l-2"></span><span class="connector c-l-3"></span><span class="connector c-l-4"></span><span class="connector c-l-5"></span><span class="connector c-l-6"></span>
+        </div>
+        <div class="bracket-center">
+          <div class="final-label-center">Final</div>
+          <div class="final-trophy" aria-hidden="true"><span class="trophy-cup">🏆</span><span class="trophy-ball">⚽</span></div>
+          <div class="final-slot final-left" data-round="finals" data-index="0"><span>Finalista 01</span></div>
+          <div class="final-slot final-right" data-round="finals" data-index="1"><span>Finalista 02</span></div>
+        </div>
+        <div class="bracket-side bracket-right" aria-label="Lado direito do chaveamento">
+          <div class="round-label top-label">Oitavas</div><div class="round-label mid-label">Quartas</div><div class="round-label final-label">Semifinal</div>
+          <div class="team-slot slot-r-1" data-slot="8"><span>Vaga 09</span></div><div class="team-slot slot-r-2" data-slot="9"><span>Vaga 10</span></div><div class="team-slot slot-r-3" data-slot="10"><span>Vaga 11</span></div><div class="team-slot slot-r-4" data-slot="11"><span>Vaga 12</span></div>
+          <div class="team-slot slot-r-5" data-slot="12"><span>Vaga 13</span></div><div class="team-slot slot-r-6" data-slot="13"><span>Vaga 14</span></div><div class="team-slot slot-r-7" data-slot="14"><span>Vaga 15</span></div><div class="team-slot slot-r-8" data-slot="15"><span>Vaga 16</span></div>
+          <div class="advance-slot adv-r-1" data-round="quarters" data-index="4"><span>A definir 05</span></div><div class="advance-slot adv-r-2" data-round="quarters" data-index="5"><span>A definir 06</span></div><div class="advance-slot adv-r-3" data-round="quarters" data-index="6"><span>A definir 07</span></div><div class="advance-slot adv-r-4" data-round="quarters" data-index="7"><span>A definir 08</span></div>
+          <div class="advance-slot semi-r-1" data-round="semis" data-index="2"><span>A definir 03</span></div><div class="advance-slot semi-r-2" data-round="semis" data-index="3"><span>A definir 04</span></div>
+          <span class="connector c-r-1"></span><span class="connector c-r-2"></span><span class="connector c-r-3"></span><span class="connector c-r-4"></span><span class="connector c-r-5"></span><span class="connector c-r-6"></span>
+        </div>
+      </div>
+    </section>
   </article>
 </section>
 

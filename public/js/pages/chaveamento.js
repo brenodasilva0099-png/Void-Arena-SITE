@@ -1,43 +1,119 @@
 (function () {
-  const grid = document.getElementById('bracketGrid');
   const statusEl = document.getElementById('bracketStatus');
-  const rounds = [
-    ['slots', 'Oitavas', 16], ['quarters', 'Quartas', 8], ['semis', 'Semifinal', 4], ['finals', 'Final', 2]
-  ];
-  function teamName(team) { return team?.name || team?.tag || 'Aguardando'; }
+  const miniStatusEl = document.getElementById('bracketMiniStatus');
+  const settingsForm = document.getElementById('tournamentSettingsForm');
+  let currentBracket = { slots: [], quarters: [], semis: [], finals: [], matchProgress: {} };
+  let currentSettings = { tournamentName: 'Rematch Championship', matchFormat: 'MD1', teamLimit: 16, groupCount: 4, structure: 'single_elimination', autoCreateMatchChannels: true, discordMatchCategoryId: '' };
+
+  function safe(value) { return VoidArena.escapeHtml(value || ''); }
+  function teamName(team, fallback) { return team?.name || team?.tag || fallback; }
+  function teamLabel(team, fallback) {
+    const name = teamName(team, fallback);
+    const tag = team?.tag && team?.tag !== name ? ` <small>${safe(team.tag)}</small>` : '';
+    return `<span>${safe(name)}${tag}</span>`;
+  }
+  function setStatus(message, type = '') {
+    if (statusEl) { statusEl.textContent = message; statusEl.className = `va-status ${type}`.trim(); }
+    if (miniStatusEl) miniStatusEl.textContent = message.replace(/^❌\s*/, '');
+  }
+  function fillSettings(settings = {}) {
+    currentSettings = { ...currentSettings, ...(settings || {}) };
+    if (!settingsForm) return;
+    Object.entries(currentSettings).forEach(([key, value]) => {
+      const field = settingsForm.elements[key];
+      if (!field) return;
+      if (field.type === 'checkbox') field.checked = value !== false;
+      else field.value = value ?? '';
+    });
+    const nameEl = document.getElementById('boardTournamentName');
+    const formatEl = document.getElementById('boardMatchFormatLabel');
+    if (nameEl) nameEl.textContent = currentSettings.tournamentName || 'Rematch Championship';
+    if (formatEl) formatEl.textContent = `${currentSettings.matchFormat || 'MD1'} • ${currentSettings.teamLimit || 16} TIMES`;
+  }
+  function collectSettings() {
+    return {
+      tournamentName: String(settingsForm.elements.tournamentName.value || 'Rematch Championship').trim(),
+      matchFormat: settingsForm.elements.matchFormat.value || 'MD1',
+      structure: settingsForm.elements.structure.value || 'single_elimination',
+      teamLimit: Number(settingsForm.elements.teamLimit.value || 16),
+      groupCount: Number(settingsForm.elements.groupCount.value || 4),
+      autoCreateMatchChannels: Boolean(settingsForm.elements.autoCreateMatchChannels.checked),
+      discordMatchCategoryId: String(settingsForm.elements.discordMatchCategoryId.value || '').trim()
+    };
+  }
+  function fillSlots(selector, list, fallbackPrefix) {
+    document.querySelectorAll(selector).forEach((el) => {
+      const index = Number(el.dataset.slot ?? el.dataset.index ?? 0);
+      const team = list?.[index] || null;
+      el.classList.toggle('is-empty', !team);
+      const fallback = el.dataset.slot !== undefined ? `${fallbackPrefix} ${String(index + 1).padStart(2, '0')}` : `${fallbackPrefix} ${String(index + 1).padStart(2, '0')}`;
+      el.innerHTML = teamLabel(team, fallback);
+      el.title = team ? teamName(team, '') : '';
+    });
+  }
   function render(bracket = {}) {
-    grid.innerHTML = rounds.map(([key, label, size]) => {
-      const items = Array.isArray(bracket[key]) ? bracket[key] : [];
-      const matches = [];
-      for (let i = 0; i < size; i += 2) {
-        const a = items[i] || null;
-        const b = items[i + 1] || null;
-        matches.push(`<div class="va-match"><div class="va-team ${a ? '' : 'va-empty'}">${VoidArena.escapeHtml(teamName(a))}</div><div class="va-team ${b ? '' : 'va-empty'}">${VoidArena.escapeHtml(teamName(b))}</div></div>`);
-      }
-      return `<section class="va-round"><h3>${label}</h3>${matches.join('')}</section>`;
-    }).join('');
+    currentBracket = {
+      slots: Array.isArray(bracket.slots) ? bracket.slots : [],
+      quarters: Array.isArray(bracket.quarters) ? bracket.quarters : [],
+      semis: Array.isArray(bracket.semis) ? bracket.semis : [],
+      finals: Array.isArray(bracket.finals) ? bracket.finals : [],
+      matchProgress: bracket.matchProgress || {}
+    };
+    fillSlots('.team-slot[data-slot]', currentBracket.slots, 'Vaga');
+    document.querySelectorAll('.advance-slot[data-round="quarters"]').forEach((el) => {
+      const i = Number(el.dataset.index || 0); const team = currentBracket.quarters[i] || null;
+      el.classList.toggle('is-empty', !team); el.innerHTML = teamLabel(team, `A definir ${String(i + 1).padStart(2, '0')}`);
+    });
+    document.querySelectorAll('.advance-slot[data-round="semis"]').forEach((el) => {
+      const i = Number(el.dataset.index || 0); const team = currentBracket.semis[i] || null;
+      el.classList.toggle('is-empty', !team); el.innerHTML = teamLabel(team, `A definir ${String(i + 1).padStart(2, '0')}`);
+    });
+    document.querySelectorAll('.final-slot[data-round="finals"]').forEach((el) => {
+      const i = Number(el.dataset.index || 0); const team = currentBracket.finals[i] || null;
+      el.classList.toggle('is-empty', !team); el.innerHTML = teamLabel(team, `Finalista ${String(i + 1).padStart(2, '0')}`);
+    });
   }
   async function load() {
-    statusEl.textContent = 'Carregando chaveamento...';
+    setStatus('Carregando chaveamento...');
     const data = await VoidArena.request('/api/dashboard/snapshot');
+    fillSettings(data.settings || {});
     render(data.bracket || {});
-    statusEl.textContent = 'Chaveamento carregado.';
-    statusEl.className = 'va-status ok';
+    setStatus('Chaveamento carregado.', 'ok');
+  }
+  async function saveSettings() {
+    setStatus('Salvando configurações do torneio...');
+    const data = await VoidArena.request('/api/tournament/settings', { method: 'PUT', body: JSON.stringify(collectSettings()) });
+    fillSettings(data.settings || {});
+    setStatus('Configurações salvas.', 'ok');
   }
   async function generate() {
-    statusEl.textContent = 'Gerando chaveamento...';
+    setStatus('Gerando chaveamento e sincronizando HUBs...');
     try {
+      await saveSettings();
       const data = await VoidArena.request('/api/bracket/generate', { method: 'POST', body: '{}' });
+      fillSettings(data.settings || currentSettings);
       render(data.bracket || {});
       const hubs = data.resultHubs;
-      statusEl.textContent = hubs?.success === false ? `Chaveamento gerado, mas HUBs não sincronizaram: ${hubs.message}` : 'Chaveamento gerado e HUBs sincronizadas.';
-      statusEl.className = hubs?.success === false ? 'va-status err' : 'va-status ok';
-    } catch (error) {
-      statusEl.textContent = `❌ ${error.message}`;
-      statusEl.className = 'va-status err';
-    }
+      setStatus(hubs?.success === false ? `Chaveamento gerado, mas HUBs falharam: ${hubs.message}` : 'Chaveamento gerado e HUBs sincronizadas.', hubs?.success === false ? 'err' : 'ok');
+    } catch (error) { setStatus(`❌ ${error.message}`, 'err'); }
   }
-  document.getElementById('reloadBracketBtn').addEventListener('click', load);
-  document.getElementById('generateBracketBtn').addEventListener('click', generate);
-  VoidArena.bootLayout('chaveamento').then(load).catch((error) => { statusEl.textContent = `❌ ${error.message}`; });
+  async function syncHubs() {
+    setStatus('Sincronizando HUBs pelo BOT...');
+    try {
+      const data = await VoidArena.request('/api/bracket', { method: 'PUT', body: JSON.stringify({
+        slots: currentBracket.slots.map((t) => t?.id || t || null),
+        quarters: currentBracket.quarters.map((t) => t?.id || t || null),
+        semis: currentBracket.semis.map((t) => t?.id || t || null),
+        finals: currentBracket.finals.map((t) => t?.id || t || null),
+        matchProgress: currentBracket.matchProgress || {}
+      }) });
+      if (data.bracket) render(data.bracket);
+      setStatus(data.resultHubs?.success === false ? `HUBs não sincronizaram: ${data.resultHubs.message}` : 'HUBs sincronizadas.', data.resultHubs?.success === false ? 'err' : 'ok');
+    } catch (error) { setStatus(`❌ ${error.message}`, 'err'); }
+  }
+  document.getElementById('reloadBracketBtn')?.addEventListener('click', load);
+  document.getElementById('generateBracketBtn')?.addEventListener('click', generate);
+  document.getElementById('saveSettingsBtn')?.addEventListener('click', saveSettings);
+  document.getElementById('syncHubsBtn')?.addEventListener('click', syncHubs);
+  VoidArena.bootLayout('chaveamento').then(load).catch((error) => setStatus(`❌ ${error.message}`, 'err'));
 }());

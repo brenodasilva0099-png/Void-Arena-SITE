@@ -9,7 +9,6 @@
 </head>
 <body class="va-organized-body" data-page="config">
   <div class="va-shell">
-
 <aside class="va-sidebar">
   <div class="va-brand">
     <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
@@ -36,30 +35,42 @@
     <a data-nav-key="legado" href="/pages/painel-completo.html">🧰 Painel completo</a>
   </nav>
 </aside>
-
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.0</p>
+          <p class="va-eyebrow">Void Arena 5.0.1</p>
           <h1 class="va-title">Configurações</h1>
-          <p class="va-subtitle">Configurações gerais do site separadas das permissões.</p>
+          <p class="va-subtitle">Configurações, saúde do sistema e backups prontos para uso.</p>
         </div>
         <div class="va-user-pill">Logado como <span data-user-name>...</span></div>
       </header>
 
 <section class="va-grid">
+  <article class="va-card large">
+    <h2>Status geral</h2>
+    <p>Resumo do SITE, BOT e banco remoto. Use isto antes de mexer em backup/deploy.</p>
+    <div id="systemStatusList" class="va-list"></div>
+    <div class="va-actions"><button id="reloadConfigBtn" class="va-btn" type="button">Recarregar status</button><a class="va-btn" href="/pages/permissoes.html">Permissões</a><a class="va-btn" href="/pages/painel-completo.html">Painel completo</a></div>
+    <div id="configStatus" class="va-status">Carregando...</div>
+  </article>
+  <article class="va-card">
+    <h2>Backups</h2>
+    <p>O backup oficial continua no GitHub pelo BOT. Aqui você consulta, cria e restaura o último backup seguro.</p>
+    <div id="backupSummary" class="va-list"></div>
+    <div class="va-actions"><button id="createBackupBtn" class="va-btn primary" type="button">Salvar backup agora</button><button id="restoreBackupBtn" class="va-btn danger" type="button">Restaurar último</button></div>
+    <div id="backupStatus" class="va-status">Aguardando...</div>
+  </article>
   <article class="va-card full">
-    <h2>Configurações</h2>
-    <p>Configurações gerais do site separadas das permissões.</p>
-    <div class="va-actions"><a class="va-btn" href="/pages/permissoes.html">Permissões</a>
-<a class="va-btn" href="/pages/painel-completo.html">Painel completo</a></div>
-    <p class="va-footer-note">Esta página já está separada na estrutura 5.0. As funções detalhadas serão migradas do painel completo sem misturar tudo de novo.</p>
+    <h2>Checklist da base 5.0</h2>
+    <div class="va-checklist">
+      <span>✅ Páginas separadas</span><span>✅ Painel completo preservado</span><span>✅ Ponte SITE → BOT</span><span>✅ Backups via BOT</span><span>✅ Permissões por cargo</span><span>✅ Chaveamento premium integrado</span>
+    </div>
   </article>
 </section>
 
     </main>
   </div>
   <script src="/js/core/api.js"></script>
-  <script src="/js/pages/static.js"></script>
+  <script src="/js/pages/configuracoes.js"></script>
 </body>
 </html>

@@ -1,12 +1,12 @@
 {
   "name": "void-arena-site",
-  "version": "5.0.0",
-  "description": "Void Arena 5.0 reorganizado: páginas separadas, rotas críticas organizadas e ponte SITE → BOT.",
+  "version": "5.0.1",
+  "description": "Void Arena 5.0.1: estrutura separada com módulos antigos integrados, chaveamento premium e backups pelo BOT.",
   "main": "site/index.js",
   "scripts": {
     "start": "node site/index.js",
     "dev": "node site/index.js",
-    "check": "node --check site/index.js && node --check server/app.js && node --check server/storage.js && node --check server/bootstrap/organizedRoutes.js && node --check server/routes/organized.routes.js && node --check server/services/botApi.service.js && node --check server/services/access.service.js && node --check server/services/bracket.service.js && node --check public/js/core/api.js && node --check public/js/pages/dashboard.js && node --check public/js/pages/chaveamento.js && node --check public/js/pages/resultados.js && node --check public/js/dashboard.js"
+    "check": "node --check site/index.js && node --check server/app.js && node --check server/storage.js && node --check server/bootstrap/organizedRoutes.js && node --check server/routes/organized.routes.js && node --check server/services/botApi.service.js && node --check server/services/access.service.js && node --check server/services/bracket.service.js && node --check public/js/core/api.js && node --check public/js/pages/dashboard.js && node --check public/js/pages/chaveamento.js && node --check public/js/pages/resultados.js && node --check public/js/pages/eventos.js && node --check public/js/pages/times.js && node --check public/js/pages/rankings.js && node --check public/js/pages/configuracoes.js && node --check public/js/pages/static.js && node --check public/js/dashboard.js"
   },
   "keywords": [
     "void-arena",

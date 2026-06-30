@@ -67,3 +67,38 @@ body.va-organized-body {
 .va-table th { color: #dcd3ff; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
 .va-footer-note { margin-top: 18px; color: var(--va-muted); font-size: 13px; }
 @media (max-width: 980px) { .va-shell { grid-template-columns: 1fr; } .va-sidebar { position: static; height: auto; } .va-card, .va-card.large { grid-column: 1 / -1; } .va-topbar { align-items: flex-start; flex-direction: column; } }
+
+/* Void Arena 5.0.1 - integração dos módulos antigos na estrutura nova */
+.va-hero-card { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+.va-actions-right { justify-content: flex-end; margin-top: 0; }
+.va-section-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.va-form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.va-form-grid label { display: grid; gap: 7px; color: var(--va-muted); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.va-form-grid input, .va-form-grid select { width: 100%; border: 1px solid rgba(34, 211, 238, .28); background: rgba(5, 9, 25, .88); color: var(--va-text); border-radius: 14px; padding: 12px 13px; font: inherit; font-weight: 800; outline: none; }
+.va-check-row { grid-column: 1 / -1; display: flex !important; grid-template-columns: none !important; align-items: center; gap: 10px; background: rgba(139, 92, 246, .08); padding: 12px; border: 1px solid var(--va-border); border-radius: 16px; }
+.va-check-row input { width: auto; }
+.va-bracket-card { padding: 0; overflow: hidden; }
+.va-integrated-bracket { margin: 0; border: 0; border-radius: 22px; background: transparent; box-shadow: none; }
+.va-integrated-bracket .bracket-header h1 { background: linear-gradient(135deg, #ffffff 0%, #38d7ff 38%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; }
+.va-integrated-bracket .bracket-board { min-width: 1180px; background: radial-gradient(circle at center, rgba(0, 0, 0, .45), transparent 18rem), linear-gradient(90deg, rgba(139, 92, 246, .13), rgba(6, 12, 30, .86) 42%, rgba(5, 30, 44, .86)); border-color: rgba(34, 211, 238, .18); }
+.va-integrated-bracket .team-slot, .va-integrated-bracket .advance-slot, .va-integrated-bracket .final-slot { border-color: rgba(34, 211, 238, .55); background: linear-gradient(135deg, rgba(139, 92, 246, .18), rgba(34, 211, 238, .08)); color: #eef7ff; box-shadow: 0 0 18px rgba(34, 211, 238, .10); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.va-integrated-bracket .team-slot::before, .va-integrated-bracket .advance-slot::before, .va-integrated-bracket .final-slot::before { background: #22d3ee; box-shadow: 0 0 14px rgba(34,211,238,.62); }
+.va-integrated-bracket .connector::before, .va-integrated-bracket .connector::after { background: rgba(34, 211, 238, .42); box-shadow: 0 0 12px rgba(34, 211, 238, .20); }
+.va-integrated-bracket .round-label, .va-integrated-bracket .final-label-center { color: #62e6ff; }
+.va-integrated-bracket .is-empty { opacity: .58; }
+.va-integrated-bracket small { color: var(--va-cyan); font-size: 10px; margin-left: 4px; opacity: .8; }
+.va-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.va-kpi { padding: 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.045); }
+.va-kpi strong { display: block; font-size: 28px; }
+.va-kpi span { color: var(--va-muted); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.va-checklist { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.va-checklist span { padding: 10px 12px; border-radius: 999px; border: 1px solid var(--va-border); background: rgba(139, 92, 246, .10); color: #ded6ff; font-weight: 900; }
+.va-badge { display: inline-flex; margin-left: 8px; padding: 6px 9px; border-radius: 999px; border: 1px solid var(--va-border); color: var(--va-muted); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.va-badge.ok { color: var(--va-green); border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.08); }
+.va-badge.err { color: var(--va-red); border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+.va-mini-link { margin-left: 8px; color: var(--va-cyan); font-weight: 900; text-decoration: none; }
+.va-result-item, .va-team-item, .va-event-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.va-team-item { justify-content: flex-start; }
+.va-team-item img, .va-event-item img { width: 42px; height: 42px; border-radius: 13px; object-fit: cover; border: 1px solid var(--va-border); }
+.va-team-item > span, .va-orb { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: rgba(139,92,246,.18); border: 1px solid var(--va-border); color: var(--va-cyan); font-weight: 1000; }
+@media (max-width: 980px) { .va-hero-card, .va-section-head { flex-direction: column; } .va-actions-right { justify-content: flex-start; } .va-form-grid, .va-kpi-grid { grid-template-columns: 1fr; } .va-integrated-bracket .bracket-board { min-width: 1080px; } }
