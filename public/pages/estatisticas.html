@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Início | Void Arena</title>
+  <title>Estatísticas | Void Arena</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
 </head>
-<body class="va-organized-body" data-page="dashboard">
+<body class="va-organized-body" data-page="estatisticas">
   <div class="va-shell">
 
 <aside class="va-sidebar">
@@ -41,46 +41,24 @@
       <header class="va-topbar">
         <div>
           <p class="va-eyebrow">Void Arena 5.0</p>
-          <h1 class="va-title">Início</h1>
-          <p class="va-subtitle">Tela inicial enxuta. Cada módulo pesado ganhou página própria.</p>
+          <h1 class="va-title">Estatísticas</h1>
+          <p class="va-subtitle">Estatísticas separadas do chat e do chaveamento.</p>
         </div>
         <div class="va-user-pill">Logado como <span data-user-name>...</span></div>
       </header>
 
 <section class="va-grid">
-  <article class="va-card large">
-    <h2>Central Hollow Nexus</h2>
-    <p>Dashboard limpo com atalhos. As funções grandes agora ficam em páginas próprias para evitar bagunça e conflito de código.</p>
-    <div class="va-actions">
-      <a class="va-btn primary" href="/pages/chaveamento.html">Abrir chaveamento</a>
-      <a class="va-btn" href="/pages/resultados.html">Ver resultados</a>
-      <a class="va-btn" href="/pages/eventos.html">Gerenciar eventos</a>
-    </div>
-  </article>
-  <article class="va-card">
-    <h3>Status</h3>
-    <p id="homeStatus">Carregando status...</p>
-  </article>
-  <article class="va-card">
-    <h3>Organização 5.0</h3>
-    <p>O painel completo antigo foi preservado como fallback enquanto as áreas novas são estabilizadas.</p>
-    <div class="va-actions"><a class="va-btn" href="/pages/painel-completo.html">Painel completo</a></div>
-  </article>
   <article class="va-card full">
-    <h2>Atalhos rápidos</h2>
-    <div class="va-actions">
-      <a class="va-btn" href="/pages/times.html">Times</a>
-      <a class="va-btn" href="/pages/rankings.html">Rankings</a>
-      <a class="va-btn" href="/pages/analise-partidas.html">Análise de Partidas</a>
-      <a class="va-btn" href="/pages/permissoes.html">Permissões</a>
-      <a class="va-btn" href="/pages/configuracoes.html">Configurações</a>
-    </div>
+    <h2>Estatísticas</h2>
+    <p>Estatísticas separadas do chat e do chaveamento.</p>
+    <div class="va-actions"><a class="va-btn" href="/pages/painel-completo.html">Abrir painel completo temporário</a></div>
+    <p class="va-footer-note">Esta página já está separada na estrutura 5.0. As funções detalhadas serão migradas do painel completo sem misturar tudo de novo.</p>
   </article>
 </section>
 
     </main>
   </div>
   <script src="/js/core/api.js"></script>
-  <script src="/js/pages/dashboard.js"></script>
+  <script src="/js/pages/static.js"></script>
 </body>
 </html>

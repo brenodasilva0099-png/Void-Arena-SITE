@@ -1659,7 +1659,7 @@ function createServer({ client }) {
     }
 
     const bridge = await readChatBridgeSettings();
-    const authorName = user?.profile?.username || user?.name || 'Usuário Abyss';
+    const authorName = user?.profile?.username || user?.name || 'Usuário Void Arena';
     let discordMessageId = '';
     let discordChannelId = '';
 
@@ -1725,7 +1725,7 @@ function createServer({ client }) {
 
       if (message.discordMessageId && message.discordChannelId) {
         try {
-          const nextContent = `**${message.authorName || 'Usuário Abyss'} via site:** ${message.content}`;
+          const nextContent = `**${message.authorName || 'Usuário Void Arena'} via site:** ${message.content}`;
           if (client?.channels?.fetch) {
             const discordChannel = await client.channels.fetch(message.discordChannelId);
             const discordMessage = await discordChannel?.messages?.fetch?.(message.discordMessageId);
@@ -1804,7 +1804,7 @@ function createServer({ client }) {
     }
 
     const bridge = await readStatsBridgeSettings();
-    const authorName = user?.profile?.username || user?.name || 'Usuário Abyss';
+    const authorName = user?.profile?.username || user?.name || 'Usuário Void Arena';
     let discordMessageId = '';
     let discordChannelId = '';
 
@@ -1870,7 +1870,7 @@ function createServer({ client }) {
 
       if (message.discordMessageId && message.discordChannelId) {
         try {
-          const nextContent = `**${message.authorName || 'Usuário Abyss'} via estatísticas do site:** ${message.content}`;
+          const nextContent = `**${message.authorName || 'Usuário Void Arena'} via estatísticas do site:** ${message.content}`;
           if (client?.channels?.fetch) {
             const discordChannel = await client.channels.fetch(message.discordChannelId);
             const discordMessage = await discordChannel?.messages?.fetch?.(message.discordMessageId);
@@ -2031,7 +2031,7 @@ function createServer({ client }) {
       const message = await saveTeamChatMessage(req.params.conversationId, {
         source: 'site',
         authorId: user?.id || req.session.userId,
-        authorName: user?.profile?.username || user?.name || 'Usuário Abyss',
+        authorName: user?.profile?.username || user?.name || 'Usuário Void Arena',
         authorAvatar: user?.avatar || '',
         content,
         attachments: []

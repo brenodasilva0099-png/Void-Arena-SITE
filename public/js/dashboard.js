@@ -1208,7 +1208,7 @@ function userProfileData(user = {}) {
 
 function publicUserName(user = {}) {
   const profile = userProfileData(user);
-  return profile.username || user.name || 'Usuário Abyss';
+  return profile.username || user.name || 'Usuário Void Arena';
 }
 
 function userGameMeta(user = {}) {
@@ -2912,7 +2912,7 @@ function collectProfileFormData() {
 
 function refreshSettingsPreview(data = {}) {
   const profile = data.profile || userProfileData(currentUser || {});
-  const displayName = profile.username || currentUser?.name || 'Usuário Abyss';
+  const displayName = profile.username || currentUser?.name || 'Usuário Void Arena';
 
   if (settingsName) settingsName.textContent = displayName;
   if (settingsMeta) {
@@ -4431,7 +4431,7 @@ myTeamsContent?.addEventListener('click', (event) => {
   }
 
   if (button.dataset.myTeamAction === 'share') {
-    const text = `${team.name} (${team.tag}) no Abyss Tourment Game`;
+    const text = `${team.name} (${team.tag}) no Void Arena`;
     navigator.clipboard?.writeText(text);
     window.alert('Informações do time copiadas para compartilhar.');
     return;
