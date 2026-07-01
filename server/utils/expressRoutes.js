@@ -1,18 +1,6 @@
 function routeStacks(app) {
-  const stacks = [];
-
-  if (Array.isArray(app?._router?.stack)) {
-    stacks.push(app._router.stack);
-  }
-
-  // Express 5 exposes app.router as a real router object.
-  // Express 4 exposes app.router as a deprecated getter that throws, so never
-  // touch it unless it is an own property.
-  if (Object.prototype.hasOwnProperty.call(app || {}, 'router') && Array.isArray(app.router?.stack)) {
-    stacks.push(app.router.stack);
-  }
-
-  return stacks;
+  const stack = app?._router?.stack;
+  return Array.isArray(stack) ? [stack] : [];
 }
 
 function removeRoute(app, method, routePath) {
