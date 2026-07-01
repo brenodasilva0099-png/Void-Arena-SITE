@@ -7,6 +7,7 @@
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/mobile-chaveamento.css" />
 </head>
 <body class="va-organized-body" data-page="chaveamento">
   <div class="va-shell">
@@ -37,12 +38,7 @@
   </nav>
 </aside>
     <main class="va-main">
-      <header class="va-topbar">
-        <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
-          <h1 class="va-title">Chaveamento</h1>
-          <p class="va-subtitle">Chaveamento separado com o visual premium antigo integrado na estrutura nova.</p>
-        </div>
+      <header class="va-topbar va-profile-only">
         <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
 
@@ -50,15 +46,14 @@
   <article class="va-card full va-hero-card">
     <div>
       <p class="va-eyebrow">Chaveamento oficial</p>
-      <h2>Modelo visual integrado</h2>
-      <p>Visual antigo premium integrado na estrutura nova. Gerar chaveamento também sincroniza as HUBs de resultados no bot.</p>
+      <h2>Controle do torneio</h2>
+      <p>Gere, salve, edite posições e sincronize as HUBs de resultado do evento no Discord.</p>
     </div>
     <div class="va-actions va-actions-right">
       <button id="generateBracketBtn" class="va-btn primary" type="button">Gerar automático</button>
       <button id="reloadBracketBtn" class="va-btn" type="button">Recarregar</button>
       <button id="syncHubsBtn" class="va-btn" type="button">Sincronizar HUBs</button>
       <button id="openManualEditorBtn" class="va-btn" type="button">Editar posições</button>
-      
     </div>
     <div id="bracketStatus" class="va-status">Carregando...</div>
   </article>
@@ -67,7 +62,7 @@
     <div class="va-section-head">
       <div>
         <h2>Configuração rápida</h2>
-        <p>Use aqui para ajustar formato, limite, grupos e criação automática de canais no Discord.</p>
+        <p>Use aqui para ajustar evento, formato, limite, grupos e criação automática de canais no Discord.</p>
       </div>
       <button id="saveSettingsBtn" class="va-btn primary" type="button">Salvar modelo</button>
     </div>
