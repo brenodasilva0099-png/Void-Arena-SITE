@@ -1,0 +1,219 @@
+/* Void Arena 5.1.2.3 - ajustes mobile e topo compacto do chaveamento */
+.va-topbar.va-profile-only {
+  justify-content: flex-end;
+  padding: 0;
+  margin-bottom: 12px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.va-topbar.va-profile-only .va-user-pill,
+.va-topbar.va-profile-only .va-user-avatar-link {
+  margin-left: auto;
+}
+
+.va-bracket-card {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.va-bracket-card .va-integrated-bracket {
+  min-width: 1080px;
+}
+
+@media (max-width: 760px) {
+  body.va-organized-body {
+    overflow-x: hidden;
+  }
+
+  .va-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .va-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    height: auto;
+    max-height: 42vh;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--va-border);
+  }
+
+  .va-brand {
+    margin-bottom: 10px;
+  }
+
+  .va-brand img {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+
+  .va-brand small {
+    font-size: 9px;
+  }
+
+  .va-brand strong {
+    font-size: 15px;
+  }
+
+  .va-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .va-nav-title {
+    display: none;
+  }
+
+  .va-nav a {
+    flex: 0 0 auto;
+    min-height: 36px;
+    margin: 0;
+    padding: 8px 10px;
+    white-space: nowrap;
+    font-size: 14px;
+  }
+
+  .va-nav a:hover,
+  .va-nav a.active {
+    transform: none;
+  }
+
+  .va-main {
+    padding: 12px;
+  }
+
+  .va-grid {
+    gap: 12px;
+  }
+
+  .va-card {
+    padding: 14px;
+    border-radius: 18px;
+    min-height: auto;
+  }
+
+  .va-hero-card,
+  .va-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .va-actions,
+  .va-actions-right {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .va-actions .va-btn,
+  .va-actions-right .va-btn {
+    flex: 1 1 150px;
+    justify-content: center;
+  }
+
+  .va-form-grid,
+  .va-form-grid.two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .va-check-row {
+    align-items: flex-start;
+  }
+
+  .va-event-state-card {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .va-bracket-card {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding: 0;
+    border-radius: 18px;
+  }
+
+  .va-bracket-card::after {
+    content: 'Arraste para o lado para ver todo o chaveamento';
+    display: block;
+    padding: 10px 14px 14px;
+    color: var(--va-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .va-adaptive-bracket {
+    padding: 0 2px 8px;
+  }
+
+  .va-match-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .va-result-card,
+  .va-team-card,
+  .va-player-card,
+  .va-item {
+    padding: 13px;
+  }
+
+  .va-result-game-row,
+  .va-player-row,
+  .va-result-item,
+  .va-team-item,
+  .va-event-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .va-result-side {
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .va-score-big {
+    text-align: left;
+  }
+
+  .va-modal-shell {
+    padding: 10px;
+  }
+
+  .va-modal-card {
+    width: 100%;
+    max-height: 92vh;
+    padding: 16px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .va-actions .va-btn,
+  .va-actions-right .va-btn {
+    flex-basis: 100%;
+  }
+
+  .va-user-pill.is-avatar-only,
+  .va-user-avatar-link {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+  }
+
+  .va-user-pill.is-avatar-only .va-user-pill-avatar,
+  .va-user-avatar-link .va-user-pill-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
