@@ -2,7 +2,7 @@ const { removeRoutes } = require('../utils/expressRoutes');
 const { registerOrganizedRouteOverrides } = require('../routes/organized.routes');
 
 function registerOrganizedRoutes(app) {
-  removeRoutes(app, [
+  const report = removeRoutes(app, [
     ['get', '/api/bot'],
     ['get', '/api/dashboard/snapshot'],
     ['get', '/api/teams'],
@@ -17,7 +17,9 @@ function registerOrganizedRoutes(app) {
   ]);
 
   registerOrganizedRouteOverrides(app);
-  console.log('✅ Void Arena 5.1: estrutura nova assumiu as rotas principais.');
+  const removedCount = report.filter((item) => item.removed).length;
+  console.log(`✅ Void Arena 5.1.2: ${removedCount} rotas antigas substituídas pela estrutura nova.`);
+
 }
 
 module.exports = { registerOrganizedRoutes };

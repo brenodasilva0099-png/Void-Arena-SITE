@@ -39,11 +39,11 @@
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.1.1</p>
+          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
           <h1 class="va-title">Chaveamento</h1>
           <p class="va-subtitle">Chaveamento separado com o visual premium antigo integrado na estrutura nova.</p>
         </div>
-        <div class="va-user-pill">Logado como <span data-user-name>...</span></div>
+        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
 
 <section class="va-grid">
@@ -57,6 +57,7 @@
       <button id="generateBracketBtn" class="va-btn primary" type="button">Gerar automático</button>
       <button id="reloadBracketBtn" class="va-btn" type="button">Recarregar</button>
       <button id="syncHubsBtn" class="va-btn" type="button">Sincronizar HUBs</button>
+      <button id="openManualEditorBtn" class="va-btn" type="button">Editar posições</button>
       
     </div>
     <div id="bracketStatus" class="va-status">Carregando...</div>
@@ -70,6 +71,7 @@
       </div>
       <button id="saveSettingsBtn" class="va-btn primary" type="button">Salvar modelo</button>
     </div>
+    <div id="activeEventStatus" class="va-event-state-card">Selecione um evento para vincular chaveamento, HUBs e resultados.</div>
     <form id="tournamentSettingsForm" class="va-form-grid">
       <label>Evento ativo
         <select name="activeEventId"><option value="">Usar todos os times cadastrados</option></select>
@@ -138,6 +140,26 @@
 
     </main>
   </div>
+
+  <div id="manualBracketModal" class="va-modal-shell" hidden>
+    <div class="va-modal-card">
+      <div class="va-modal-head">
+        <div>
+          <p class="va-eyebrow">Editor seguro</p>
+          <h2>Editar posições do chaveamento</h2>
+          <p class="va-muted">Use como fallback manual. Salvar aqui também sincroniza as HUBs no Discord.</p>
+        </div>
+        <button id="closeManualEditorBtn" class="va-modal-close" type="button">×</button>
+      </div>
+      <div id="manualEditorBody" class="va-manual-grid"></div>
+      <div class="va-actions">
+        <button id="saveManualEditorBtn" class="va-btn primary" type="button">Salvar posições</button>
+        <button id="cancelManualEditorBtn" class="va-btn" type="button">Cancelar</button>
+      </div>
+      <div id="manualEditorStatus" class="va-status"></div>
+    </div>
+  </div>
+
   <script src="/js/core/api.js"></script>
   <script src="/js/pages/chaveamento.js"></script>
 </body>

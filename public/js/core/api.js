@@ -73,22 +73,20 @@
     const name = profileUsername(user);
     const avatar = userAvatar(user);
     document.querySelectorAll('.va-user-pill').forEach((pill) => {
-      pill.classList.add('is-clickable', 'is-compact');
+      pill.classList.add('is-clickable', 'is-compact', 'is-avatar-only');
       pill.setAttribute('role', 'link');
       pill.setAttribute('tabindex', '0');
-      pill.setAttribute('title', 'Abrir perfil');
-      pill.innerHTML = `
-        <span class="va-user-pill-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="Avatar ${escapeHtml(name)}" />` : escapeHtml(name.slice(0, 1).toUpperCase())}</span>
-        <span class="va-user-pill-name" data-user-name>${escapeHtml(name)}</span>
-      `;
+      pill.setAttribute('title', `Abrir perfil de ${name}`);
+      pill.setAttribute('aria-label', `Abrir perfil de ${name}`);
+      pill.innerHTML = `<span class="va-user-pill-avatar">${avatar ? `<img src="${escapeHtml(avatar)}" alt="Avatar ${escapeHtml(name)}" />` : escapeHtml(name.slice(0, 1).toUpperCase())}</span>`;
       const open = () => { window.location.href = '/pages/perfil.html'; };
-      pill.addEventListener('click', open);
-      pill.addEventListener('keydown', (event) => {
+      pill.onclick = open;
+      pill.onkeydown = (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           open();
         }
-      });
+      };
     });
   }
 

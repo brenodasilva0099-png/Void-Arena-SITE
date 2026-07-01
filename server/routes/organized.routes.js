@@ -8,7 +8,8 @@ const {
   generateBracketSlots,
   generateAdaptiveBracket,
   generateGroups,
-  sanitizeTeam
+  sanitizeTeam,
+  nextTargetForSlotMatch
 } = require('../services/bracket.service');
 
 const RESULT_CHANNEL = 'results-main';
@@ -200,16 +201,8 @@ async function saveResultRecord(result = {}) {
 }
 
 function nextSlotTargetForResult(matchIndex = 0, bracket = {}) {
-  const slots = Array.isArray(bracket.slots) ? bracket.slots : [];
-  const filled = slots.filter(Boolean).length;
-  const slotSize = slots.length > 16 ? 32 : 16;
-  if (slotSize === 16 && filled <= 4) return { round: 'finals', index: matchIndex < 4 ? 0 : 1 };
-  if (slotSize === 16 && filled <= 8) {
-    const map = { 0: 0, 1: 1, 4: 2, 5: 3 };
-    return { round: 'semis', index: map[matchIndex] ?? Math.min(3, matchIndex) };
-  }
-  if (slotSize === 16) return { round: 'quarters', index: matchIndex };
-  return { round: 'round16', index: Math.max(0, Math.min(15, matchIndex)) };
+  const slotSize = bracket.slotSize || (Array.isArray(bracket.slots) && bracket.slots.length > 16 ? 32 : 16);
+  return nextTargetForSlotMatch(matchIndex, slotSize);
 }
 
 async function applyResultToBracket(result = {}) {
@@ -231,7 +224,7 @@ async function applyResultToBracket(result = {}) {
     generatedAt: bracket.generatedAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-  if (roundKey === 'slots') { const target = nextSlotTargetForResult(matchIndex, bracket); next[target.round][target.index] = winnerTeamId; }
+  if (roundKey === 'slots') { const target = nextSlotTargetForResult(matchIndex, next); if (!Array.isArray(next[target.round])) next[target.round] = []; next[target.round][target.index] = winnerTeamId; }
   else if (roundKey === 'round16') next.quarters[Math.floor(matchIndex / 2)] = winnerTeamId;
   else if (roundKey === 'quarters') next.semis[Math.floor(matchIndex / 2)] = winnerTeamId;
   else if (roundKey === 'semis') next.finals[matchIndex < 2 ? 0 : 1] = winnerTeamId;
