@@ -4,12 +4,14 @@ const http = require('node:http');
 const { createServer } = require('../server/app');
 const { createRealtimeServer } = require('../server/realtime');
 const { registerOrganizedRoutes } = require('../server/bootstrap/organizedRoutes');
+const { registerDebugRoutes } = require('../server/routes/debug.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
 // Site/API separado. O banco principal continua no BOT via BOT_API_URL + BOT_API_KEY.
 const app = createServer({ client: null });
 registerOrganizedRoutes(app);
+registerDebugRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
