@@ -1,0 +1,33 @@
+body[data-page="chaveamento"] .va-shell {
+  overflow-x: hidden;
+}
+
+body[data-page="chaveamento"] .va-main {
+  overflow-x: hidden;
+}
+
+body[data-page="chaveamento"] .va-bracket-card {
+  overflow: visible;
+}
+
+body[data-page="chaveamento"] .va-integrated-bracket {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 14px;
+  scrollbar-gutter: stable;
+}
+
+body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
+  min-width: 1180px;
+  width: 1180px;
+  max-width: none;
+  margin: 0 auto;
+}
+
+@media (min-width: 1500px) {
+  body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
+    min-width: 0;
+    width: 100%;
+    grid-template-columns: minmax(420px, 1fr) 260px minmax(420px, 1fr);
+  }
+}
