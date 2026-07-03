@@ -50,38 +50,86 @@
       </header>
 
 <section class="va-grid">
-  <article class="va-card full va-team-create-card">
+  <article class="va-card full va-team-create-card compact">
     <div class="va-section-head">
       <div>
         <p class="va-eyebrow">Cadastro de time</p>
         <h2>Criar / cadastrar time</h2>
-        <p>Informe nome, tag, escudo, titulares, reservas e contatos. Depois o capitão pode inscrever esse time em eventos abertos.</p>
+        <p>O capitão abre o cadastro em tela separada, informa elenco, IDs Discord, escudo e conexões do time.</p>
       </div>
-      <button id="toggleTeamFormBtn" class="va-btn primary" type="button">Abrir cadastro</button>
+      <button id="openTeamCreateModalBtn" class="va-btn primary" type="button">Abrir cadastro</button>
     </div>
-    <form id="teamCreateForm" class="va-form-grid two va-collapsible-form" hidden>
-      <label>Nome do time<input name="name" type="text" maxlength="80" placeholder="Ex: Hollow Nexus" required /></label>
-      <label>Tag<input name="tag" type="text" maxlength="6" placeholder="Ex: ONX" required /></label>
-      <label class="wide">Logo / escudo<input name="logo" type="url" placeholder="Cole uma URL de imagem ou deixe vazio" /></label>
-      <label>Discord do time<input name="socialDiscord" type="text" placeholder="Link ou servidor" /></label>
-      <label>Instagram<input name="socialInstagram" type="text" placeholder="@time" /></label>
-      <label>YouTube<input name="socialYoutube" type="text" placeholder="Canal do time" /></label>
-      <label class="wide">Titulares<input name="players" type="text" placeholder="Separe por vírgula: jogador1, jogador2, jogador3..." required /></label>
-      <label class="wide">Contas/Discord dos titulares<input name="playerAccounts" type="text" placeholder="Opcional: IDs, menções ou nomes na mesma ordem" /></label>
-      <label class="wide">Reservas<input name="reserves" type="text" placeholder="Opcional: reserva1, reserva2..." /></label>
-      <label class="wide">Contas/Discord dos reservas<input name="reserveAccounts" type="text" placeholder="Opcional: IDs, menções ou nomes na mesma ordem" /></label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar time</button><button id="clearTeamFormBtn" class="va-btn" type="button">Limpar</button></div>
-    </form>
     <div id="teamCreateStatus" class="va-status"></div>
   </article>
 
-  <article class="va-card full"><h2>Times cadastrados</h2><p>Lista pública de equipes disponíveis para inscrição em eventos.</p><div id="teamsList" class="va-list"></div><div id="teamsStatus" class="va-status">Carregando...</div></article>
+  <article class="va-card full">
+    <h2>Times cadastrados</h2>
+    <p>Lista pública de equipes disponíveis para inscrição em eventos.</p>
+    <div id="teamsList" class="va-list"></div>
+    <div id="teamsStatus" class="va-status">Carregando...</div>
+  </article>
 </section>
 
     </main>
   </div>
+
+  <div id="teamCreateModal" class="va-modal-shell" hidden>
+    <div class="va-modal-card va-team-create-modal">
+      <div class="va-modal-head">
+        <div>
+          <p class="va-eyebrow">Cadastro de time</p>
+          <h2>Criar time</h2>
+          <p class="va-muted">Organize titulares e reservas por nome + ID Discord. Isso ajuda o site a conectar cada jogador ao perfil público quando ele logar.</p>
+        </div>
+        <button class="va-modal-close" type="button" data-team-create-close>×</button>
+      </div>
+
+      <form id="teamCreateForm" class="va-form-grid two">
+        <label>Nome do time<input name="name" type="text" maxlength="80" placeholder="Ex: Hollow Nexus" required /></label>
+        <label>Tag<input name="tag" type="text" maxlength="8" placeholder="Ex: ONX" required /></label>
+
+        <label class="wide va-logo-field">Logo / escudo
+          <div class="va-logo-input-wrap">
+            <input name="logo" type="text" placeholder="Cole uma URL ou use a área ao lado" />
+            <button id="logoPasteBox" class="va-logo-paste-box" type="button" title="Clique aqui e pressione Ctrl+V com a imagem copiada">Ctrl+V<br><small>imagem</small></button>
+          </div>
+          <span class="va-muted">Funciona com URL ou imagem copiada no PC. A prévia aparece no canto da área.</span>
+        </label>
+
+        <div class="wide va-logo-preview-row">
+          <div id="teamLogoPreview" class="va-team-logo preview">?</div>
+          <div><strong>Prévia do escudo</strong><p class="va-muted">Cole a imagem na caixinha “Ctrl+V imagem” ou cole uma URL no campo.</p></div>
+        </div>
+
+        <div class="wide va-roster-editor">
+          <div class="va-section-head mini"><div><h3>Titulares</h3><p>Adicione nome e ID/menção Discord de cada titular.</p></div><button id="addPlayerRowBtn" class="va-btn" type="button">+ Titular</button></div>
+          <div id="playersRows" class="va-player-editor-list"></div>
+        </div>
+
+        <div class="wide va-roster-editor">
+          <div class="va-section-head mini"><div><h3>Reservas</h3><p>Opcional, mas recomendado para validação de elenco.</p></div><button id="addReserveRowBtn" class="va-btn" type="button">+ Reserva</button></div>
+          <div id="reservesRows" class="va-player-editor-list"></div>
+        </div>
+
+        <div class="wide va-connections-editor">
+          <h3>Conexões e contatos</h3>
+          <p class="va-muted">Estilo Discord: links e redes que aparecem no perfil público do time.</p>
+          <div class="va-form-grid two flat">
+            <label>Discord do time<input name="socialDiscord" type="text" placeholder="Link, convite ou servidor" /></label>
+            <label>Instagram<input name="socialInstagram" type="text" placeholder="@time" /></label>
+            <label>YouTube<input name="socialYoutube" type="text" placeholder="Canal do time" /></label>
+            <label>TikTok<input name="socialTikTok" type="text" placeholder="@time" /></label>
+            <label>Steam/Grupo<input name="socialSteam" type="text" placeholder="Grupo ou perfil" /></label>
+            <label>Xbox/Gamertag<input name="socialXbox" type="text" placeholder="Gamertag ou clube" /></label>
+          </div>
+        </div>
+
+        <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar time</button><button id="clearTeamFormBtn" class="va-btn" type="button">Limpar</button></div>
+      </form>
+    </div>
+  </div>
+
   <script src="/js/core/api.js"></script>
   <script src="/js/pages/times.js"></script>
-  <script src="/js/pages/times-create.js"></script>
 </body>
 </html>
