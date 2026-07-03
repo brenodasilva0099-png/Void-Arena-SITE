@@ -4,29 +4,76 @@ body[data-page="chaveamento"] .va-main {
 }
 
 body[data-page="chaveamento"] .va-bracket-card {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding-inline: clamp(12px, 1.5vw, 22px);
+  scrollbar-width: thin;
+}
+
+body[data-page="chaveamento"] .va-bracket-card::-webkit-scrollbar {
+  height: 10px;
+}
+
+body[data-page="chaveamento"] .va-bracket-card::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(139, 92, 246, .42);
 }
 
 body[data-page="chaveamento"] .va-integrated-bracket {
-  overflow: hidden;
+  overflow: visible;
   padding-bottom: 14px;
   width: 100%;
+  min-width: 1180px;
 }
 
 body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-  min-width: 0 !important;
-  width: min(100%, 1100px) !important;
-  max-width: 100%;
+  min-width: 1180px !important;
+  width: 1180px !important;
+  max-width: none;
   margin: 0 auto;
-  grid-template-columns: minmax(330px, 1fr) 220px minmax(330px, 1fr);
-  gap: 12px;
-  padding: clamp(14px, 1.4vw, 22px);
+  grid-template-columns: 440px 260px 440px !important;
+  gap: 20px;
+  padding: 24px;
 }
 
+body[data-page="chaveamento"] .va-integrated-bracket .bracket-side,
 body[data-page="chaveamento"] .va-integrated-bracket .bracket-center {
   min-width: 0;
 }
+
+body[data-page="chaveamento"] .team-slot {
+  width: 142px;
+  height: 28px;
+}
+
+body[data-page="chaveamento"] .advance-slot {
+  width: 116px;
+  height: 28px;
+}
+
+body[data-page="chaveamento"] .final-slot {
+  width: 128px;
+  height: 30px;
+}
+
+body[data-page="chaveamento"] .bracket-left .adv-l-1,
+body[data-page="chaveamento"] .bracket-left .adv-l-2,
+body[data-page="chaveamento"] .bracket-left .adv-l-3,
+body[data-page="chaveamento"] .bracket-left .adv-l-4 { left: 190px; }
+
+body[data-page="chaveamento"] .bracket-right .adv-r-1,
+body[data-page="chaveamento"] .bracket-right .adv-r-2,
+body[data-page="chaveamento"] .bracket-right .adv-r-3,
+body[data-page="chaveamento"] .bracket-right .adv-r-4 { right: 190px; }
+
+body[data-page="chaveamento"] .bracket-left .semi-l-1,
+body[data-page="chaveamento"] .bracket-left .semi-l-2 { right: 12px; }
+
+body[data-page="chaveamento"] .bracket-right .semi-r-1,
+body[data-page="chaveamento"] .bracket-right .semi-r-2 { left: 12px; }
+
+body[data-page="chaveamento"] .final-left { left: 4px; }
+body[data-page="chaveamento"] .final-right { right: 4px; }
 
 body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:not(:last-child) {
   display: none !important;
@@ -41,19 +88,28 @@ body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:last-child h3:
   font-size: clamp(22px, 3vw, 32px);
 }
 
-@media (max-width: 1360px) {
-  body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-    width: min(100%, 1030px) !important;
-    grid-template-columns: minmax(315px, 1fr) 190px minmax(315px, 1fr);
+@media (max-width: 1540px) {
+  body[data-page="chaveamento"] .va-integrated-bracket {
+    min-width: 1120px;
   }
 
-  body[data-page="chaveamento"] .team-slot { width: 118px; }
-  body[data-page="chaveamento"] .advance-slot { width: 86px; }
-  body[data-page="chaveamento"] .final-slot { width: 88px; }
+  body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
+    min-width: 1120px !important;
+    width: 1120px !important;
+    grid-template-columns: 415px 250px 415px !important;
+  }
+
+  body[data-page="chaveamento"] .team-slot { width: 132px; }
+  body[data-page="chaveamento"] .advance-slot { width: 108px; }
+  body[data-page="chaveamento"] .final-slot { width: 118px; }
 }
 
 @media (max-width: 760px) {
   body[data-page="chaveamento"] .va-bracket-card {
     overflow: visible;
+  }
+
+  body[data-page="chaveamento"] .va-integrated-bracket {
+    min-width: 0;
   }
 }
