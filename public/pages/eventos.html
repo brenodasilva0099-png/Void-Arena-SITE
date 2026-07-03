@@ -7,6 +7,7 @@
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/arena-pages.css" />
 </head>
 <body class="va-organized-body" data-page="eventos">
   <div class="va-shell">
@@ -41,14 +42,61 @@
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
+          <p class="va-eyebrow">Eventos públicos</p>
           <h1 class="va-title">Eventos</h1>
-          <p class="va-subtitle">Campeonatos separados do dashboard principal.</p>
+          <p class="va-subtitle">Veja campeonatos disponíveis, requisitos, vagas e inscreva seu time como capitão.</p>
         </div>
         <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
 
-<section class="va-grid"><article class="va-card full"><h2>Eventos e campeonatos</h2><p>Área dedicada para listar e administrar campeonatos.</p><div id="eventsList" class="va-list"></div><div id="eventsStatus" class="va-status">Carregando...</div></article></section>
+<section class="va-grid">
+  <article class="va-card full va-events-hero">
+    <div>
+      <p class="va-eyebrow">Inscrições e validação</p>
+      <h2>Escolha um evento e envie seu time</h2>
+      <p>Cada campeonato mostra status, vagas, formato e progresso. O capitão seleciona um time cadastrado, envia a inscrição e aguarda validação da organização.</p>
+    </div>
+    <div class="va-flow-grid mini">
+      <div><strong>1</strong><span>Crie o time</span></div>
+      <div><strong>2</strong><span>Escolha evento</span></div>
+      <div><strong>3</strong><span>Inscreva</span></div>
+      <div><strong>4</strong><span>Aguarde validação</span></div>
+    </div>
+  </article>
+
+  <article class="va-card full">
+    <div class="va-section-head">
+      <div>
+        <h2>Eventos disponíveis</h2>
+        <p>Os eventos abertos aparecem primeiro. Eventos em andamento continuam visíveis para acompanhamento.</p>
+      </div>
+      <a class="va-btn" href="/pages/times.html">Criar time</a>
+    </div>
+    <div id="eventsList" class="va-list va-events-list"></div>
+    <div id="eventsStatus" class="va-status">Carregando...</div>
+  </article>
+</section>
+
+<div id="eventRegisterModal" class="va-modal-shell" hidden>
+  <div class="va-modal-card">
+    <div class="va-modal-head">
+      <div>
+        <p class="va-eyebrow">Inscrição de time</p>
+        <h2 id="eventRegisterTitle">Inscrever no evento</h2>
+        <p class="va-muted" id="eventRegisterInfo">Selecione o time que você representa.</p>
+      </div>
+      <button class="va-modal-close" type="button" data-event-close>×</button>
+    </div>
+    <form id="eventRegisterForm" class="va-form-grid two">
+      <input type="hidden" name="eventId" />
+      <label class="wide">Time
+        <select name="teamId" required></select>
+      </label>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar inscrição</button><button class="va-btn" type="button" data-event-close>Cancelar</button></div>
+    </form>
+    <div id="eventRegisterStatus" class="va-status"></div>
+  </div>
+</div>
 
     </main>
   </div>
