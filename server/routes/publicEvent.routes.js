@@ -76,48 +76,11 @@ function canRepresent(user = {}, team = {}) {
   return values.some((value) => ids.has(value));
 }
 
-async function sendDiscordDm(discordId, content) {
-  const token = process.env.DISCORD_TOKEN || '';
-  if (!token || !discordId) return { sent: false, skipped: true };
-  const dm = await fetch('https://discord.com/api/v10/users/@me/channels', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bot ${token}` },
-    body: JSON.stringify({ recipient_id: discordId })
-  });
-  const channel = await dm.json().catch(() => ({}));
-  if (!dm.ok || !channel.id) return { sent: false, error: channel.message || `DM ${dm.status}` };
-  const sent = await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bot ${token}` },
-    body: JSON.stringify({ content, allowed_mentions: { parse: [] } })
-  });
-  return { sent: sent.ok, error: sent.ok ? null : `Mensagem ${sent.status}` };
-}
-
 async function notifyCaptains(event, reason) {
-  const botNotice = await callBot('/internal/events/notify-captains', {
+  return callBot('/internal/events/notify-captains', {
     method: 'POST',
     body: JSON.stringify({ event, reason })
-  }).catch((error) => ({ success: false, message: error.message }));
-  if (botNotice.success) return botNotice;
-
-  const [teams, users] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => [])]);
-  const usersById = new Map(users.map((user) => [String(user.id || ''), user]));
-  const ids = Array.from(new Set(teams.map((team) => usersById.get(String(team.ownerUserId || ''))?.discordId).filter(Boolean)));
-  if (!ids.length) return { success: false, skipped: true, message: 'Nenhum capitao com Discord vinculado.' };
-
-  const link = process.env.PUBLIC_SITE_URL || 'https://void-arena-site.onrender.com';
-  const text = [
-    `🏆 **Novo evento na Void Arena**`,
-    `**${event.title || event.name || 'Evento'}** está disponível para inscrição.`,
-    `Formato: ${event.matchFormat || 'MD1'} • Vagas: ${event.registeredCount || 0}/${event.teamLimit || '?'}`,
-    event.startAt ? `Início: ${event.startAt}` : '',
-    `${link}/pages/eventos.html`
-  ].filter(Boolean).join('\n');
-
-  const results = [];
-  for (const id of ids) results.push({ discordId: id, ...(await sendDiscordDm(id, text).catch((error) => ({ sent: false, error: error.message }))) });
-  return { success: results.some((item) => item.sent), fallback: true, attempted: results.length, sent: results.filter((item) => item.sent).length, results };
+  }).catch((error) => ({ success: false, message: error.message, skipped: true }));
 }
 
 function registerPublicEventRoutes(app) {
