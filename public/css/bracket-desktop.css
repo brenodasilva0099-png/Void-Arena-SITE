@@ -1,27 +1,31 @@
-body[data-page="chaveamento"] .va-shell {
-  overflow-x: hidden;
-}
-
+body[data-page="chaveamento"] .va-shell,
 body[data-page="chaveamento"] .va-main {
   overflow-x: hidden;
 }
 
 body[data-page="chaveamento"] .va-bracket-card {
-  overflow: visible;
+  overflow: hidden;
+  padding-inline: clamp(12px, 1.5vw, 22px);
 }
 
 body[data-page="chaveamento"] .va-integrated-bracket {
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   padding-bottom: 14px;
-  scrollbar-gutter: stable;
+  width: 100%;
 }
 
 body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-  min-width: 1180px;
-  width: 1180px;
-  max-width: none;
+  min-width: 0 !important;
+  width: min(100%, 1100px) !important;
+  max-width: 100%;
   margin: 0 auto;
+  grid-template-columns: minmax(330px, 1fr) 220px minmax(330px, 1fr);
+  gap: 12px;
+  padding: clamp(14px, 1.4vw, 22px);
+}
+
+body[data-page="chaveamento"] .va-integrated-bracket .bracket-center {
+  min-width: 0;
 }
 
 body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:not(:last-child) {
@@ -37,10 +41,19 @@ body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:last-child h3:
   font-size: clamp(22px, 3vw, 32px);
 }
 
-@media (min-width: 1500px) {
+@media (max-width: 1360px) {
   body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-    min-width: 0;
-    width: 100%;
-    grid-template-columns: minmax(420px, 1fr) 260px minmax(420px, 1fr);
+    width: min(100%, 1030px) !important;
+    grid-template-columns: minmax(315px, 1fr) 190px minmax(315px, 1fr);
+  }
+
+  body[data-page="chaveamento"] .team-slot { width: 118px; }
+  body[data-page="chaveamento"] .advance-slot { width: 86px; }
+  body[data-page="chaveamento"] .final-slot { width: 88px; }
+}
+
+@media (max-width: 760px) {
+  body[data-page="chaveamento"] .va-bracket-card {
+    overflow: visible;
   }
 }
