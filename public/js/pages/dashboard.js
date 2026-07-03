@@ -5,16 +5,13 @@
   try {
     await VoidArena.bootLayout('dashboard');
     const snap = await VoidArena.request('/api/dashboard/snapshot');
-    const health = await VoidArena.request('/api/health').catch(() => ({ data: {} }));
-    const db = health.data || {};
     counters.innerHTML = [
-      kpi('Times', snap.teams?.length || db.teams || 0),
-      kpi('Eventos', snap.events?.length || db.events || 0),
-      kpi('Vagas no chaveamento', (snap.bracket?.slots || []).filter(Boolean).length),
-      kpi('Resultados', snap.results?.length || 0),
-      kpi('Mensagens', db.messages || 0)
+      kpi('Times cadastrados', snap.teams?.length || 0),
+      kpi('Eventos ativos', (snap.events || []).filter((event) => event.status !== 'finished').length),
+      kpi('Vagas preenchidas', (snap.bracket?.slots || []).filter(Boolean).length),
+      kpi('Resultados enviados', snap.results?.length || 0)
     ].join('');
-    statusEl.textContent = 'Site online. Estrutura nova ativa: perfil, times, chaveamento, resultados e backups integrados.';
+    statusEl.textContent = 'Arena online: site e bot preparados para organizar inscrições, partidas e resultados.';
     statusEl.className = 'va-status ok';
   } catch (error) { statusEl.textContent = `❌ ${error.message}`; statusEl.className = 'va-status err'; }
 }());
