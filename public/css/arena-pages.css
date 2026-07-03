@@ -1,151 +1,54 @@
 /* Void Arena - telas publicas de inicio, times e eventos */
-.va-home-spotlight {
-  position: relative;
-  overflow: hidden;
-  min-height: 260px;
-  background:
-    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, .14), transparent 28%),
-    linear-gradient(145deg, rgba(18, 20, 38, .92), rgba(10, 14, 35, .82));
-}
-
-.va-home-spotlight::after {
-  content: '';
-  position: absolute;
-  inset: auto -12% -42% 40%;
-  height: 260px;
-  background: radial-gradient(circle, rgba(139, 92, 246, .28), transparent 68%);
-  pointer-events: none;
-}
-
-.va-home-card p,
-.va-home-flow p,
-.va-events-hero p,
-.va-team-create-card p {
-  color: var(--va-muted);
-}
-
-.va-flow-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.va-flow-grid div {
-  padding: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 18px;
-  background: rgba(255,255,255,.045);
-}
-
-.va-flow-grid strong {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 10px;
-  background: linear-gradient(135deg, rgba(139,92,246,.9), rgba(34,211,238,.46));
-  color: white;
-}
-
-.va-flow-grid span {
-  color: #d8d0ff;
-  font-weight: 800;
-  line-height: 1.45;
-}
-
-.va-flow-grid.mini {
-  margin-top: 0;
-}
-
-.va-flow-grid.mini div {
-  padding: 12px;
-}
-
-.va-checklist.compact span {
-  font-size: 12px;
-}
-
-.va-form-grid .wide,
-.va-actions.wide {
-  grid-column: 1 / -1;
-}
-
-.va-collapsible-form {
-  margin-top: 16px;
-}
-
-.va-event-card {
-  padding: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 8% 12%, rgba(245, 158, 11, .10), transparent 24%),
-    rgba(255,255,255,.045);
-}
-
-.va-event-topline,
-.va-event-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.va-event-main {
-  justify-content: flex-start;
-  margin-top: 12px;
-}
-
-.va-event-main h3 {
-  margin: 0 0 6px;
-}
-
-.va-event-main p {
-  margin: 0;
-  color: var(--va-muted);
-  line-height: 1.55;
-}
-
-.va-event-icon {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 58px;
-  background: linear-gradient(135deg, rgba(245,158,11,.25), rgba(139,92,246,.2));
-  border: 1px solid rgba(255,255,255,.12);
-  font-size: 28px;
-}
-
-.va-event-progress {
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.08);
-  overflow: hidden;
-  margin-top: 14px;
-}
-
-.va-event-progress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--va-purple), var(--va-cyan));
-}
-
-.va-btn[disabled] {
-  opacity: .55;
-  cursor: not-allowed;
-  filter: grayscale(.35);
-}
-
-@media (max-width: 980px) {
-  .va-flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 620px) {
-  .va-flow-grid { grid-template-columns: 1fr; }
-  .va-event-main { align-items: flex-start; }
-}
+.va-home-spotlight { position: relative; overflow: hidden; min-height: 260px; background: radial-gradient(circle at 12% 12%, rgba(34, 211, 238, .14), transparent 28%), linear-gradient(145deg, rgba(18, 20, 38, .92), rgba(10, 14, 35, .82)); }
+.va-home-spotlight::after { content: ''; position: absolute; inset: auto -12% -42% 40%; height: 260px; background: radial-gradient(circle, rgba(139, 92, 246, .28), transparent 68%); pointer-events: none; }
+.va-home-card p, .va-home-flow p, .va-events-hero p, .va-team-create-card p { color: var(--va-muted); }
+.va-flow-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.va-flow-grid div { padding: 14px; border: 1px solid rgba(255,255,255,.10); border-radius: 18px; background: rgba(255,255,255,.045); }
+.va-flow-grid strong { width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; margin-bottom: 10px; background: linear-gradient(135deg, rgba(139,92,246,.9), rgba(34,211,238,.46)); color: white; }
+.va-flow-grid span { color: #d8d0ff; font-weight: 800; line-height: 1.45; }
+.va-flow-grid.mini { margin-top: 0; }
+.va-flow-grid.mini div { padding: 12px; }
+.va-checklist.compact span { font-size: 12px; }
+.va-form-grid .wide, .va-actions.wide { grid-column: 1 / -1; }
+.va-form-grid.flat { margin-top: 0; }
+.va-collapsible-form { margin-top: 16px; }
+.va-team-create-card.compact { background: linear-gradient(135deg, rgba(139,92,246,.10), rgba(34,211,238,.06)); }
+.va-team-create-modal { max-width: 980px; width: min(980px, calc(100vw - 28px)); max-height: calc(100vh - 36px); overflow: auto; }
+.va-logo-input-wrap { display: grid; grid-template-columns: 1fr 96px; gap: 10px; align-items: stretch; }
+.va-logo-paste-box { border: 1px dashed rgba(34,211,238,.55); border-radius: 14px; background: rgba(34,211,238,.10); color: var(--va-text); font-weight: 900; cursor: pointer; }
+.va-logo-paste-box:focus { outline: 2px solid rgba(34,211,238,.45); }
+.va-logo-paste-box small { color: var(--va-muted); }
+.va-logo-preview-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid rgba(255,255,255,.09); border-radius: 18px; background: rgba(255,255,255,.035); }
+.va-team-logo.preview { width: 58px; height: 58px; font-size: 18px; }
+.va-team-logo.preview img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.va-roster-editor { border: 1px solid rgba(255,255,255,.09); border-radius: 18px; padding: 14px; background: rgba(255,255,255,.035); }
+.va-section-head.mini { margin-bottom: 10px; }
+.va-section-head.mini h3 { margin: 0; }
+.va-section-head.mini p { margin: 4px 0 0; color: var(--va-muted); }
+.va-player-editor-list { display: grid; gap: 10px; }
+.va-roster-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+.va-btn.mini { padding: 10px 12px; }
+.va-btn.danger { border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); }
+.va-connections-editor { border: 1px solid rgba(255,255,255,.09); border-radius: 18px; padding: 14px; background: rgba(255,255,255,.035); }
+.va-connections-editor h3 { margin: 0 0 4px; }
+.va-connections-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 10px 0; }
+.va-connection-card { padding: 12px; border: 1px solid rgba(255,255,255,.10); border-radius: 16px; background: rgba(255,255,255,.045); display: grid; gap: 6px; }
+.va-connection-card strong { font-size: 13px; }
+.va-connection-card a, .va-connection-card span { color: #d8d0ff; text-decoration: none; font-weight: 800; overflow-wrap: anywhere; }
+.va-team-profile-hero { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.09); margin-bottom: 12px; }
+.va-player-row.as-button { width: 100%; cursor: pointer; text-align: left; color: inherit; background: rgba(255,255,255,.04); }
+.va-profile-public-grid { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: start; }
+.va-event-card { padding: 18px; border: 1px solid rgba(255,255,255,.10); border-radius: 24px; background: radial-gradient(circle at 8% 12%, rgba(245, 158, 11, .10), transparent 24%), rgba(255,255,255,.045); }
+.va-event-topline, .va-event-main { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.va-event-main { justify-content: flex-start; margin-top: 12px; }
+.va-event-main h3 { margin: 0 0 6px; }
+.va-event-main p { margin: 0; color: var(--va-muted); line-height: 1.55; }
+.va-event-icon { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; flex: 0 0 58px; background: linear-gradient(135deg, rgba(245,158,11,.25), rgba(139,92,246,.2)); border: 1px solid rgba(255,255,255,.12); font-size: 28px; }
+.va-event-progress { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 14px; }
+.va-event-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--va-purple), var(--va-cyan)); }
+.va-icon-btn { width: 38px; height: 38px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(139,92,246,.12); color: var(--va-text); cursor: pointer; font-size: 17px; margin-left: auto; }
+.va-icon-btn:hover { background: rgba(139,92,246,.24); }
+.va-event-settings-modal { max-width: 900px; width: min(900px, calc(100vw - 28px)); max-height: calc(100vh - 36px); overflow: auto; }
+.va-btn[disabled] { opacity: .55; cursor: not-allowed; filter: grayscale(.35); }
+@media (max-width: 980px) { .va-flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .va-roster-row { grid-template-columns: 1fr; } .va-connections-grid { grid-template-columns: 1fr; } .va-profile-public-grid { grid-template-columns: 1fr; } }
+@media (max-width: 620px) { .va-flow-grid { grid-template-columns: 1fr; } .va-event-main { align-items: flex-start; } .va-logo-input-wrap { grid-template-columns: 1fr; } }
