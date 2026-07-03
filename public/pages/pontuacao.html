@@ -7,6 +7,7 @@
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/scoring-rankings.css" />
 </head>
 <body class="va-organized-body" data-page="pontuacao">
   <div class="va-shell">
@@ -37,24 +38,57 @@
         <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
       </nav>
     </aside>
+
     <main class="va-main">
-      <header class="va-topbar">
+      <header class="va-topbar va-scoring-topbar">
         <div>
           <p class="va-eyebrow">Void Arena Points</p>
           <h1 class="va-title">Pontuação</h1>
-          <p class="va-subtitle">Ranking por vitória, empate, gols, clean sheet e peso do evento.</p>
+          <p class="va-subtitle">Regras oficiais para somar pontos, validar vencedores e alimentar os rankings.</p>
         </div>
         <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
-      <section class="va-grid">
+
+      <section class="va-grid va-scoring-page">
+        <article class="va-card full va-scoring-hero">
+          <div>
+            <p class="va-eyebrow">Sistema competitivo</p>
+            <h2>Como o Void Arena calcula pontos</h2>
+            <p>Vitória continua sendo o principal critério. Gols, defesa limpa, participação e peso do evento entram como bônus para deixar o ranking justo sem incentivar farm de placar.</p>
+          </div>
+          <div class="va-scoring-formula">
+            <strong>VAP</strong>
+            <span>(vitórias × 3) + empates + (gols × 0,5) + clean sheets + bônus × peso do evento</span>
+          </div>
+        </article>
+
         <article class="va-card full">
-          <div class="va-section-head"><div><h2>Regra oficial da Void Arena</h2><p class="va-muted">Vitória vale mais que gol, mas ataque e defesa também contam.</p></div><div><select id="eventFilter"><option value="">Todos os eventos</option></select> <button id="reloadScoringBtn" class="va-btn secondary" type="button">Atualizar</button></div></div>
-          <div id="scoringRules" class="va-grid"></div>
+          <div class="va-section-head">
+            <div>
+              <h2>Regra oficial</h2>
+              <p class="va-muted">Essas regras alimentam os rankings de times e jogadores depois que o resultado é validado.</p>
+            </div>
+            <div class="va-scoring-toolbar">
+              <select id="eventFilter" aria-label="Filtrar evento"><option value="">Todos os eventos</option></select>
+              <button id="reloadScoringBtn" class="va-btn secondary" type="button">Atualizar</button>
+              <a class="va-btn" href="/pages/rankings.html">Ver rankings</a>
+            </div>
+          </div>
+          <div id="scoringRules" class="va-scoring-rule-grid"></div>
+          <div id="scoringSummary" class="va-scoring-summary"></div>
           <div id="scoringStatus" class="va-status">Carregando...</div>
         </article>
-        <article class="va-card full"><h2>Ranking de Times</h2><p class="va-muted">VAP = Void Arena Points.</p><div id="scoringTeams" class="va-list"></div></article>
-        <article class="va-card full"><h2>Validação dos vencedores</h2><p class="va-muted">Resultado validado já entra automaticamente na pontuação.</p><div id="scoringValidation" class="va-list"></div></article>
-        <article class="va-card full"><h2>Ranking de Jogadores</h2><p class="va-muted">Primeira versão: pontuação do jogador vem da campanha do time.</p><div id="scoringPlayers" class="va-list"></div></article>
+
+        <article class="va-card full">
+          <div class="va-section-head">
+            <div>
+              <h2>Validação dos vencedores</h2>
+              <p class="va-muted">Aqui fica a área operacional: resultados pendentes, conflitos e partidas que ainda não entraram nos pontos.</p>
+            </div>
+            <a class="va-btn secondary" href="/pages/resultados.html">Ver resultados</a>
+          </div>
+          <div id="scoringValidation" class="va-list"></div>
+        </article>
       </section>
     </main>
   </div>
