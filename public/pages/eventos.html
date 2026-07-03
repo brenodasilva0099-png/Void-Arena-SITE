@@ -54,13 +54,13 @@
     <div>
       <p class="va-eyebrow">Inscrições e validação</p>
       <h2>Escolha um evento e envie seu time</h2>
-      <p>Cada campeonato mostra status, vagas, formato e progresso. O capitão seleciona um time cadastrado, envia a inscrição e aguarda validação da organização.</p>
+      <p>O time só entra oficialmente depois da validação no Discord. A inscrição abre um pedido no canal de validação, com botão e histórico para a staff aprovar.</p>
     </div>
     <div class="va-flow-grid mini">
       <div><strong>1</strong><span>Crie o time</span></div>
-      <div><strong>2</strong><span>Escolha evento</span></div>
-      <div><strong>3</strong><span>Inscreva</span></div>
-      <div><strong>4</strong><span>Aguarde validação</span></div>
+      <div><strong>2</strong><span>Envie inscrição</span></div>
+      <div><strong>3</strong><span>Valide no Discord</span></div>
+      <div><strong>4</strong><span>Staff aprova</span></div>
     </div>
   </article>
 
@@ -68,7 +68,7 @@
     <div class="va-section-head">
       <div>
         <h2>Eventos disponíveis</h2>
-        <p>Os eventos abertos aparecem primeiro. Eventos em andamento continuam visíveis para acompanhamento.</p>
+        <p>Os eventos abertos aparecem primeiro. A engrenagem permite ajustar formato, data, recompensa e taxa.</p>
       </div>
       <a class="va-btn" href="/pages/times.html">Criar time</a>
     </div>
@@ -92,9 +92,39 @@
       <label class="wide">Time
         <select name="teamId" required></select>
       </label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar inscrição</button><button class="va-btn" type="button" data-event-close>Cancelar</button></div>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar para validação</button><button class="va-btn" type="button" data-event-close>Cancelar</button></div>
     </form>
     <div id="eventRegisterStatus" class="va-status"></div>
+  </div>
+</div>
+
+<div id="eventSettingsModal" class="va-modal-shell" hidden>
+  <div class="va-modal-card va-event-settings-modal">
+    <div class="va-modal-head">
+      <div>
+        <p class="va-eyebrow">Definições do evento</p>
+        <h2 id="eventSettingsTitle">Editar evento</h2>
+        <p class="va-muted">Atualize data, formato, modelo, recompensa e taxa de inscrição. Se não houver taxa, marque como F2P.</p>
+      </div>
+      <button class="va-modal-close" type="button" data-event-settings-close>×</button>
+    </div>
+    <form id="eventSettingsForm" class="va-form-grid two">
+      <input type="hidden" name="eventId" />
+      <label class="wide">Nome do evento<input name="title" maxlength="80" required /></label>
+      <label>Data/hora<input name="startAt" type="datetime-local" /></label>
+      <label>Status<select name="status"><option value="open">Aberto</option><option value="closed">Fechado</option><option value="running">Em andamento</option><option value="finished">Finalizado</option></select></label>
+      <label>Formato<select name="matchFormat"><option>MD1</option><option>MD2</option><option>MD3</option><option>MD5</option></select></label>
+      <label>Modelo / estrutura<select name="structure"><option value="single_elimination">Mata-mata</option><option value="groups">Grupos</option><option value="groups_playoffs">Grupos + playoffs</option></select></label>
+      <label>Modo<input name="mode" maxlength="60" placeholder="Rematch, Liga, Copa..." /></label>
+      <label>Limite de times<select name="teamLimit"><option>4</option><option>8</option><option>12</option><option>16</option><option>20</option><option>24</option><option>28</option><option>32</option></select></label>
+      <label>Recompensa<input name="reward" maxlength="180" placeholder="Ex: cargo, prêmio, dinheiro, destaque..." /></label>
+      <label>Taxa de inscrição<input name="entryFee" maxlength="80" placeholder="Ex: R$ 10,00 por time" /></label>
+      <label class="va-check-row"><input name="isFree" type="checkbox" /> <span>Marcar como F2P / gratuito</span></label>
+      <label class="wide">Instruções de pagamento/validação<textarea name="paymentInstructions" maxlength="420" placeholder="Explique onde enviar comprovante ou como validar a inscrição."></textarea></label>
+      <label class="wide">Descrição<textarea name="description" maxlength="320"></textarea></label>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar definições</button><button class="va-btn" type="button" data-event-settings-close>Cancelar</button></div>
+    </form>
+    <div id="eventSettingsStatus" class="va-status"></div>
   </div>
 </div>
 
