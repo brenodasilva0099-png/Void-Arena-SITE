@@ -43,6 +43,26 @@ async function readBotStorage(method) {
   return data?.result || [];
 }
 
+function safeTeam(team = {}, users = []) {
+  const owner = users.find((user) => String(user.id || '') === String(team.ownerUserId || '')) || null;
+  const captainName = owner?.profile?.username || owner?.name || team.captainName || team.ownerName || 'não definido';
+  return {
+    id: team.id || '',
+    name: team.name || 'Time sem nome',
+    tag: team.tag || '',
+    logo: team.logo || '',
+    ownerUserId: team.ownerUserId || '',
+    ownerName: captainName,
+    captainName,
+    players: Array.isArray(team.players) ? team.players : [],
+    reserves: Array.isArray(team.reserves) ? team.reserves : [],
+    playerAccounts: team.playerAccounts || {},
+    socials: team.socials || {},
+    createdAt: team.createdAt || null,
+    updatedAt: team.updatedAt || null
+  };
+}
+
 async function buildDebugStatus(req) {
   const [siteDb, botHealth, latestBackup, botTeams, botUsers, botEvents, siteTeams, siteUsers, siteEvents] = await Promise.all([
     storage.readDatabaseStatus().catch((error) => ({ error: error.message })),
@@ -185,6 +205,16 @@ function registerDebugRoutes(app) {
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, generatedAt: new Date().toISOString() });
     }
+  });
+
+  app.get('/debug/public/teams', async (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const [teams, users, bracket] = await Promise.all([
+      storage.readTeams().catch(() => []),
+      storage.readUsers().catch(() => []),
+      storage.readBracket().catch(() => ({}))
+    ]);
+    return res.json({ success: true, teams: teams.map((team) => safeTeam(team, users)), bracket });
   });
 }
 
