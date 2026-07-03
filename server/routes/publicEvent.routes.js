@@ -40,10 +40,8 @@ function safeEvent(event = {}, teams = []) {
     isFree: event.isFree === true || !cleanText(event.entryFee || event.registrationFee || ''),
     feeLabel: feeLabel(event),
     paymentInstructions: event.paymentInstructions || '',
-    registrations: registrations.map((item) => ({
-      ...item,
-      team: teamById.get(String(item.teamId || '')) || null
-    })),
+    captainNoticeMessages: Array.isArray(event.captainNoticeMessages) ? event.captainNoticeMessages : [],
+    registrations: registrations.map((item) => ({ ...item, team: teamById.get(String(item.teamId || '')) || null })),
     registeredCount: registrations.length,
     createdAt: event.createdAt || null,
     updatedAt: event.updatedAt || null
@@ -75,6 +73,7 @@ function normalizeEvent(body = {}, existing = {}) {
     registrationFee: entryFee,
     isFree: body.isFree === true || !entryFee,
     paymentInstructions: cleanText(body.paymentInstructions || existing.paymentInstructions || '', 420),
+    captainNoticeMessages: Array.isArray(existing.captainNoticeMessages) ? existing.captainNoticeMessages : [],
     registrations: Array.isArray(existing.registrations) ? existing.registrations : [],
     updatedAt: new Date().toISOString(),
     createdAt: existing.createdAt || new Date().toISOString()
@@ -97,10 +96,10 @@ function canRepresent(user = {}, team = {}) {
   return values.some((value) => ids.has(value));
 }
 
-async function notifyCaptains(event, reason) {
+async function notifyCaptains(event, reason, options = {}) {
   return callBot('/internal/events/notify-captains', {
     method: 'POST',
-    body: JSON.stringify({ event, reason })
+    body: JSON.stringify({ event, reason, ...options })
   }).catch((error) => ({ success: false, message: error.message, skipped: true }));
 }
 
@@ -109,6 +108,7 @@ function registerPublicEventRoutes(app) {
     ['get', '/api/events'],
     ['post', '/api/events'],
     ['put', '/api/events/:eventId'],
+    ['post', '/api/events/:eventId/announce'],
     ['post', '/api/events/:eventId/register']
   ]);
 
@@ -121,7 +121,7 @@ function registerPublicEventRoutes(app) {
     try {
       const event = await storage.saveTournamentEvent(normalizeEvent(req.body || {}));
       const teams = await storage.readTeams().catch(() => []);
-      const notice = await notifyCaptains(safeEvent(event, teams), 'created');
+      const notice = await notifyCaptains(safeEvent(event, teams), 'created', { forceNew: true });
       return res.status(201).json({ success: true, event: safeEvent(event, teams), notice });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
@@ -135,7 +135,20 @@ function registerPublicEventRoutes(app) {
       if (!existing) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' });
       const event = await storage.saveTournamentEvent(normalizeEvent({ ...(req.body || {}), id: existing.id }, existing));
       const teams = await storage.readTeams().catch(() => []);
-      const notice = event.status === 'open' ? await notifyCaptains(safeEvent(event, teams), 'published') : { success: true, skipped: true };
+      const notice = event.status === 'open' ? await notifyCaptains(safeEvent(event, teams), 'edited', { forceNew: false }) : { success: true, skipped: true };
+      return res.json({ success: true, event: safeEvent(event, teams), notice });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/events/:eventId/announce', requireOwner, async (req, res) => {
+    try {
+      const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]);
+      const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
+      if (!event) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' });
+      const message = cleanText(req.body?.message || '', 320);
+      const notice = await notifyCaptains(safeEvent({ ...event, description: message || event.description }, teams), 'announcement', { forceNew: true });
       return res.json({ success: true, event: safeEvent(event, teams), notice });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
@@ -143,11 +156,7 @@ function registerPublicEventRoutes(app) {
   });
 
   app.post('/api/events/:eventId/register', requireLogin, async (req, res) => {
-    const [teams, user, events] = await Promise.all([
-      storage.readTeams().catch(() => []),
-      getSessionUser(req),
-      storage.readEvents().catch(() => [])
-    ]);
+    const [teams, user, events] = await Promise.all([storage.readTeams().catch(() => []), getSessionUser(req), storage.readEvents().catch(() => [])]);
     const teamId = cleanText(req.body?.teamId || '', 80);
     const team = teams.find((item) => String(item.id || '') === teamId);
     const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
