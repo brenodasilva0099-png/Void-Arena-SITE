@@ -7,6 +7,7 @@
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/arena-pages.css" />
 </head>
 <body class="va-organized-body" data-page="perfil">
   <div class="va-shell">
@@ -39,7 +40,7 @@
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
+          <p class="va-eyebrow">Void Arena</p>
           <h1 class="va-title">Meu perfil</h1>
           <p class="va-subtitle">Edite como você aparece nos times, resultados, rankings e perfil público.</p>
         </div>
@@ -51,9 +52,9 @@
           <div class="va-profile-page-avatar" id="profileAvatarPreview">?</div>
           <h2 id="profilePreviewName">Perfil</h2>
           <p class="va-muted" id="profilePreviewMeta">Carregando...</p>
-          <div class="va-checklist">
-            <span>👤 Público</span><span>🛡️ Times</span><span>📊 Rankings</span><span>🎮 Resultados</span>
-          </div>
+          <div class="va-checklist"><span>👤 Público</span><span>🛡️ Times</span><span>📊 Rankings</span><span>🎮 Resultados</span></div>
+          <h3>Conexões</h3>
+          <div id="profileConnectionsPreview" class="va-connections-grid"></div>
         </article>
         <article class="va-card va-profile-page-card">
           <h2>Configurações do perfil</h2>
@@ -71,12 +72,11 @@
             <label>TikTok<input name="tiktok" maxlength="160" /></label>
             <label>YouTube<input name="youtube" maxlength="160" /></label>
             <label>Twitter/X<input name="twitter" maxlength="160" /></label>
+            <label>Spotify<input name="spotify" maxlength="160" /></label>
+            <label>Riot / EA / PSN<input name="gameAccount" maxlength="160" /></label>
             <label>Bio<textarea name="bio" maxlength="220"></textarea></label>
           </form>
-          <div class="va-actions">
-            <button id="saveProfileBtn" class="va-btn primary" type="button">Salvar perfil</button>
-            <a class="va-btn" href="/pages/dashboard.html">Cancelar</a>
-          </div>
+          <div class="va-actions"><button id="saveProfileBtn" class="va-btn primary" type="button">Salvar perfil</button><a class="va-btn" href="/pages/dashboard.html">Cancelar</a></div>
           <div id="profileStatus" class="va-status">Carregando...</div>
         </article>
       </section>
