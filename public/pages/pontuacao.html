@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pontuação | Void Arena</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+</head>
+<body class="va-organized-body" data-page="pontuacao">
+  <div class="va-shell">
+    <aside class="va-sidebar">
+      <div class="va-brand">
+        <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
+        <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+      </div>
+      <nav class="va-nav">
+        <div class="va-nav-title">Principal</div>
+        <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
+        <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
+        <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
+        <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
+        <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
+        <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
+        <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
+        <a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a>
+        <div class="va-nav-title">Comunicação</div>
+        <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
+        <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
+        <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
+        <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
+        <div class="va-nav-title">Admin</div>
+        <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
+        <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
+        <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
+        <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+      </nav>
+    </aside>
+    <main class="va-main">
+      <header class="va-topbar">
+        <div>
+          <p class="va-eyebrow">Void Arena Points</p>
+          <h1 class="va-title">Pontuação</h1>
+          <p class="va-subtitle">Ranking por vitória, empate, gols, clean sheet e peso do evento.</p>
+        </div>
+        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
+      </header>
+      <section class="va-grid">
+        <article class="va-card full">
+          <div class="va-section-head"><div><h2>Regra oficial da Void Arena</h2><p class="va-muted">Vitória vale mais que gol, mas ataque e defesa também contam.</p></div><div><select id="eventFilter"><option value="">Todos os eventos</option></select> <button id="reloadScoringBtn" class="va-btn secondary" type="button">Atualizar</button></div></div>
+          <div id="scoringRules" class="va-grid"></div>
+          <div id="scoringStatus" class="va-status">Carregando...</div>
+        </article>
+        <article class="va-card full"><h2>Ranking de Times</h2><p class="va-muted">VAP = Void Arena Points.</p><div id="scoringTeams" class="va-list"></div></article>
+        <article class="va-card full"><h2>Validação dos vencedores</h2><p class="va-muted">Resultado validado já entra automaticamente na pontuação.</p><div id="scoringValidation" class="va-list"></div></article>
+        <article class="va-card full"><h2>Ranking de Jogadores</h2><p class="va-muted">Primeira versão: pontuação do jogador vem da campanha do time.</p><div id="scoringPlayers" class="va-list"></div></article>
+      </section>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/pages/pontuacao.js"></script>
+</body>
+</html>
