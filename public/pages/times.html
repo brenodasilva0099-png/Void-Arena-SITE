@@ -7,6 +7,7 @@
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/arena-pages.css" />
 </head>
 <body class="va-organized-body" data-page="times">
   <div class="va-shell">
@@ -41,14 +42,41 @@
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
+          <p class="va-eyebrow">Void Arena</p>
           <h1 class="va-title">Times</h1>
-          <p class="va-subtitle">Times separados do dashboard principal.</p>
+          <p class="va-subtitle">Crie, visualize e prepare seu elenco para os eventos oficiais.</p>
         </div>
         <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
 
-<section class="va-grid"><article class="va-card full"><h2>Times</h2><p>Área dedicada para visualizar times cadastrados.</p><div id="teamsList" class="va-list"></div><div id="teamsStatus" class="va-status">Carregando...</div></article></section>
+<section class="va-grid">
+  <article class="va-card full va-team-create-card">
+    <div class="va-section-head">
+      <div>
+        <p class="va-eyebrow">Cadastro de time</p>
+        <h2>Criar / cadastrar time</h2>
+        <p>Informe nome, tag, escudo, titulares, reservas e contatos. Depois o capitão pode inscrever esse time em eventos abertos.</p>
+      </div>
+      <button id="toggleTeamFormBtn" class="va-btn primary" type="button">Abrir cadastro</button>
+    </div>
+    <form id="teamCreateForm" class="va-form-grid two va-collapsible-form" hidden>
+      <label>Nome do time<input name="name" type="text" maxlength="80" placeholder="Ex: Hollow Nexus" required /></label>
+      <label>Tag<input name="tag" type="text" maxlength="6" placeholder="Ex: ONX" required /></label>
+      <label class="wide">Logo / escudo<input name="logo" type="url" placeholder="Cole uma URL de imagem ou deixe vazio" /></label>
+      <label>Discord do time<input name="socialDiscord" type="text" placeholder="Link ou servidor" /></label>
+      <label>Instagram<input name="socialInstagram" type="text" placeholder="@time" /></label>
+      <label>YouTube<input name="socialYoutube" type="text" placeholder="Canal do time" /></label>
+      <label class="wide">Titulares<input name="players" type="text" placeholder="Separe por vírgula: jogador1, jogador2, jogador3..." required /></label>
+      <label class="wide">Contas/Discord dos titulares<input name="playerAccounts" type="text" placeholder="Opcional: IDs, menções ou nomes na mesma ordem" /></label>
+      <label class="wide">Reservas<input name="reserves" type="text" placeholder="Opcional: reserva1, reserva2..." /></label>
+      <label class="wide">Contas/Discord dos reservas<input name="reserveAccounts" type="text" placeholder="Opcional: IDs, menções ou nomes na mesma ordem" /></label>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar time</button><button id="clearTeamFormBtn" class="va-btn" type="button">Limpar</button></div>
+    </form>
+    <div id="teamCreateStatus" class="va-status"></div>
+  </article>
+
+  <article class="va-card full"><h2>Times cadastrados</h2><p>Lista pública de equipes disponíveis para inscrição em eventos.</p><div id="teamsList" class="va-list"></div><div id="teamsStatus" class="va-status">Carregando...</div></article>
+</section>
 
     </main>
   </div>
