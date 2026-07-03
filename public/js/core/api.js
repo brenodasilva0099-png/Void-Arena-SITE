@@ -61,6 +61,19 @@
     document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; });
   }
 
+  function ensureScoringNavLink() {
+    document.querySelectorAll('.va-nav').forEach((nav) => {
+      if (nav.querySelector('[data-nav-key="pontuacao"]')) return;
+      const rankings = nav.querySelector('[data-nav-key="rankings"]');
+      const link = document.createElement('a');
+      link.setAttribute('data-nav-key', 'pontuacao');
+      link.href = '/pages/pontuacao.html';
+      link.textContent = '🏅 Pontuação';
+      if (rankings?.parentNode) rankings.insertAdjacentElement('afterend', link);
+      else nav.appendChild(link);
+    });
+  }
+
   function profileUsername(user = {}) {
     return user?.profile?.username || user?.name || 'Usuário';
   }
@@ -91,6 +104,7 @@
   }
 
   async function bootLayout(activeKey = '') {
+    ensureScoringNavLink();
     const [user, brand] = await Promise.all([loadMe(), loadBrand()]);
     applyBrand(brand);
     document.querySelectorAll('[data-user-name]').forEach((el) => { el.textContent = profileUsername(user); });
