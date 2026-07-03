@@ -6,6 +6,7 @@ const { createRealtimeServer } = require('../server/realtime');
 const { registerOrganizedRoutes } = require('../server/bootstrap/organizedRoutes');
 const { registerDebugRoutes } = require('../server/routes/debug.routes');
 const { registerPublicEventRoutes } = require('../server/routes/publicEvent.routes');
+const { registerPublicTeamRoutes } = require('../server/routes/publicTeam.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -13,6 +14,7 @@ const PORT = Number(process.env.PORT || 3000);
 const app = createServer({ client: null });
 registerOrganizedRoutes(app);
 registerDebugRoutes(app);
+registerPublicTeamRoutes(app);
 registerPublicEventRoutes(app);
 
 const server = http.createServer(app);
