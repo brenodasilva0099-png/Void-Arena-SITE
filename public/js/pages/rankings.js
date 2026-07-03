@@ -76,10 +76,8 @@
       a.played += 1; b.played += 1;
       a.goals += r.goalsA; b.goals += r.goalsB;
       a.goalsAgainst += r.goalsB; b.goalsAgainst += r.goalsA;
-      a.defenses += r.goalsAgainst === 0 ? 1 : 0;
-      b.defenses += r.goalsAgainst === 0 ? 1 : 0;
-      if (r.goalsB === 0) a.cleanSheets += 1;
-      if (r.goalsA === 0) b.cleanSheets += 1;
+      if (r.goalsB === 0) { a.cleanSheets += 1; a.defenses += 1; }
+      if (r.goalsA === 0) { b.cleanSheets += 1; b.defenses += 1; }
       if (draw) { a.draws += 1; b.draws += 1; }
       else if (r.winnerTeamId === a.id) { a.wins += 1; b.losses += 1; a.mvp += 1; }
       else if (r.winnerTeamId === b.id) { b.wins += 1; a.losses += 1; b.mvp += 1; }
