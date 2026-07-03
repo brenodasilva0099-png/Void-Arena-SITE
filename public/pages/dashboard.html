@@ -11,76 +11,15 @@
 </head>
 <body class="va-organized-body" data-page="dashboard">
   <div class="va-shell">
-
-<aside class="va-sidebar">
-  <div class="va-brand">
-    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
-  </div>
-  <nav class="va-nav">
-    <div class="va-nav-title">Principal</div>
-    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-    <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
-    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-    <div class="va-nav-title">Comunicação</div>
-    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-    <div class="va-nav-title">Admin</div>
-    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
-  </nav>
-</aside>
-
+<aside class="va-sidebar"><div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div><nav class="va-nav"><div class="va-nav-title">Principal</div><a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a><a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a><a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a><a data-nav-key="times" href="/pages/times.html">🛡️ Times</a><a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a><a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a><a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a><div class="va-nav-title">Comunicação</div><a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a><a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a><a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a><a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a><div class="va-nav-title">Admin</div><a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a><a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a><a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a><a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a></nav></aside>
     <main class="va-main">
-      <header class="va-topbar">
-        <div>
-          <p class="va-eyebrow">Void Arena</p>
-          <h1 class="va-title">Arena central</h1>
-          <p class="va-subtitle">O ponto de partida para times, capitães, campeonatos e partidas oficiais.</p>
-        </div>
-        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
-      </header>
-
-<section class="va-grid va-home-grid">
-  <article class="va-card large va-home-spotlight">
-    <p class="va-eyebrow">Competição organizada</p>
-    <h2>Seu campeonato sem bagunça</h2>
-    <p>O site centraliza inscrições, times, eventos, chaveamento, resultados e comunicação. O bot cuida da ponte com o Discord: avisos, HUBs de partidas, canais de confronto e validações para capitães.</p>
-    <div id="homeStatus" class="va-status">Carregando status da arena...</div>
-    <div id="homeCounters" class="va-kpi-grid"></div>
-  </article>
-
-  <article class="va-card va-home-card">
-    <h2>Para capitães</h2>
-    <p>Cadastre seu time, acompanhe eventos abertos, envie inscrição e veja quando a partida estiver pronta para jogar.</p>
-    <div class="va-checklist compact"><span>🛡️ Time</span><span>🏆 Eventos</span><span>📌 Resultados</span></div>
-  </article>
-
-  <article class="va-card va-home-card">
-    <h2>Para organização</h2>
-    <p>Crie eventos, valide inscrições, gere a árvore e mantenha tudo sincronizado com o Discord sem editar código.</p>
-    <div class="va-checklist compact"><span>🧩 Chaveamento</span><span>⚙️ Permissões</span><span>🤖 Bot</span></div>
-  </article>
-
-  <article class="va-card full va-home-flow">
-    <h2>Como a Void Arena funciona</h2>
-    <div class="va-flow-grid">
-      <div><strong>1</strong><span>Capitão cria o time com titulares, reservas, tag, logo e contatos.</span></div>
-      <div><strong>2</strong><span>Evento abre inscrições e cada capitão escolhe o time que vai disputar.</span></div>
-      <div><strong>3</strong><span>Organização valida os inscritos, gera o chaveamento e publica os confrontos.</span></div>
-      <div><strong>4</strong><span>Bot notifica no Discord, atualiza HUBs e ajuda a registrar os resultados.</span></div>
-    </div>
-  </article>
-</section>
-
+      <header class="va-topbar"><div><p class="va-eyebrow">Void Arena</p><h1 class="va-title">Bem-vindo à arena</h1><p class="va-subtitle">Um hub para capitães acompanharem eventos, times, partidas e avisos oficiais.</p></div><a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a></header>
+      <section class="va-grid va-home-grid">
+        <article class="va-card large va-home-spotlight"><p class="va-eyebrow">Central dos capitães</p><h2>Entre, escolha seu caminho e acompanhe a competição</h2><p>A Void Arena junta site e bot para deixar eventos mais fáceis de participar: você cria seu time, entra nos campeonatos abertos, acompanha confrontos, recebe avisos no Discord e consulta resultados oficiais sem depender de mensagens perdidas.</p><div id="homeStatus" class="va-status">Arena carregada. Use o menu lateral para navegar.</div></article>
+        <article class="va-card va-home-card"><h2>O que o site faz</h2><p>Guarda perfis públicos, times, inscrições, eventos, chaveamento, rankings e histórico visual da competição.</p><div class="va-checklist compact"><span>👤 Perfis</span><span>🛡️ Times</span><span>🏆 Eventos</span></div></article>
+        <article class="va-card va-home-card"><h2>O que o bot faz</h2><p>Leva a arena para o Discord: DMs para capitães, validação de inscrições, HUBs de partida, avisos oficiais e registro de evidências.</p><div class="va-checklist compact"><span>📣 Avisos</span><span>✅ Validação</span><span>📌 Histórico</span></div></article>
+        <article class="va-card full va-home-flow"><h2>Fluxo rápido</h2><div class="va-flow-grid"><div><strong>1</strong><span>Crie ou edite seu time com titulares, reservas, logo e contatos.</span></div><div><strong>2</strong><span>Escolha um evento aberto e envie a inscrição para validação.</span></div><div><strong>3</strong><span>A organização aprova no Discord e libera o time oficialmente.</span></div><div><strong>4</strong><span>Confrontos, avisos e resultados ficam registrados na arena.</span></div></div></article>
+      </section>
     </main>
   </div>
   <script src="/js/core/api.js"></script>
