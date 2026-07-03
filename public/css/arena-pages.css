@@ -1,0 +1,151 @@
+/* Void Arena - telas publicas de inicio, times e eventos */
+.va-home-spotlight {
+  position: relative;
+  overflow: hidden;
+  min-height: 260px;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, .14), transparent 28%),
+    linear-gradient(145deg, rgba(18, 20, 38, .92), rgba(10, 14, 35, .82));
+}
+
+.va-home-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: auto -12% -42% 40%;
+  height: 260px;
+  background: radial-gradient(circle, rgba(139, 92, 246, .28), transparent 68%);
+  pointer-events: none;
+}
+
+.va-home-card p,
+.va-home-flow p,
+.va-events-hero p,
+.va-team-create-card p {
+  color: var(--va-muted);
+}
+
+.va-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.va-flow-grid div {
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  background: rgba(255,255,255,.045);
+}
+
+.va-flow-grid strong {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, rgba(139,92,246,.9), rgba(34,211,238,.46));
+  color: white;
+}
+
+.va-flow-grid span {
+  color: #d8d0ff;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.va-flow-grid.mini {
+  margin-top: 0;
+}
+
+.va-flow-grid.mini div {
+  padding: 12px;
+}
+
+.va-checklist.compact span {
+  font-size: 12px;
+}
+
+.va-form-grid .wide,
+.va-actions.wide {
+  grid-column: 1 / -1;
+}
+
+.va-collapsible-form {
+  margin-top: 16px;
+}
+
+.va-event-card {
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(245, 158, 11, .10), transparent 24%),
+    rgba(255,255,255,.045);
+}
+
+.va-event-topline,
+.va-event-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.va-event-main {
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.va-event-main h3 {
+  margin: 0 0 6px;
+}
+
+.va-event-main p {
+  margin: 0;
+  color: var(--va-muted);
+  line-height: 1.55;
+}
+
+.va-event-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 58px;
+  background: linear-gradient(135deg, rgba(245,158,11,.25), rgba(139,92,246,.2));
+  border: 1px solid rgba(255,255,255,.12);
+  font-size: 28px;
+}
+
+.va-event-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.va-event-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--va-purple), var(--va-cyan));
+}
+
+.va-btn[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(.35);
+}
+
+@media (max-width: 980px) {
+  .va-flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .va-flow-grid { grid-template-columns: 1fr; }
+  .va-event-main { align-items: flex-start; }
+}
