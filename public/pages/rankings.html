@@ -7,49 +7,58 @@
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/scoring-rankings.css" />
 </head>
 <body class="va-organized-body" data-page="rankings">
   <div class="va-shell">
-
-<aside class="va-sidebar">
-  <div class="va-brand">
-    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
-  </div>
-  <nav class="va-nav">
-    <div class="va-nav-title">Principal</div>
-    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-    <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
-    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-    <div class="va-nav-title">Comunicação</div>
-    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-    <div class="va-nav-title">Admin</div>
-    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
-  </nav>
-</aside>
+    <aside class="va-sidebar">
+      <div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div>
+      <nav class="va-nav">
+        <div class="va-nav-title">Principal</div>
+        <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
+        <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
+        <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
+        <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
+        <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
+        <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
+        <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
+        <a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a>
+        <div class="va-nav-title">Comunicação</div>
+        <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
+        <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
+        <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
+        <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
+        <div class="va-nav-title">Admin</div>
+        <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
+        <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
+        <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
+        <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+      </nav>
+    </aside>
 
     <main class="va-main">
       <header class="va-topbar">
-        <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
-          <h1 class="va-title">Rankings</h1>
-          <p class="va-subtitle">Ranking separado de resultados e chaveamento.</p>
-        </div>
+        <div><p class="va-eyebrow">Void Arena Rankings</p><h1 class="va-title">Rankings</h1><p class="va-subtitle">Classificação completa de times e jogadores com estatísticas competitivas.</p></div>
         <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
 
-<section class="va-grid"><article class="va-card full"><h2>Rankings</h2><p>Base separada para rankings de times e jogadores. A pontuação real deve ser alimentada pelos resultados validados.</p><div id="rankingList" class="va-list"></div><div id="rankingStatus" class="va-status">Carregando...</div></article></section>
+      <section class="va-grid">
+        <article class="va-card full va-rankings-hero">
+          <div><h2>Ranking competitivo</h2><p class="va-muted">Times aparecem com win-rate, gols, defesas e VAP. Jogadores aparecem com passes, gols, assistências, defesas, MVP e interceptações.</p></div>
+          <div class="va-rankings-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button><a class="va-btn" href="/pages/pontuacao.html">Regras</a></div>
+        </article>
 
+        <article class="va-card full">
+          <div class="va-section-head"><div><h2>Ranking de Times</h2><p class="va-muted">Ordenado por VAP, vitórias, saldo de gols e gols marcados.</p></div></div>
+          <div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div>
+        </article>
+
+        <article class="va-card full">
+          <div class="va-section-head"><div><h2>Ranking de Jogadores</h2><p class="va-muted">Enquanto as estatísticas individuais reais não forem enviadas, os campos ficam preparados e começam zerados.</p></div></div>
+          <div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div>
+          <div id="rankingStatus" class="va-status">Carregando...</div>
+        </article>
+      </section>
     </main>
   </div>
   <script src="/js/core/api.js"></script>
