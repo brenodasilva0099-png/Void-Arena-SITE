@@ -44,15 +44,25 @@
     favicon.href = icon;
     document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; });
   }
-  function ensureScoringNavLink() {
+  function ensureExtraNavLinks() {
     document.querySelectorAll('.va-nav').forEach((nav) => {
-      if (nav.querySelector('[data-nav-key="pontuacao"]')) return;
       const rankings = nav.querySelector('[data-nav-key="rankings"]');
-      const link = document.createElement('a');
-      link.setAttribute('data-nav-key', 'pontuacao');
-      link.href = '/pages/pontuacao.html';
-      link.textContent = '🏅 Pontuação';
-      if (rankings?.parentNode) rankings.insertAdjacentElement('afterend', link); else nav.appendChild(link);
+      let anchor = rankings || nav.querySelector('[data-nav-key="pontuacao"]');
+      if (!nav.querySelector('[data-nav-key="pontuacao"]')) {
+        const link = document.createElement('a');
+        link.setAttribute('data-nav-key', 'pontuacao');
+        link.href = '/pages/pontuacao.html';
+        link.textContent = '🏅 Pontuação';
+        if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link);
+        anchor = link;
+      }
+      if (!nav.querySelector('[data-nav-key="placar"]')) {
+        const link = document.createElement('a');
+        link.setAttribute('data-nav-key', 'placar');
+        link.href = '/pages/placar.html';
+        link.textContent = '🎮 Placar';
+        if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link);
+      }
     });
   }
   function profileUsername(user = {}) { return user?.profile?.username || user?.name || 'Usuário'; }
@@ -70,7 +80,7 @@
     });
   }
   async function bootLayout(activeKey = '') {
-    ensureScoringNavLink();
+    ensureExtraNavLinks();
     const [user, brand] = await Promise.all([loadMe(), loadBrand()]);
     applyBrand(brand);
     document.querySelectorAll('[data-user-name]').forEach((el) => { el.textContent = profileUsername(user); });
