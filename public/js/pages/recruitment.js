@@ -6,6 +6,7 @@
   const teamSelect = document.getElementById('recruitmentTeamSelect');
   const typeSelect = document.getElementById('recruitmentTypeSelect');
   const noteInput = document.getElementById('recruitmentNoteInput');
+  const pageKey = document.body?.dataset?.page || 'jogadores';
   let directory = { players: [], teams: [], viewerTeams: [], selectedPlayer: null };
   const esc = (value) => VoidArena.escapeHtml(value ?? '');
 
@@ -26,12 +27,30 @@
     teamSelect.innerHTML = '<option value="">Selecionar time</option>' + teams.map((team) => `<option value="${esc(team.id)}">${esc(team.name)}${team.tag ? ` (${esc(team.tag)})` : ''}</option>`).join('');
   }
 
+  function savePendingRecruitment(player) {
+    sessionStorage.setItem('voidarena:pendingRecruitment', JSON.stringify(player));
+  }
+  function consumePendingRecruitment() {
+    try {
+      const raw = sessionStorage.getItem('voidarena:pendingRecruitment');
+      if (!raw) return null;
+      sessionStorage.removeItem('voidarena:pendingRecruitment');
+      return JSON.parse(raw);
+    } catch { return null; }
+  }
+
   function renderDirectory() {
     if (!directoryTable) return;
     const rows = directory.players || [];
     directoryTable.innerHTML = '<thead><tr><th>Jogador</th><th>Status</th><th>Time atual</th><th>Posição/região</th><th>Ação</th></tr></thead><tbody>' + (rows.length ? rows.map((p) => `<tr><td><div class="va-directory-player"><span class="va-directory-avatar">${avatar(p)}</span><span><strong>${esc(p.name)}</strong><small>${esc(p.discordId || p.userId || 'sem ID vinculado')}</small></span></div></td><td>${statusBadge(p)}</td><td>${p.teamName ? `<strong>${esc(p.teamName)}</strong><small>${esc(p.teamTag || '')}</small>` : '<span class="va-muted">Sem clube</span>'}</td><td>${esc(playerMeta(p))}</td><td><div class="va-directory-actions"><button class="va-btn mini secondary" data-open-player="${esc(p.userId || p.discordId || p.id)}" type="button">Perfil</button><button class="va-btn mini" data-recruit-player="${esc(p.userId || p.discordId || p.id)}" data-player-name="${esc(p.name)}" type="button">Recrutar</button></div></td></tr>`).join('') : '<tr><td colspan="5">Nenhum jogador encontrado ainda.</td></tr>') + '</tbody>';
     directoryTable.querySelectorAll('[data-recruit-player]').forEach((btn) => btn.addEventListener('click', () => {
-      directory.selectedPlayer = { id: btn.dataset.recruitPlayer, name: btn.dataset.playerName };
+      const selected = { id: btn.dataset.recruitPlayer, name: btn.dataset.playerName };
+      if (!document.getElementById('recruitmentPanel')) {
+        savePendingRecruitment(selected);
+        window.location.href = '/pages/recrutamento.html';
+        return;
+      }
+      directory.selectedPlayer = selected;
       if (typeSelect) typeSelect.value = 'recruitment';
       fillTeamSelect();
       setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${directory.selectedPlayer.name}`, 'ok');
@@ -50,12 +69,23 @@
     recruitmentTable.innerHTML = '<thead><tr><th>Tipo</th><th>Time</th><th>Jogador/solicitante</th><th>Status</th><th>Mensagem</th></tr></thead><tbody>' + (requests.length ? requests.map((r) => `<tr><td><span class="va-badge">${r.type === 'trial' ? 'Peneira' : 'Recrutamento'}</span></td><td><strong>${esc(r.team?.name || '')}</strong><small>${esc(r.team?.tag || '')}</small></td><td><strong>${esc(r.type === 'trial' ? r.requester?.name : (r.playerName || r.playerId || 'Jogador'))}</strong><small>${esc(r.requester?.discordId || '')}</small></td><td><span class="va-badge ok">${esc(r.status || 'pending')}</span></td><td>${esc(r.note || 'Sem observação.')}</td></tr>`).join('') : '<tr><td colspan="5">Nenhuma solicitação registrada ainda.</td></tr>') + '</tbody>';
   }
 
-  async function loadDirectory() { setStatus(directoryStatus, 'Carregando banco de jogadores...'); directory = await VoidArena.request('/api/players/directory'); fillTeamSelect(); renderDirectory(); }
-  async function loadRequests() { const data = await VoidArena.request('/api/recruitment/requests'); renderRequests(data.requests || []); }
+  async function loadDirectory() {
+    setStatus(directoryStatus, 'Carregando banco de jogadores...');
+    directory = await VoidArena.request('/api/players/directory');
+    const pending = consumePendingRecruitment();
+    if (pending && typeSelect) {
+      directory.selectedPlayer = pending;
+      typeSelect.value = 'recruitment';
+      setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${pending.name}`, 'ok');
+    }
+    fillTeamSelect();
+    renderDirectory();
+  }
+  async function loadRequests() { if (!recruitmentTable) return; const data = await VoidArena.request('/api/recruitment/requests'); renderRequests(data.requests || []); }
   async function submitRequest() {
     const type = typeSelect?.value || 'recruitment'; const teamId = teamSelect?.value || '';
     if (!teamId) throw new Error('Selecione o time.');
-    if (type === 'recruitment' && !directory.selectedPlayer?.id) throw new Error('Selecione um jogador na tabela para recrutar.');
+    if (type === 'recruitment' && !directory.selectedPlayer?.id) throw new Error('Selecione um jogador na tela Jogadores para recrutar.');
     const saved = await VoidArena.request('/api/recruitment/requests', { method: 'POST', body: JSON.stringify({ type, teamId, playerId: type === 'recruitment' ? directory.selectedPlayer.id : '', playerName: type === 'recruitment' ? directory.selectedPlayer.name : '', note: noteInput?.value || '' }) });
     if (noteInput) noteInput.value = '';
     directory.selectedPlayer = null;
@@ -64,7 +94,8 @@
   }
 
   typeSelect?.addEventListener('change', () => { directory.selectedPlayer = typeSelect.value === 'trial' ? null : directory.selectedPlayer; fillTeamSelect(); });
-  document.getElementById('reloadDirectoryBtn')?.addEventListener('click', () => Promise.all([loadDirectory(), loadRequests()]).catch((e) => setStatus(directoryStatus, `❌ ${e.message}`, 'err')));
+  document.getElementById('reloadDirectoryBtn')?.addEventListener('click', () => Promise.all([loadDirectory(), loadRequests()]).catch((e) => setStatus(directoryStatus || recruitmentStatus, `❌ ${e.message}`, 'err')));
   document.getElementById('sendRecruitmentBtn')?.addEventListener('click', () => submitRequest().catch((e) => setStatus(recruitmentStatus, `❌ ${e.message}`, 'err')));
-  Promise.all([loadDirectory(), loadRequests()]).catch((e) => { setStatus(directoryStatus, `❌ ${e.message}`, 'err'); setStatus(recruitmentStatus, `❌ ${e.message}`, 'err'); });
+
+  VoidArena.bootLayout(pageKey).then(() => Promise.all([loadDirectory(), loadRequests()])).catch((e) => { setStatus(directoryStatus, `❌ ${e.message}`, 'err'); setStatus(recruitmentStatus, `❌ ${e.message}`, 'err'); });
 }());
