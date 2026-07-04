@@ -3,6 +3,7 @@ const { requireOwner } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
 const { normalizeTeamLimit, normalizeBracketForResponse, generateAdaptiveBracket, generateGroups } = require('../services/bracket.service');
 
+let lastQuickSettings = {};
 function safeStructure(value = '') { const allowed = new Set(['single_elimination', 'groups', 'groups_playoffs']); return allowed.has(String(value)) ? String(value) : 'single_elimination'; }
 function safeFormat(value = '') { const allowed = new Set(['MD1', 'MD2', 'MD3', 'MD5']); return allowed.has(String(value)) ? String(value) : 'MD1'; }
 function safeTeamSource(value = '') { return String(value || '').trim() === 'registered' ? 'registered' : 'all'; }
@@ -15,8 +16,9 @@ function registerBracketV2Routes(app) {
   app.put('/api/tournament/settings-v2', requireOwner, async (req, res) => {
     try {
       const current = await storage.readTournamentSettings().catch(() => ({}));
-      const payload = normalizeSettingsPayload(req.body || {}, current);
+      const payload = normalizeSettingsPayload(req.body || {}, { ...current, ...lastQuickSettings });
       const saved = await storage.writeTournamentSettings(payload);
+      lastQuickSettings = { ...payload };
       return res.json({ success: true, settings: { ...saved, activeEventId: payload.activeEventId, teamSource: payload.teamSource } });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
@@ -24,7 +26,7 @@ function registerBracketV2Routes(app) {
   app.post('/api/bracket/generate-v2', requireOwner, async (req, res) => {
     try {
       const [teams, users, storedSettings, events] = await Promise.all([storage.readTeams(), storage.readUsers(), storage.readTournamentSettings().catch(() => ({})), storage.readEvents().catch(() => [])]);
-      const settings = normalizeSettingsPayload(req.body || {}, storedSettings || {});
+      const settings = normalizeSettingsPayload(req.body && Object.keys(req.body).length ? req.body : lastQuickSettings, { ...storedSettings, ...lastQuickSettings });
       const limit = normalizeTeamLimit(settings.teamLimit || 16);
       const source = sourceTeamsForSettings(teams, events, settings);
       const selectedTeams = source.sourceTeams.slice(0, limit);
@@ -34,6 +36,7 @@ function registerBracketV2Routes(app) {
       const generated = generateAdaptiveBracket(selectedTeams, limit);
       const bracket = await storage.writeBracket({ slotSize: generated.slotSize, teamLimit: limit, eventId: settings.activeEventId || '', teamSource: safeTeamSource(settings.teamSource), slots: generated.slots, round16: generated.round16, quarters: [], semis: [], finals: [], matchProgress: {}, generatedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       const resultHubs = await syncResultHubs(bracket, settings);
+      lastQuickSettings = { ...settings };
       return res.json({ success: true, bracket: normalizeBracketForResponse(bracket, teams, users), groups, resultHubs, sourceLabel: source.sourceLabel, settings: { ...settings, teamLimit: limit, teamSource: safeTeamSource(settings.teamSource) } });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
