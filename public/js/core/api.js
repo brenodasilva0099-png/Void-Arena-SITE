@@ -75,7 +75,7 @@
 
   function ensureExtraNavLinks() {
     document.querySelectorAll('.va-nav').forEach((nav) => {
-      addNavLink(nav, 'rankings', 'jogadores', '/pages/jogadores.html', '🧑‍🚀 Jogadores');
+      addNavLink(nav, 'rankings', 'jogadores', '/pages/jogadores.html', '👤 Jogadores');
       addNavLink(nav, 'jogadores', 'recrutamento', '/pages/recrutamento.html', '🤝 Recrutamento');
       addNavLink(nav, 'recrutamento', 'pontuacao', '/pages/pontuacao.html', '🏅 Pontuação');
       addNavLink(nav, 'pontuacao', 'placar', '/pages/placar.html', '🎮 Placar');
