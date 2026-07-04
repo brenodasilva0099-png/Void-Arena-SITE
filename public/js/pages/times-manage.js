@@ -13,11 +13,14 @@
     return data;
   }
 
+  function cleanDiscord(value = '') { return String(value || '').replace(/^<@!?/, '').replace(/>$/, '').trim(); }
   function teamPlayers(team, key, fallbackKey) {
     const detailed = Array.isArray(team[key]) ? team[key] : [];
     if (detailed.length) return detailed;
     return Array.isArray(team[fallbackKey]) ? team[fallbackKey].map((name, index) => ({ name, discordId: team.playerAccounts?.[fallbackKey === 'players' ? 'players' : 'reserves']?.[index] || '' })) : [];
   }
+  function allRoster(team) { return [...teamPlayers(team, 'playerDetails', 'players'), ...teamPlayers(team, 'reserveDetails', 'reserves')]; }
+  function registeredRoster(team) { return allRoster(team).filter((p) => String(p.id || p.discordId || '').trim()); }
 
   function addRow(container, data = {}) {
     const row = document.createElement('div');
@@ -30,7 +33,7 @@
   function rows(container) {
     return Array.from(container.querySelectorAll('.va-roster-row')).map((row) => ({
       name: row.querySelector('[data-name]')?.value || '',
-      discordId: String(row.querySelector('[data-discord]')?.value || '').replace(/^<@!?/, '').replace(/>$/, '').trim()
+      discordId: cleanDiscord(row.querySelector('[data-discord]')?.value || '')
     })).filter((item) => item.name.trim());
   }
 
@@ -46,6 +49,19 @@
     shell.addEventListener('click', (event) => { if (event.target === shell || event.target.closest('[data-close-team-manage]')) shell.hidden = true; });
     shell.querySelector('#teamManageAddPlayer').addEventListener('click', () => addRow(shell.querySelector('#teamManagePlayers')));
     shell.querySelector('#teamManageAddReserve').addEventListener('click', () => addRow(shell.querySelector('#teamManageReserves')));
+    return shell;
+  }
+
+  function transferModal() {
+    let shell = document.getElementById('teamTransferCaptainModal');
+    if (shell) return shell;
+    shell = document.createElement('div');
+    shell.id = 'teamTransferCaptainModal';
+    shell.className = 'va-modal-shell';
+    shell.hidden = true;
+    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Transferir capitão</p><h2 id="teamTransferTitle">Transferir capitão</h2><p class="va-muted">Transfere a posse do time para um jogador cadastrado/vinculado no site, sem perder elenco, inscrições ou histórico.</p></div><button class="va-modal-close" data-close-transfer type="button">×</button></div><form id="teamTransferForm" class="va-form-grid"><label>Novo capitão<select name="captain" required></select></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Confirmar transferência</button><button class="va-btn" data-close-transfer type="button">Cancelar</button></div></form><div id="teamTransferStatus" class="va-status"></div></div>`;
+    document.body.appendChild(shell);
+    shell.addEventListener('click', (event) => { if (event.target === shell || event.target.closest('[data-close-transfer]')) shell.hidden = true; });
     return shell;
   }
 
@@ -74,6 +90,20 @@
     shell.hidden = false;
   }
 
+  function openTransfer(team) {
+    const shell = transferModal();
+    const form = shell.querySelector('#teamTransferForm');
+    const status = shell.querySelector('#teamTransferStatus');
+    const select = form.elements.captain;
+    const players = registeredRoster(team);
+    shell.querySelector('#teamTransferTitle').textContent = `Transferir capitão • ${team.name || 'time'}`;
+    form.dataset.teamId = team.id;
+    select.innerHTML = '<option value="">Selecionar novo capitão</option>' + players.map((p) => `<option value="${esc(p.id || p.discordId)}" data-user-id="${esc(p.id || '')}" data-discord-id="${esc(p.discordId || '')}">${esc(p.name || 'Jogador')} ${p.type === 'reserve' ? '(Reserva)' : '(Titular)'}</option>`).join('');
+    status.textContent = players.length ? 'Escolha um jogador cadastrado/vinculado no site.' : 'Nenhum jogador vinculado encontrado nesse elenco. Preencha o ID Discord correto e peça para o jogador logar no site.';
+    status.className = players.length ? 'va-status' : 'va-status err';
+    shell.hidden = false;
+  }
+
   async function saveEdit(event) {
     event.preventDefault();
     const shell = modal();
@@ -89,14 +119,7 @@
           logo: form.elements.logo.value,
           playerDetails: rows(shell.querySelector('#teamManagePlayers')),
           reserveDetails: rows(shell.querySelector('#teamManageReserves')),
-          socials: {
-            discord: form.elements.socialDiscord.value,
-            instagram: form.elements.socialInstagram.value,
-            youtube: form.elements.socialYoutube.value,
-            tiktok: form.elements.socialTikTok.value,
-            steam: form.elements.socialSteam.value,
-            xbox: form.elements.socialXbox.value
-          }
+          socials: { discord: form.elements.socialDiscord.value, instagram: form.elements.socialInstagram.value, youtube: form.elements.socialYoutube.value, tiktok: form.elements.socialTikTok.value, steam: form.elements.socialSteam.value, xbox: form.elements.socialXbox.value }
         })
       });
       status.textContent = 'Time atualizado.';
@@ -108,14 +131,32 @@
     }
   }
 
+  async function saveTransfer(event) {
+    event.preventDefault();
+    const shell = transferModal();
+    const form = event.currentTarget;
+    const status = shell.querySelector('#teamTransferStatus');
+    const selected = form.elements.captain.selectedOptions[0];
+    status.textContent = 'Transferindo capitão...';
+    status.className = 'va-status';
+    try {
+      await request(`/api/teams/${encodeURIComponent(form.dataset.teamId)}/transfer-captain`, {
+        method: 'POST',
+        body: JSON.stringify({ userId: selected?.dataset?.userId || '', discordId: selected?.dataset?.discordId || selected?.value || '' })
+      });
+      status.textContent = 'Capitão transferido com sucesso.';
+      status.className = 'va-status ok';
+      setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      status.textContent = `Erro: ${error.message}`;
+      status.className = 'va-status err';
+    }
+  }
+
   async function removeTeam(team) {
     if (!confirm(`Excluir o time ${team.name}?`)) return;
-    try {
-      await request(`/api/teams/${encodeURIComponent(team.id)}`, { method: 'DELETE' });
-      window.location.reload();
-    } catch (error) {
-      alert(`Erro ao excluir: ${error.message}`);
-    }
+    try { await request(`/api/teams/${encodeURIComponent(team.id)}`, { method: 'DELETE' }); window.location.reload(); }
+    catch (error) { alert(`Erro ao excluir: ${error.message}`); }
   }
 
   async function enhance() {
@@ -127,12 +168,14 @@
       const actions = document.createElement('div');
       actions.className = 'va-actions team-actions';
       actions.setAttribute('data-manage-team-actions', '1');
-      actions.innerHTML = '<button class="va-btn mini" type="button">Editar</button><button class="va-btn danger mini" type="button">Excluir</button>';
+      actions.innerHTML = '<button class="va-btn mini" type="button">Editar</button><button class="va-btn mini secondary" type="button">Transferir capitão</button><button class="va-btn danger mini" type="button">Excluir</button>';
       actions.children[0].addEventListener('click', (event) => { event.stopPropagation(); openEdit(team); });
-      actions.children[1].addEventListener('click', (event) => { event.stopPropagation(); removeTeam(team); });
+      actions.children[1].addEventListener('click', (event) => { event.stopPropagation(); openTransfer(team); });
+      actions.children[2].addEventListener('click', (event) => { event.stopPropagation(); removeTeam(team); });
       card.appendChild(actions);
     });
     modal().querySelector('#teamManageForm').addEventListener('submit', saveEdit, { once: false });
+    transferModal().querySelector('#teamTransferForm').addEventListener('submit', saveTransfer, { once: false });
   }
 
   setTimeout(enhance, 1200);
