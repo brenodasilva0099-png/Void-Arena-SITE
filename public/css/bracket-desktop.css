@@ -21,19 +21,30 @@ body[data-page="chaveamento"] .va-bracket-card::-webkit-scrollbar-thumb {
 
 body[data-page="chaveamento"] .va-integrated-bracket {
   overflow: visible;
-  padding-bottom: 14px;
-  width: 100%;
-  min-width: 1180px;
+  width: max-content;
+  min-width: 1320px;
+  margin: 0 auto;
+  padding: 18px 28px 28px;
+  border: 1px solid rgba(34, 211, 238, .22);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 12% 48%, rgba(139, 92, 246, .20), transparent 32%),
+    radial-gradient(circle at 88% 48%, rgba(34, 211, 238, .18), transparent 34%),
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, .46), transparent 36%),
+    linear-gradient(90deg, rgba(22, 17, 48, .92), rgba(5, 13, 29, .96), rgba(22, 17, 48, .92));
+  box-shadow: inset 0 0 80px rgba(34, 211, 238, .05), 0 24px 70px rgba(0, 0, 0, .28);
 }
 
 body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-  min-width: 1180px !important;
-  width: 1180px !important;
+  min-width: 1260px !important;
+  width: 1260px !important;
   max-width: none;
   margin: 0 auto;
-  grid-template-columns: 440px 260px 440px !important;
+  grid-template-columns: 470px 280px 470px !important;
   gap: 20px;
   padding: 24px;
+  border: 0;
+  background: transparent !important;
 }
 
 body[data-page="chaveamento"] .va-integrated-bracket .bracket-side,
@@ -59,21 +70,21 @@ body[data-page="chaveamento"] .final-slot {
 body[data-page="chaveamento"] .bracket-left .adv-l-1,
 body[data-page="chaveamento"] .bracket-left .adv-l-2,
 body[data-page="chaveamento"] .bracket-left .adv-l-3,
-body[data-page="chaveamento"] .bracket-left .adv-l-4 { left: 190px; }
+body[data-page="chaveamento"] .bracket-left .adv-l-4 { left: 198px; }
 
 body[data-page="chaveamento"] .bracket-right .adv-r-1,
 body[data-page="chaveamento"] .bracket-right .adv-r-2,
 body[data-page="chaveamento"] .bracket-right .adv-r-3,
-body[data-page="chaveamento"] .bracket-right .adv-r-4 { right: 190px; }
+body[data-page="chaveamento"] .bracket-right .adv-r-4 { right: 198px; }
 
 body[data-page="chaveamento"] .bracket-left .semi-l-1,
-body[data-page="chaveamento"] .bracket-left .semi-l-2 { right: 12px; }
+body[data-page="chaveamento"] .bracket-left .semi-l-2 { right: 10px; }
 
 body[data-page="chaveamento"] .bracket-right .semi-r-1,
-body[data-page="chaveamento"] .bracket-right .semi-r-2 { left: 12px; }
+body[data-page="chaveamento"] .bracket-right .semi-r-2 { left: 10px; }
 
-body[data-page="chaveamento"] .final-left { left: 4px; }
-body[data-page="chaveamento"] .final-right { right: 4px; }
+body[data-page="chaveamento"] .final-left { left: 0; }
+body[data-page="chaveamento"] .final-right { right: 0; }
 
 body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:not(:last-child) {
   display: none !important;
@@ -90,13 +101,14 @@ body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:last-child h3:
 
 @media (max-width: 1540px) {
   body[data-page="chaveamento"] .va-integrated-bracket {
-    min-width: 1120px;
+    min-width: 1240px;
+    padding-inline: 22px;
   }
 
   body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-    min-width: 1120px !important;
-    width: 1120px !important;
-    grid-template-columns: 415px 250px 415px !important;
+    min-width: 1190px !important;
+    width: 1190px !important;
+    grid-template-columns: 440px 270px 440px !important;
   }
 
   body[data-page="chaveamento"] .team-slot { width: 132px; }
@@ -111,5 +123,10 @@ body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round:last-child h3:
 
   body[data-page="chaveamento"] .va-integrated-bracket {
     min-width: 0;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }
