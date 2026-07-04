@@ -11,10 +11,10 @@ const { registerEventNotifyRoutes } = require('../server/routes/eventNotify.rout
 const { registerBracketV2Routes } = require('../server/routes/bracketV2.routes');
 const { registerBridgeRoutes } = require('../server/routes/bridge.routes');
 const { registerProfileV2Routes } = require('../server/routes/profileV2.routes');
+const { registerPlacarRoutes } = require('../server/routes/placar.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
-// Site/API separado. O banco principal continua no BOT via BOT_API_URL + BOT_API_KEY.
 const app = createServer({ client: null });
 registerOrganizedRoutes(app);
 registerDebugRoutes(app);
@@ -24,12 +24,13 @@ registerEventNotifyRoutes(app);
 registerBracketV2Routes(app);
 registerBridgeRoutes(app);
 registerProfileV2Routes(app);
+registerPlacarRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
 
 server.listen(PORT, () => {
-  console.log(`Site Void Arena 5.1.2 rodando em: http://localhost:${PORT}`);
+  console.log(`Site Void Arena 5.1.3 rodando em: http://localhost:${PORT}`);
   console.log('Realtime WebSocket ativo em: /realtime');
 });
 
