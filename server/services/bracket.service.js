@@ -1,18 +1,18 @@
 const SUPPORTED_TEAM_LIMITS = [4, 8, 12, 16, 20, 24, 28, 32];
 
-function bracketSlotSize(limit = 16) {
-  const number = Number(limit || 16);
-  return number > 16 ? 32 : 16;
-}
-
 function normalizeTeamLimit(value = 16) {
   const number = Number(value || 16);
   return SUPPORTED_TEAM_LIMITS.includes(number) ? number : 16;
 }
 
+function bracketSlotSize(limit = 16) {
+  return normalizeTeamLimit(limit);
+}
+
 function normalizeBracketData(data = {}) {
-  const size = Math.max(16, Number(data.slotSize || data.teamLimit || (Array.isArray(data.slots) && data.slots.length > 16 ? 32 : 16)) || 16);
-  const slotSize = size > 16 ? 32 : 16;
+  const inferred = data.teamLimit || data.slotSize || (Array.isArray(data.slots) ? data.slots.length : 16) || 16;
+  const teamLimit = normalizeTeamLimit(inferred);
+  const slotSize = bracketSlotSize(teamLimit);
   const fill = (items, targetSize) => {
     const arr = Array.isArray(items) ? items.slice(0, targetSize) : [];
     while (arr.length < targetSize) arr.push(null);
@@ -28,7 +28,7 @@ function normalizeBracketData(data = {}) {
   };
   return {
     slotSize,
-    teamLimit: normalizeTeamLimit(data.teamLimit || slotSize),
+    teamLimit,
     slots: fill(data.slots, slotSize),
     round16: fill(data.round16, 16),
     quarters: fill(data.quarters, 8),
@@ -90,22 +90,11 @@ function shuffle(items = []) {
   return arr;
 }
 
-function basePairPositions(slotSize = 16) {
-  if (slotSize > 16) return Array.from({ length: 32 }, (_, index) => index);
-  // Ordem visual balanceada no board premium: metade esquerda primeiro, metade direita depois.
-  return [0, 1, 8, 9, 2, 3, 10, 11, 4, 5, 12, 13, 6, 7, 14, 15];
-}
-
 function generateBracketSlots(teams = [], limit = 16) {
   const teamLimit = normalizeTeamLimit(limit);
-  const slotSize = bracketSlotSize(teamLimit);
   const picked = shuffle(teams).slice(0, teamLimit);
-  const slots = Array(slotSize).fill(null);
-  const order = basePairPositions(slotSize).slice(0, teamLimit);
-  picked.forEach((team, index) => {
-    const slotIndex = order[index] ?? index;
-    slots[slotIndex] = team?.id || null;
-  });
+  const slots = Array(teamLimit).fill(null);
+  picked.forEach((team, index) => { slots[index] = team?.id || null; });
   return slots;
 }
 
@@ -113,21 +102,24 @@ function generateAdaptiveBracket(teams = [], limit = 16) {
   const teamLimit = normalizeTeamLimit(limit);
   const slotSize = bracketSlotSize(teamLimit);
   const picked = shuffle(teams).slice(0, teamLimit);
-  if (slotSize === 16) {
-    return { slotSize, teamLimit, slots: generateBracketSlots(picked, teamLimit), round16: [] };
+
+  if (teamLimit <= 16) {
+    return { slotSize, teamLimit, slots: picked.map((team) => team?.id || null), round16: [] };
   }
 
-  const byeCount = Math.max(0, 32 - teamLimit);
-  const prelimTeamCount = teamLimit - byeCount;
-  const prelimTeams = picked.slice(0, prelimTeamCount);
-  const byeTeams = picked.slice(prelimTeamCount);
-  const slots = Array(32).fill(null);
+  const preliminaryMatchCount = Math.max(0, teamLimit - 16);
+  const preliminaryTeamCount = preliminaryMatchCount * 2;
+  const preliminaryTeams = picked.slice(0, preliminaryTeamCount);
+  const byeTeams = picked.slice(preliminaryTeamCount);
+  const slots = Array(teamLimit).fill(null);
   const round16 = Array(16).fill(null);
 
-  prelimTeams.forEach((team, index) => { slots[index] = team?.id || null; });
+  preliminaryTeams.forEach((team, index) => { slots[index] = team?.id || null; });
   byeTeams.forEach((team, index) => {
-    const target = prelimTeamCount / 2 + index;
+    const target = preliminaryMatchCount + index;
     if (target < round16.length) round16[target] = team?.id || null;
+    const slotTarget = preliminaryTeamCount + index;
+    if (slotTarget < slots.length) slots[slotTarget] = team?.id || null;
   });
 
   return { slotSize, teamLimit, slots, round16 };
@@ -149,18 +141,11 @@ function matchPairsForSlots(slots = []) {
 }
 
 function nextTargetForSlotMatch(matchIndex = 0, slotSize = 16) {
-  // 4 times: duas semifinais visuais, vencedores vão direto para a final.
-  if (slotSize === 16 && [0, 4].includes(matchIndex)) {
-    return { round: 'finals', index: matchIndex === 0 ? 0 : 1 };
-  }
-  // 8 times: quatro quartas visuais, vencedores vão para semifinais.
-  if (slotSize === 16 && [0, 1, 4, 5].includes(matchIndex)) {
-    return { round: 'semis', index: ({ 0: 0, 1: 1, 4: 2, 5: 3 })[matchIndex] };
-  }
-  // 16 times: oitavas completas, vencedores vão para quartas.
-  if (slotSize === 16) return { round: 'quarters', index: matchIndex };
-  // 32 mode: rodada inicial alimenta as quartas/oitavas simplificadas da estrutura atual.
-  return { round: 'quarters', index: Math.floor(matchIndex / 2) };
+  const size = normalizeTeamLimit(slotSize);
+  if (size === 4) return { round: 'finals', index: Math.min(matchIndex, 1) };
+  if (size === 8) return { round: 'semis', index: Math.min(matchIndex, 3) };
+  if (size <= 16) return { round: 'quarters', index: Math.min(matchIndex, 7) };
+  return { round: 'round16', index: Math.min(matchIndex, 15) };
 }
 
 module.exports = {
