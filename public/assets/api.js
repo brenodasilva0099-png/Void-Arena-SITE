@@ -20,20 +20,10 @@
     }
     return data;
   }
-  function escapeHtml(value = '') {
-    return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
-  }
-  function formatDate(value) {
-    if (!value) return 'sem data';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-  }
+  function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char])); }
+  function formatDate(value) { if (!value) return 'sem data'; const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value); return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }
   async function loadMe() { const data = await request('/api/me'); return data.user; }
-  async function loadBrand() {
-    const data = await request('/api/brand/server').catch(() => ({ server: { name: 'Hollow Nexus', icon: '/assets/hollow-nexus.png' } }));
-    return data.server || { name: 'Hollow Nexus', icon: '/assets/hollow-nexus.png' };
-  }
+  async function loadBrand() { const data = await request('/api/brand/server').catch(() => ({ server: { name: 'Hollow Nexus', icon: '/assets/hollow-nexus.png' } })); return data.server || { name: 'Hollow Nexus', icon: '/assets/hollow-nexus.png' }; }
   function applyBrand(brand = {}) {
     const icon = brand.icon || brand.fallbackIcon || '/assets/hollow-nexus.png';
     const name = brand.name || 'Hollow Nexus';
@@ -44,25 +34,22 @@
     favicon.href = icon;
     document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; });
   }
+  function addNavLink(nav, afterKey, key, href, text) {
+    if (nav.querySelector(`[data-nav-key="${key}"]`)) return nav.querySelector(`[data-nav-key="${key}"]`);
+    const anchor = nav.querySelector(`[data-nav-key="${afterKey}"]`);
+    const link = document.createElement('a');
+    link.setAttribute('data-nav-key', key);
+    link.href = href;
+    link.textContent = text;
+    if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link);
+    return link;
+  }
   function ensureExtraNavLinks() {
     document.querySelectorAll('.va-nav').forEach((nav) => {
-      const rankings = nav.querySelector('[data-nav-key="rankings"]');
-      let anchor = rankings || nav.querySelector('[data-nav-key="pontuacao"]');
-      if (!nav.querySelector('[data-nav-key="pontuacao"]')) {
-        const link = document.createElement('a');
-        link.setAttribute('data-nav-key', 'pontuacao');
-        link.href = '/pages/pontuacao.html';
-        link.textContent = '🏅 Pontuação';
-        if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link);
-        anchor = link;
-      }
-      if (!nav.querySelector('[data-nav-key="placar"]')) {
-        const link = document.createElement('a');
-        link.setAttribute('data-nav-key', 'placar');
-        link.href = '/pages/placar.html';
-        link.textContent = '🎮 Placar';
-        if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link);
-      }
+      addNavLink(nav, 'rankings', 'jogadores', '/pages/jogadores.html', '🧑‍🚀 Jogadores');
+      addNavLink(nav, 'jogadores', 'recrutamento', '/pages/recrutamento.html', '🤝 Recrutamento');
+      addNavLink(nav, 'recrutamento', 'pontuacao', '/pages/pontuacao.html', '🏅 Pontuação');
+      addNavLink(nav, 'pontuacao', 'placar', '/pages/placar.html', '🎮 Placar');
     });
   }
   function profileUsername(user = {}) { return user?.profile?.username || user?.name || 'Usuário'; }
