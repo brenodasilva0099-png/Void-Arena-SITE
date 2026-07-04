@@ -11,84 +11,19 @@
 </head>
 <body class="va-organized-body" data-page="pontuacao">
   <div class="va-shell">
-    <aside class="va-sidebar">
-      <div class="va-brand">
-        <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-        <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
-      </div>
-      <nav class="va-nav">
-        <div class="va-nav-title">Principal</div>
-        <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-        <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
-        <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-        <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-        <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-        <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-        <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-        <a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a>
-        <div class="va-nav-title">Comunicação</div>
-        <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-        <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-        <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-        <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-        <div class="va-nav-title">Admin</div>
-        <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-        <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-        <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-        <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
-      </nav>
-    </aside>
-
+    <aside class="va-sidebar"><div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div><nav class="va-nav"><div class="va-nav-title">Principal</div><a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a><a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a><a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a><a data-nav-key="times" href="/pages/times.html">🛡️ Times</a><a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a><a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a><a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a><a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a><div class="va-nav-title">Comunicação</div><a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a><a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a><a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a><a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a><div class="va-nav-title">Admin</div><a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a><a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a><a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a><a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a></nav></aside>
     <main class="va-main">
-      <header class="va-topbar va-scoring-topbar">
-        <div>
-          <p class="va-eyebrow">Void Arena Points</p>
-          <h1 class="va-title">Pontuação</h1>
-          <p class="va-subtitle">Regras oficiais para somar pontos, validar vencedores e alimentar os rankings.</p>
-        </div>
-        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
-      </header>
-
+      <header class="va-topbar va-scoring-topbar"><div><p class="va-eyebrow">Void Arena Points</p><h1 class="va-title">Pontuação</h1><p class="va-subtitle">Regras simples para somar pontos e alimentar os rankings depois que o resultado é validado.</p></div><a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a></header>
       <section class="va-grid va-scoring-page">
         <article class="va-card full va-scoring-hero">
-          <div>
-            <p class="va-eyebrow">Sistema competitivo</p>
-            <h2>Como o Void Arena calcula pontos</h2>
-            <p>Vitória continua sendo o principal critério. Gols, defesa limpa, participação e peso do evento entram como bônus para deixar o ranking justo sem incentivar farm de placar.</p>
-          </div>
-          <div class="va-scoring-formula">
-            <strong>VAP</strong>
-            <span>(vitórias × 3) + empates + (gols × 0,5) + clean sheets + bônus × peso do evento</span>
-          </div>
+          <div><p class="va-eyebrow">Sistema competitivo</p><h2>O que é VAP?</h2><p><strong>VAP</strong> é a pontuação geral do time na Void Arena. Ele soma o que importa no futebol: vencer, empatar, fazer gols, defender bem e participar de eventos validados.</p></div>
+          <div class="va-scoring-formula"><strong>VAP</strong><span>Vitória + empate + gols + clean sheet + participação + bônus de colocação</span></div>
         </article>
-
         <article class="va-card full">
-          <div class="va-section-head">
-            <div>
-              <h2>Regra oficial</h2>
-              <p class="va-muted">Essas regras alimentam os rankings de times e jogadores depois que o resultado é validado.</p>
-            </div>
-            <div class="va-scoring-toolbar">
-              <select id="eventFilter" aria-label="Filtrar evento"><option value="">Todos os eventos</option></select>
-              <button id="reloadScoringBtn" class="va-btn secondary" type="button">Atualizar</button>
-              <a class="va-btn" href="/pages/rankings.html">Ver rankings</a>
-            </div>
-          </div>
-          <div id="scoringRules" class="va-scoring-rule-grid"></div>
-          <div id="scoringSummary" class="va-scoring-summary"></div>
-          <div id="scoringStatus" class="va-status">Carregando...</div>
+          <div class="va-section-head"><div><h2>Regra oficial</h2><p class="va-muted">Exemplo: venceu 2x0 = 3 pela vitória + 1 pelos gols + 1 por não sofrer gol = 5 VAP.</p></div><div class="va-scoring-toolbar"><select id="eventFilter" aria-label="Filtrar evento"><option value="">Todos os eventos</option></select><button id="reloadScoringBtn" class="va-btn secondary" type="button">Atualizar</button><a class="va-btn" href="/pages/rankings.html">Ver rankings</a></div></div>
+          <div id="scoringRules" class="va-scoring-rule-grid"></div><div id="scoringSummary" class="va-scoring-summary"></div><div id="scoringStatus" class="va-status">Carregando...</div>
         </article>
-
-        <article class="va-card full">
-          <div class="va-section-head">
-            <div>
-              <h2>Validação dos vencedores</h2>
-              <p class="va-muted">Aqui fica a área operacional: resultados pendentes, conflitos e partidas que ainda não entraram nos pontos.</p>
-            </div>
-            <a class="va-btn secondary" href="/pages/resultados.html">Ver resultados</a>
-          </div>
-          <div id="scoringValidation" class="va-list"></div>
-        </article>
+        <article class="va-card full"><div class="va-section-head"><div><h2>Validação dos vencedores</h2><p class="va-muted">Resultado só entra no ranking quando está validado. Se tiver conflito, ele aparece aqui antes de somar pontos.</p></div><a class="va-btn secondary" href="/pages/resultados.html">Ver resultados</a></div><div id="scoringValidation" class="va-list"></div></article>
       </section>
     </main>
   </div>
