@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
   <link rel="stylesheet" href="/css/scoring-rankings.css" />
+  <link rel="stylesheet" href="/css/recruitment.css" />
 </head>
 <body class="va-organized-body" data-page="rankings">
   <div class="va-shell">
@@ -23,6 +24,7 @@
         <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
         <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
         <a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a>
+        <a data-nav-key="placar" href="/pages/placar.html">🎮 Placar</a>
         <div class="va-nav-title">Comunicação</div>
         <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
         <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
@@ -37,11 +39,18 @@
     </aside>
     <main class="va-main">
       <header class="va-topbar"><div><p class="va-eyebrow">Void Arena Rankings</p><h1 class="va-title">Rankings</h1><p class="va-subtitle">Classificação completa de times e jogadores com estatísticas competitivas.</p></div><a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a></header>
-      <section class="va-grid"><article class="va-card full va-rankings-hero"><div><h2>Ranking competitivo</h2><p class="va-muted">Times aparecem com win-rate, gols, defesas e VAP. Jogadores aparecem com passes, gols, assistências, defesas, MVP e interceptações.</p></div><div class="va-rankings-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button><a class="va-btn" href="/pages/pontuacao.html">Regras</a></div></article><article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Times</h2><p class="va-muted">Ordenado por VAP, vitórias, saldo de gols e gols marcados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div></article><article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Jogadores</h2><p class="va-muted">Enquanto as estatísticas individuais reais não forem enviadas, os campos ficam preparados e começam zerados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div><div id="rankingStatus" class="va-status">Carregando...</div></article></section>
+      <section class="va-grid">
+        <article class="va-card full va-rankings-hero"><div><h2>Ranking competitivo</h2><p class="va-muted">Times aparecem com win-rate, gols, defesas e VAP. Jogadores aparecem com passes, gols, assistências, defesas, MVP e interceptações.</p></div><div class="va-rankings-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button><a class="va-btn" href="/pages/pontuacao.html">Regras</a></div></article>
+        <article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Times</h2><p class="va-muted">Ordenado por VAP, vitórias, saldo de gols e gols marcados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div></article>
+        <article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Jogadores</h2><p class="va-muted">Enquanto as estatísticas individuais reais não forem enviadas, os campos ficam preparados e começam zerados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div><div id="rankingStatus" class="va-status">Carregando...</div></article>
+        <article class="va-card full"><div class="va-section-head"><div><p class="va-eyebrow">Mercado de jogadores</p><h2>Banco de Jogadores</h2><p class="va-muted">Todos os jogadores cadastrados no site, registrados em algum time ou livres para recrutamento.</p></div><button id="reloadDirectoryBtn" class="va-btn secondary" type="button">Atualizar jogadores</button></div><div class="va-table-wrap"><table class="va-rank-table" id="playerDirectoryTable"></table></div><div id="playerDirectoryStatus" class="va-status">Carregando banco de jogadores...</div></article>
+        <article id="recruitmentPanel" class="va-card full"><div class="va-section-head"><div><p class="va-eyebrow">Recrutamento / Peneira</p><h2>Solicitações de clube</h2><p class="va-muted">Capitães podem solicitar recrutamento. Jogadores sem clube podem pedir peneira/avaliação para entrar em um time.</p></div></div><div class="va-recruitment-panel"><div class="va-recruitment-form"><label>Tipo<select id="recruitmentTypeSelect"><option value="recruitment">Capitão: solicitar recrutamento</option><option value="trial">Jogador: pedir peneira/avaliação</option></select></label><label>Time<select id="recruitmentTeamSelect"><option value="">Selecionar time</option></select></label><label>Mensagem / observação<textarea id="recruitmentNoteInput" placeholder="Ex: jogador tem boa posição, quero testar no time / quero fazer peneira nesse time..."></textarea></label><button id="sendRecruitmentBtn" class="va-btn primary" type="button">Enviar solicitação</button><div id="recruitmentStatus" class="va-status">Selecione um jogador na tabela ou peça peneira para um time.</div></div><div class="va-recruitment-tip"><strong>Como funciona</strong><p class="va-muted">Para recrutar, clique em “Recrutar” no Banco de Jogadores e selecione um time seu. Para peneira, troque o tipo para “Jogador: pedir peneira” e selecione o time desejado.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="recruitmentRequestsTable"></table></div></article>
+      </section>
     </main>
   </div>
   <script src="/assets/api.js"></script>
   <script src="/js/core/social-icons.js"></script>
   <script src="/js/pages/rankings.js"></script>
+  <script src="/js/pages/recruitment.js"></script>
 </body>
 </html>
