@@ -13,6 +13,7 @@ const { registerBridgeRoutes } = require('../server/routes/bridge.routes');
 const { registerProfileV2Routes } = require('../server/routes/profileV2.routes');
 const { registerPlacarRoutes } = require('../server/routes/placar.routes');
 const { registerPlayersRoutes } = require('../server/routes/players.routes');
+const { registerTeamExtrasRoutes } = require('../server/routes/teamExtras.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -27,6 +28,7 @@ registerBridgeRoutes(app);
 registerProfileV2Routes(app);
 registerPlacarRoutes(app);
 registerPlayersRoutes(app);
+registerTeamExtrasRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
