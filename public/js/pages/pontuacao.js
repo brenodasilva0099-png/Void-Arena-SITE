@@ -4,7 +4,7 @@
     ['1', 'Empate', 'Empatou a partida: soma 1 ponto'],
     ['0', 'Derrota', 'Perdeu: não soma ponto de resultado'],
     ['+0,5', 'Por gol marcado', 'Cada gol ajuda, mas não vale mais que vencer'],
-    ['+1', 'Clean sheet', 'Bônus por vencer/empatar sem sofrer gol'],
+    ['+1', 'Clean sheet', 'Bônus por vencer sem sofrer gol'],
     ['+2', 'Participação', 'Time validado no evento soma presença'],
     ['+30', 'Campeão', 'Bônus de colocação para campeão'],
     ['+20', 'Vice', 'Bônus de colocação para vice-campeão']
