@@ -15,14 +15,32 @@
   let teams = [];
 
   function esc(value) { return VoidArena.escapeHtml(value || ''); }
-  function setStatus(message, type = '') { st.textContent = message; st.className = `va-status ${type}`.trim(); }
+  function setStatus(message, type = '') { if (!st) return; st.textContent = message || ''; st.className = `va-status ${type}`.trim(); st.hidden = !message; }
   function setRegisterStatus(message, type = '') { registerStatus.textContent = message; registerStatus.className = `va-status ${type}`.trim(); }
   function setSettingsStatus(message, type = '') { settingsStatus.textContent = message; settingsStatus.className = `va-status ${type}`.trim(); }
-  function count(event) { return Array.isArray(event.registrations) ? event.registrations.length : Number(event.registeredCount || 0) || 0; }
-  function statusLabel(status = '') { return ({ open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado' })[status] || status || 'Aberto'; }
-  function statusClass(status = '') { if (status === 'open') return 'ok'; if (status === 'running') return 'warn'; if (status === 'finished') return 'err'; return ''; }
+  function count(event) { return Array.isArray(event.registrations) ? event.registrations.filter((r) => !['rejected', 'cancelled'].includes(String(r.status || '').toLowerCase())).length : Number(event.registeredCount || 0) || 0; }
+  function statusLabel(status = '') { return ({ open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado', approved: 'Validado', accepted: 'Validado', pending: 'Pendente' })[status] || status || 'Aberto'; }
+  function statusClass(status = '') { if (['open', 'approved', 'accepted'].includes(status)) return 'ok'; if (status === 'running' || status === 'pending') return 'warn'; if (status === 'finished' || status === 'rejected') return 'err'; return ''; }
   function feeText(event) { return event.isFree || !String(event.entryFee || event.registrationFee || '').trim() ? 'F2P' : String(event.entryFee || event.registrationFee); }
   function dtToInput(value = '') { if (!value) return ''; const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value).slice(0, 16); const pad = (n) => String(n).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
+  function teamById(id = '') { return teams.find((team) => String(team.id || '') === String(id || '')) || null; }
+  function teamLogo(team = null) {
+    if (!team) return '<span>?</span>';
+    if (team.logo) return `<img src="${esc(team.logo)}" alt="${esc(team.name || team.tag || 'Time')}" />`;
+    return `<span>${esc((team.tag || team.name || 'T').slice(0, 2).toUpperCase())}</span>`;
+  }
+  function eventTeamLogos(event = {}) {
+    const registrations = (Array.isArray(event.registrations) ? event.registrations : [])
+      .filter((registration) => !['rejected', 'cancelled'].includes(String(registration.status || '').toLowerCase()))
+      .slice(0, 32);
+    if (!registrations.length) return '<div class="va-event-team-strip empty"><span>Nenhum time inscrito/validado ainda.</span></div>';
+    return `<div class="va-event-team-strip" title="Times inscritos/validados">${registrations.map((registration) => {
+      const team = teamById(registration.teamId);
+      const label = team?.name || registration.teamName || 'Time inscrito';
+      const status = String(registration.status || 'pending').toLowerCase();
+      return `<div class="va-event-team-logo ${statusClass(status)}" title="${esc(label)} • ${esc(statusLabel(status))}">${teamLogo(team)}<small>${esc((team?.tag || label).slice(0, 6))}</small></div>`;
+    }).join('')}</div>`;
+  }
 
   function eventCard(event) {
     const registered = count(event);
@@ -34,6 +52,7 @@
       <div class="va-event-topline"><span class="va-badge ${statusClass(event.status)}">${esc(statusLabel(event.status))}</span><span class="va-muted">${registered}/${limit || '?'} times</span><button class="va-icon-btn" type="button" data-manual-dm-event="${esc(event.id)}" title="Reenviar DM do evento">📣</button><button class="va-icon-btn" type="button" data-config-event="${esc(event.id)}" title="Configurar evento">⚙️</button></div>
       <div class="va-event-main"><div class="va-event-icon">🏆</div><div><h3>${esc(event.title || event.name || 'Evento')}</h3><p>${esc(description)}</p></div></div>
       <div class="va-kpi-row"><span class="va-badge">${esc(event.matchFormat || 'MD1')}</span><span class="va-badge">${esc(event.mode || event.structure || 'Mata-mata')}</span><span class="va-badge">Início: ${esc(event.startAt || 'a definir')}</span><span class="va-badge">Taxa: ${esc(feeText(event))}</span><span class="va-badge">Recompensa: ${esc(reward)}</span></div>
+      ${eventTeamLogos(event)}
       <div class="va-event-progress"><span style="width:${limit ? Math.min(100, (registered / limit) * 100) : 0}%"></span></div>
       <div class="va-actions"><button class="va-btn primary" type="button" data-register-event="${esc(event.id)}" ${available ? '' : 'disabled'}>${available ? 'Enviar inscrição para validação' : 'Inscrições indisponíveis'}</button></div>
     </article>`;
@@ -60,7 +79,7 @@
     }
   }
 
-  async function render() { const data = await fetchJson('/api/events'); events = (data.events || []).sort((a, b) => (a.status === 'open' ? -1 : 1) - (b.status === 'open' ? -1 : 1)); teams = await loadTeams(); list.innerHTML = events.length ? events.map(eventCard).join('') : '<div class="va-item">Nenhum evento cadastrado no momento.</div>'; list.querySelectorAll('[data-register-event]').forEach((btn) => btn.addEventListener('click', () => openRegister(btn.dataset.registerEvent))); list.querySelectorAll('[data-config-event]').forEach((btn) => btn.addEventListener('click', () => openSettings(btn.dataset.configEvent))); list.querySelectorAll('[data-manual-dm-event]').forEach((btn) => btn.addEventListener('click', () => manualEventDm(btn.dataset.manualDmEvent, setStatus))); setStatus(events.length ? `Eventos carregados: ${events.length}.` : 'Nenhum evento disponível agora.', events.length ? 'ok' : ''); }
+  async function render() { const data = await fetchJson('/api/events'); events = (data.events || []).sort((a, b) => (a.status === 'open' ? -1 : 1) - (b.status === 'open' ? -1 : 1)); teams = await loadTeams(); list.innerHTML = events.length ? events.map(eventCard).join('') : '<div class="va-item">Nenhum evento cadastrado no momento.</div>'; list.querySelectorAll('[data-register-event]').forEach((btn) => btn.addEventListener('click', () => openRegister(btn.dataset.registerEvent))); list.querySelectorAll('[data-config-event]').forEach((btn) => btn.addEventListener('click', () => openSettings(btn.dataset.configEvent))); list.querySelectorAll('[data-manual-dm-event]').forEach((btn) => btn.addEventListener('click', () => manualEventDm(btn.dataset.manualDmEvent, setStatus))); setStatus(events.length ? '' : 'Nenhum evento disponível agora.', events.length ? '' : ''); }
 
   modal?.addEventListener('click', (event) => { if (event.target === modal || event.target.closest('[data-event-close]')) closeRegister(); });
   settingsModal?.addEventListener('click', (event) => { if (event.target === settingsModal || event.target.closest('[data-event-settings-close]')) closeSettings(); });
