@@ -19,25 +19,36 @@
     channelEl.innerHTML = '<option value="">Selecionar canal de texto</option>' + usable.map((channel) => `<option value="${esc(channel.id)}">${esc(channelLabel(channel))}</option>`).join('');
     channelEl.value = selected || '';
   }
+  function attachmentHtml(attachments = []) {
+    const rows = attachments.filter((item) => item.url || item.proxyUrl).map((item) => {
+      const url = item.proxyUrl || item.url;
+      const type = String(item.contentType || '').toLowerCase();
+      const name = esc(item.name || 'arquivo');
+      if (type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(name)) return `<a class="va-bridge-attachment image" href="${esc(url)}" target="_blank" rel="noreferrer"><img src="${esc(url)}" alt="${name}" /></a>`;
+      return `<a class="va-bridge-attachment file" href="${esc(url)}" target="_blank" rel="noreferrer">📎 ${name}</a>`;
+    });
+    return rows.length ? `<div class="va-bridge-attachments">${rows.join('')}</div>` : '';
+  }
   function renderMessages(messages = []) {
-    messagesEl.innerHTML = messages.length ? messages.map((msg) => `<article class="va-bridge-msg"><strong>${esc(msg.authorName || 'Void Arena')}</strong><div>${esc(msg.content || '')}</div><small class="va-muted">${esc(msg.source || 'site')} • ${msg.createdAt ? new Date(msg.createdAt).toLocaleString('pt-BR') : ''}</small></article>`).join('') : '<div class="va-bridge-empty">Nenhuma mensagem ainda. Vincule um canal ou envie uma mensagem por aqui.</div>';
+    messagesEl.innerHTML = messages.length ? messages.map((msg) => `<article class="va-bridge-msg ${esc(msg.source || 'site')}"><strong>${esc(msg.authorName || 'Void Arena')}</strong>${msg.content ? `<div>${esc(msg.content)}</div>` : ''}${attachmentHtml(msg.attachments || [])}<small class="va-muted">${esc(msg.source || 'site')} • ${msg.createdAt ? new Date(msg.createdAt).toLocaleString('pt-BR') : ''}</small></article>`).join('') : '<div class="va-bridge-empty">Nenhuma mensagem ainda. Vincule um canal ou envie uma mensagem por aqui.</div>';
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
   async function load() {
-    setStatus('Carregando ponte Discord ↔ Site...');
+    setStatus('Carregando ponte Discord ↔ Site e histórico do canal...');
     const data = await VoidArena.request(`/api/bridge/${encodeURIComponent(key)}/state`);
     titleEl.textContent = data.bridge?.title || titleEl.textContent;
     subtitleEl.textContent = data.settings?.discordChannelId ? `Canal Discord vinculado: ${data.settings.discordChannelId}` : 'Canal Discord: não vinculado';
     inputEl.placeholder = data.bridge?.placeholder || inputEl.placeholder;
     renderChannels(data.channels || [], data.settings?.discordChannelId || '');
     renderMessages(data.messages || []);
-    setStatus(data.message || 'Ponte carregada.', data.settings?.discordChannelId ? 'ok' : '');
+    setStatus(data.message || (data.history?.imported ? `Histórico importado: ${data.history.imported} mensagem(ns).` : 'Ponte carregada.'), data.settings?.discordChannelId ? 'ok' : '');
   }
   async function link() {
-    setStatus('Vinculando canal...');
+    setStatus('Vinculando canal e puxando histórico...');
     const data = await VoidArena.request(`/api/bridge/${encodeURIComponent(key)}/link`, { method: 'PUT', body: JSON.stringify({ discordChannelId: channelEl.value }) });
     subtitleEl.textContent = data.settings?.discordChannelId ? `Canal Discord vinculado: ${data.settings.discordChannelId}` : 'Canal Discord: não vinculado';
-    setStatus(data.settings?.discordChannelId ? 'Canal vinculado.' : 'Vínculo removido.', 'ok');
+    await load();
+    setStatus(data.settings?.discordChannelId ? 'Canal vinculado e histórico carregado.' : 'Vínculo removido.', 'ok');
   }
   async function send() {
     const content = inputEl.value.trim();
