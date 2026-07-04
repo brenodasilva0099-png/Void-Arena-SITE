@@ -1,4 +1,13 @@
 (function () {
+  function ensureCleanupStyles() {
+    if (document.querySelector('link[data-void-cleanup]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/css/site-cleanup.css?v=1';
+    link.setAttribute('data-void-cleanup', '1');
+    document.head.appendChild(link);
+  }
+
   async function request(path, options = {}) {
     const response = await fetch(path, {
       credentials: 'include',
@@ -112,6 +121,7 @@
   }
 
   async function bootLayout(activeKey = '') {
+    ensureCleanupStyles();
     ensureExtraNavLinks();
     const [user, brand] = await Promise.all([loadMe(), loadBrand()]);
     applyBrand(brand);
@@ -122,6 +132,8 @@
     setupUserPill(user);
     return { user, brand };
   }
+
+  ensureCleanupStyles();
 
   window.VoidArena = {
     request,
