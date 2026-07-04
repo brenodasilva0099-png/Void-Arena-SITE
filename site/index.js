@@ -8,6 +8,8 @@ const { registerDebugRoutes } = require('../server/routes/debug.routes');
 const { registerPublicEventRoutes } = require('../server/routes/publicEvent.routes');
 const { registerPublicTeamRoutes } = require('../server/routes/publicTeam.routes');
 const { registerEventNotifyRoutes } = require('../server/routes/eventNotify.routes');
+const { registerBracketV2Routes } = require('../server/routes/bracketV2.routes');
+const { registerBridgeRoutes } = require('../server/routes/bridge.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -18,6 +20,8 @@ registerDebugRoutes(app);
 registerPublicTeamRoutes(app);
 registerPublicEventRoutes(app);
 registerEventNotifyRoutes(app);
+registerBracketV2Routes(app);
+registerBridgeRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
