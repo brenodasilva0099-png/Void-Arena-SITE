@@ -11,10 +11,10 @@ body[data-page="chaveamento"] .va-bracket-card::-webkit-scrollbar-thumb { border
 body[data-page="chaveamento"] .va-integrated-bracket {
   overflow: visible;
   width: 100%;
-  min-width: 1380px;
+  min-width: 1260px;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 20px 54px 34px;
+  padding: 24px 32px 30px;
   border: 1px solid rgba(34, 211, 238, .25);
   border-radius: 28px;
   background:
@@ -25,74 +25,86 @@ body[data-page="chaveamento"] .va-integrated-bracket {
   background-size: 100% 100%;
   box-shadow: inset 0 0 90px rgba(34, 211, 238, .07), 0 24px 70px rgba(0, 0, 0, .28);
 }
-body[data-page="chaveamento"] .va-integrated-bracket .bracket-board {
-  min-width: 1260px !important;
-  width: 1260px !important;
-  max-width: none;
-  min-height: 650px;
-  margin: 0 auto;
-  grid-template-columns: 470px 280px 470px !important;
-  gap: 20px;
-  padding: 24px;
-  border: 0;
-  background: transparent !important;
-  box-shadow: none !important;
+body[data-page="chaveamento"] .va-integrated-bracket .bracket-board { display: none !important; }
+body[data-page="chaveamento"] .bracket-header { text-align: center; margin-bottom: 16px; }
+body[data-page="chaveamento"] .bracket-header h1 { margin: 0; color: #22d3ee; font-size: clamp(36px, 4vw, 52px); line-height: 1; }
+body[data-page="chaveamento"] #bracketMiniStatus { display: block; margin-top: 8px; color: #ddd6fe; font-weight: 900; }
+body[data-page="chaveamento"] #adaptiveBracket { margin-top: 0; display: block; min-width: 1180px; }
+body[data-page="chaveamento"] .va-model-bracket-wrap { display: grid; gap: 18px; }
+body[data-page="chaveamento"] .va-model-title { display: grid; justify-items: center; gap: 8px; }
+body[data-page="chaveamento"] .va-model-title h2 { margin: 0; color: #67e8f9; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; }
+body[data-page="chaveamento"] .va-model-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+body[data-page="chaveamento"] .va-model-bracket {
+  min-height: var(--model-height, 620px);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(142px, 1fr);
+  gap: clamp(12px, 1.2vw, 22px);
+  align-items: stretch;
+  padding: 14px 0 10px;
 }
-body[data-page="chaveamento"] .va-integrated-bracket .bracket-board::before,
-body[data-page="chaveamento"] .va-integrated-bracket .bracket-board::after { display: none !important; }
-body[data-page="chaveamento"] .va-integrated-bracket .bracket-side,
-body[data-page="chaveamento"] .va-integrated-bracket .bracket-center { min-width: 0; }
-body[data-page="chaveamento"] .team-slot { width: 142px; height: 28px; }
-body[data-page="chaveamento"] .advance-slot { width: 116px; height: 28px; }
-body[data-page="chaveamento"] .final-slot { width: 128px; height: 30px; }
-body[data-page="chaveamento"] .is-model-hidden { display: none !important; }
-body[data-page="chaveamento"] .bracket-left .adv-l-1,
-body[data-page="chaveamento"] .bracket-left .adv-l-2,
-body[data-page="chaveamento"] .bracket-left .adv-l-3,
-body[data-page="chaveamento"] .bracket-left .adv-l-4 { left: 198px; }
-body[data-page="chaveamento"] .bracket-right .adv-r-1,
-body[data-page="chaveamento"] .bracket-right .adv-r-2,
-body[data-page="chaveamento"] .bracket-right .adv-r-3,
-body[data-page="chaveamento"] .bracket-right .adv-r-4 { right: 198px; }
-body[data-page="chaveamento"] .bracket-left .semi-l-1,
-body[data-page="chaveamento"] .bracket-left .semi-l-2 { right: 10px; }
-body[data-page="chaveamento"] .bracket-right .semi-r-1,
-body[data-page="chaveamento"] .bracket-right .semi-r-2 { left: 10px; }
-body[data-page="chaveamento"] .final-left { left: 0; }
-body[data-page="chaveamento"] .final-right { right: 0; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .bracket-side,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .bracket-side { min-height: 520px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .slot-l-1,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .slot-r-1 { top: 190px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .slot-l-2,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .slot-r-2 { top: 240px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .semi-l-1,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="4"] .semi-r-1 { top: 214px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-l-1,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-r-1 { top: 120px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-l-2,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-r-2 { top: 170px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-l-3,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-r-3 { top: 320px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-l-4,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .slot-r-4 { top: 370px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .adv-l-1,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .adv-r-1 { top: 145px; }
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .adv-l-2,
-body[data-page="chaveamento"] .bracket-board[data-bracket-model="8"] .adv-r-2 { top: 345px; }
-body[data-page="chaveamento"] #adaptiveBracket { margin-top: 18px; display: grid; gap: 14px; }
-body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round { display: block !important; }
-body[data-page="chaveamento"] #adaptiveBracket .va-adaptive-round h3 { font-size: clamp(22px, 3vw, 32px); margin-bottom: 8px; }
-body[data-page="chaveamento"] .va-prestage-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+body[data-page="chaveamento"] .va-model-col { min-width: 134px; display: grid; grid-template-rows: auto 1fr; gap: 12px; }
+body[data-page="chaveamento"] .va-model-col h3,
+body[data-page="chaveamento"] .va-model-final h3 { margin: 0; text-align: center; color: #67e8f9; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
+body[data-page="chaveamento"] .va-model-col > div { display: flex; flex-direction: column; justify-content: space-around; gap: 14px; min-height: 100%; }
+body[data-page="chaveamento"] .va-model-match,
+body[data-page="chaveamento"] .va-model-advance {
+  position: relative;
+  border: 1px solid rgba(34, 211, 238, .32);
+  border-radius: 14px;
+  padding: 9px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, .10), rgba(139, 92, 246, .07));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .18);
+  min-height: 68px;
+}
+body[data-page="chaveamento"] .va-model-match::after,
+body[data-page="chaveamento"] .va-model-advance::after { content: ''; position: absolute; top: 50%; width: 18px; height: 1px; background: rgba(34, 211, 238, .35); }
+body[data-page="chaveamento"] .va-model-col:not(:last-child) .va-model-match::after,
+body[data-page="chaveamento"] .va-model-col:not(:last-child) .va-model-advance::after { right: -19px; }
+body[data-page="chaveamento"] .va-model-match strong,
+body[data-page="chaveamento"] .va-model-advance strong { display: block; margin-bottom: 6px; color: #d8d0ff; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+body[data-page="chaveamento"] .va-model-team {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(2, 6, 23, .52);
+  color: #f8f7ff;
+  font-weight: 950;
+  line-height: 1.15;
+}
+body[data-page="chaveamento"] .va-model-team + .va-model-team { margin-top: 6px; }
+body[data-page="chaveamento"] .va-model-team.empty { color: rgba(248, 247, 255, .58); }
+body[data-page="chaveamento"] .va-inline-team-logo { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; overflow: hidden; flex: 0 0 22px; background: rgba(139, 92, 246, .22); font-size: 10px; }
+body[data-page="chaveamento"] .va-inline-team-logo img { width: 100%; height: 100%; object-fit: cover; }
+body[data-page="chaveamento"] .va-model-team small { display: block; color: #a5f3fc; font-size: 9px; }
+body[data-page="chaveamento"] .va-model-final { min-width: 180px; display: grid; align-content: center; justify-items: center; gap: 16px; }
+body[data-page="chaveamento"] .va-model-trophy { width: 82px; height: 82px; border-radius: 24px; display: grid; place-items: center; font-size: 38px; background: radial-gradient(circle at 30% 20%, rgba(139,92,246,.35), rgba(3,7,18,.96)); border: 1px solid rgba(34,211,238,.38); box-shadow: 0 0 38px rgba(34,211,238,.18); position: relative; }
+body[data-page="chaveamento"] .va-model-trophy span { position: absolute; right: 13px; bottom: 10px; font-size: 18px; }
+body[data-page="chaveamento"] .va-model-finalists { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+body[data-page="chaveamento"] .va-model-finalists .va-model-advance { min-height: 76px; }
+body[data-page="chaveamento"] .model-4 { grid-auto-columns: minmax(190px, 1fr); max-width: 760px; margin: 0 auto; }
+body[data-page="chaveamento"] .model-8 { grid-auto-columns: minmax(170px, 1fr); max-width: 980px; margin: 0 auto; }
+body[data-page="chaveamento"] .model-12,
+body[data-page="chaveamento"] .model-16 { grid-auto-columns: minmax(144px, 1fr); }
+body[data-page="chaveamento"] .model-20,
+body[data-page="chaveamento"] .model-24,
+body[data-page="chaveamento"] .model-28,
+body[data-page="chaveamento"] .model-32 { grid-auto-columns: minmax(136px, 1fr); }
+body[data-page="chaveamento"] .va-manual-grid { display: grid; gap: 16px; }
+body[data-page="chaveamento"] .va-manual-section { border: 1px solid rgba(255,255,255,.09); border-radius: 18px; padding: 14px; background: rgba(255,255,255,.035); }
+body[data-page="chaveamento"] .va-manual-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 @media (max-width: 1540px) {
-  body[data-page="chaveamento"] .va-integrated-bracket { min-width: 1280px; padding-inline: 42px; }
-  body[data-page="chaveamento"] .va-integrated-bracket .bracket-board { min-width: 1190px !important; width: 1190px !important; grid-template-columns: 440px 270px 440px !important; }
-  body[data-page="chaveamento"] .team-slot { width: 132px; }
-  body[data-page="chaveamento"] .advance-slot { width: 108px; }
-  body[data-page="chaveamento"] .final-slot { width: 118px; }
+  body[data-page="chaveamento"] .va-integrated-bracket { min-width: 1180px; padding-inline: 24px; }
+  body[data-page="chaveamento"] #adaptiveBracket { min-width: 1120px; }
+  body[data-page="chaveamento"] .va-model-bracket { grid-auto-columns: minmax(128px, 1fr); gap: 12px; }
 }
 @media (max-width: 760px) {
   body[data-page="chaveamento"] .va-bracket-card { overflow: visible; }
-  body[data-page="chaveamento"] .va-integrated-bracket { min-width: 0; width: 100%; padding: 0; border: 0; background: transparent; box-shadow: none; }
-  body[data-page="chaveamento"] .va-integrated-bracket .bracket-board { min-width: 0 !important; width: 100% !important; }
+  body[data-page="chaveamento"] .va-integrated-bracket { min-width: 0; width: 100%; padding: 14px; }
+  body[data-page="chaveamento"] #adaptiveBracket { min-width: 0; overflow-x: auto; }
+  body[data-page="chaveamento"] .va-model-bracket { min-width: 980px; }
 }
