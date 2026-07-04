@@ -61,28 +61,24 @@
     document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; });
   }
 
+  function addNavLink(nav, afterKey, key, href, text) {
+    if (nav.querySelector(`[data-nav-key="${key}"]`)) return nav.querySelector(`[data-nav-key="${key}"]`);
+    const anchor = nav.querySelector(`[data-nav-key="${afterKey}"]`);
+    const link = document.createElement('a');
+    link.setAttribute('data-nav-key', key);
+    link.href = href;
+    link.textContent = text;
+    if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link);
+    else nav.appendChild(link);
+    return link;
+  }
+
   function ensureExtraNavLinks() {
     document.querySelectorAll('.va-nav').forEach((nav) => {
-      let anchor = nav.querySelector('[data-nav-key="rankings"]');
-      if (!nav.querySelector('[data-nav-key="pontuacao"]')) {
-        const link = document.createElement('a');
-        link.setAttribute('data-nav-key', 'pontuacao');
-        link.href = '/pages/pontuacao.html';
-        link.textContent = '🏅 Pontuação';
-        if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link);
-        else nav.appendChild(link);
-        anchor = link;
-      } else {
-        anchor = nav.querySelector('[data-nav-key="pontuacao"]');
-      }
-      if (!nav.querySelector('[data-nav-key="placar"]')) {
-        const link = document.createElement('a');
-        link.setAttribute('data-nav-key', 'placar');
-        link.href = '/pages/placar.html';
-        link.textContent = '🎮 Placar';
-        if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link);
-        else nav.appendChild(link);
-      }
+      addNavLink(nav, 'rankings', 'jogadores', '/pages/jogadores.html', '🧑‍🚀 Jogadores');
+      addNavLink(nav, 'jogadores', 'recrutamento', '/pages/recrutamento.html', '🤝 Recrutamento');
+      addNavLink(nav, 'recrutamento', 'pontuacao', '/pages/pontuacao.html', '🏅 Pontuação');
+      addNavLink(nav, 'pontuacao', 'placar', '/pages/placar.html', '🎮 Placar');
     });
   }
 
