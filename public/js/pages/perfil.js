@@ -13,19 +13,24 @@
   function value(name, val = '') { if (form?.elements?.[name]) form.elements[name].value = val || ''; }
   function read(name) { return String(form?.elements?.[name]?.value || '').trim(); }
   function esc(v) { return VoidArena.escapeHtml(v || ''); }
-  function icon(key) { return { discord: '💬', steam: '🎮', xbox: '🟢', tiktok: '🎵', youtube: '▶️', twitter: '𝕏', spotify: '🎧', riot: '🔥', ea: '🎯', psn: '🎮' }[key] || '🔗'; }
-  function label(key) { return { discord: 'Discord', steam: 'Steam', xbox: 'Xbox', tiktok: 'TikTok', youtube: 'YouTube', twitter: 'Twitter/X', spotify: 'Spotify', riot: 'Riot ID', ea: 'EA ID', psn: 'PSN' }[key] || key; }
+  function icon(key) { const img = window.VoidArenaSocial?.iconHtml?.(key); return img || ({ discord: '💬', steam: '🎮', xbox: '🟢', tiktok: '🎵', youtube: '▶️', twitter: '𝕏', spotify: '🎧', riot: '🔥', ea: '🎯', psn: '🎮' }[key] || '🔗'); }
+  function label(key) { return window.VoidArenaSocial?.label?.(key) || ({ discord: 'Discord', steam: 'Steam', xbox: 'Xbox', tiktok: 'TikTok', youtube: 'YouTube', twitter: 'Twitter/X', spotify: 'Spotify', riot: 'Riot ID', ea: 'EA ID', psn: 'PSN' }[key] || key); }
   function hrefFor(key, val) {
     const raw = String(val || '').trim();
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^discord\.gg\//i.test(raw)) return `https://${raw}`;
     if (key === 'tiktok') return `https://www.tiktok.com/@${raw.replace(/^@/, '')}`;
     if (key === 'twitter') return `https://x.com/${raw.replace(/^@/, '')}`;
     if (key === 'steam' && /^\d{16,20}$/.test(raw)) return `https://steamcommunity.com/profiles/${raw}`;
-    if (key === 'spotify' && raw.includes('spotify.com')) return raw;
     return '';
   }
-  function socialCard([key, val]) { const href = hrefFor(key, val); const body = `<span class="va-social-card-icon">${icon(key)}</span><span class="va-social-card-body"><strong>${label(key)}</strong><small>${esc(val)}</small></span><span class="va-social-card-arrow">↗</span>`; return href ? `<a class="va-social-card" href="${esc(href)}" target="_blank" rel="noreferrer">${body}</a>` : `<div class="va-social-card">${body}</div>`; }
+  function socialCard([key, val]) {
+    const href = hrefFor(key, val);
+    const valueLine = href ? '' : `<small>${esc(val)}</small>`;
+    const body = `<span class="va-social-card-icon">${icon(key)}</span><span class="va-social-card-body"><strong>${label(key)}</strong>${valueLine}</span><span class="va-social-card-arrow">↗</span>`;
+    return href ? `<a class="va-social-card" href="${esc(href)}" target="_blank" rel="noreferrer">${body}</a>` : `<div class="va-social-card">${body}</div>`;
+  }
   function renderConnections(socials = {}) { if (!connectionsEl) return; const entries = Object.entries(socials || {}).filter(([, v]) => String(v || '').trim()); connectionsEl.innerHTML = entries.length ? entries.map(socialCard).join('') : '<div class="va-muted">Nenhuma conexão pública cadastrada.</div>'; }
   function renderTeam(team = null) { if (!teamCardEl) return; if (!team) { teamCardEl.innerHTML = '<div class="va-current-team-card"><p class="va-eyebrow">Time atual</p><strong>Nenhum time vinculado ainda</strong><p class="va-muted">Crie um time ou peça para o capitão adicionar seu Discord ID ao elenco.</p></div>'; return; } const logo = team.logo ? `<img src="${esc(team.logo)}" alt="${esc(team.name)}" />` : esc((team.tag || team.name || 'T').slice(0, 2).toUpperCase()); teamCardEl.innerHTML = `<div class="va-current-team-card"><p class="va-eyebrow">Time atual</p><div class="va-current-team-row"><div class="va-current-team-logo">${logo}</div><div><span class="va-team-tag">${esc(team.tag || 'TIME')}</span><h3>${esc(team.name || 'Time')}</h3><a class="va-btn secondary mini" href="/pages/times.html">Ver perfil do time</a></div></div></div>`; }
   function statItem(value, label, cls = '') { return `<div class="va-stat-item ${cls}"><strong>${esc(String(value))}</strong><span>${esc(label)}</span></div>`; }
