@@ -28,6 +28,14 @@ function extractDiscordId(value = '') {
   return '';
 }
 
+async function safeSessionUser(req) {
+  try {
+    return await getSessionUser(req);
+  } catch {
+    return null;
+  }
+}
+
 function canManageTeam(user = null, team = {}) {
   if (!user) return false;
   if (isOwnerRecord(user)) return true;
@@ -138,6 +146,7 @@ function buildDirectory(users = [], teams = []) {
     const profile = player.profile || {};
     return {
       ...player,
+      name: clean(player.name || 'Jogador', 80),
       teams: uniqueTeams,
       teamName: uniqueTeams[0]?.name || '',
       teamTag: uniqueTeams[0]?.tag || '',
@@ -148,7 +157,7 @@ function buildDirectory(users = [], teams = []) {
       status: uniqueTeams.length ? 'club' : 'free',
       statusLabel: uniqueTeams.length ? 'Com clube' : 'Sem clube'
     };
-  }).sort((a, b) => (a.status === b.status ? 0 : a.status === 'free' ? -1 : 1) || a.name.localeCompare(b.name));
+  }).sort((a, b) => (a.status === b.status ? 0 : a.status === 'free' ? -1 : 1) || String(a.name || '').localeCompare(String(b.name || '')));
 }
 
 function parseRecruitmentMessage(message = {}) {
@@ -162,23 +171,31 @@ function parseRecruitmentMessage(message = {}) {
 
 function registerPlayersRoutes(app) {
   app.get('/api/players/directory', requireSession, async (req, res) => {
-    const [users, teams, viewer] = await Promise.all([
-      storage.readUsers().catch(() => []),
-      storage.readTeams().catch(() => []),
-      getSessionUser(req)
-    ]);
-    const viewerTeams = teams.filter((team) => canManageTeam(viewer, team)).map(publicTeam);
-    return res.json({ success: true, players: buildDirectory(users, teams), teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
+    try {
+      const [users, teams, viewer] = await Promise.all([
+        storage.readUsers().catch(() => []),
+        storage.readTeams().catch(() => []),
+        safeSessionUser(req)
+      ]);
+      const viewerTeams = teams.filter((team) => canManageTeam(viewer, team)).map(publicTeam);
+      return res.json({ success: true, players: buildDirectory(users, teams), teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message, players: [], teams: [], viewerTeams: [] });
+    }
   });
 
   app.get('/api/recruitment/requests', requireSession, async (_req, res) => {
-    const messages = await storage.readChatMessages({ channelId: RECRUITMENT_CHANNEL_ID, limit: 150 }).catch(() => []);
-    return res.json({ success: true, requests: messages.map(parseRecruitmentMessage).reverse() });
+    try {
+      const messages = await storage.readChatMessages({ channelId: RECRUITMENT_CHANNEL_ID, limit: 150 }).catch(() => []);
+      return res.json({ success: true, requests: messages.map(parseRecruitmentMessage).reverse() });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message, requests: [] });
+    }
   });
 
   app.post('/api/recruitment/requests', requireSession, async (req, res) => {
     try {
-      const [viewer, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
+      const [viewer, teams] = await Promise.all([safeSessionUser(req), storage.readTeams().catch(() => [])]);
       if (!viewer) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
 
       const type = clean(req.body?.type, 32);
