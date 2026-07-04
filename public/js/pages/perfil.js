@@ -44,7 +44,14 @@
   }
   async function load() { await VoidArena.bootLayout('perfil'); const data = await VoidArena.request('/api/me/profile-v2'); fill(data); setStatus('Perfil carregado.', 'ok'); }
   async function save() { setStatus('Salvando perfil...'); const body = { profile: { username: read('username'), realName: read('realName'), country: read('country'), region: read('region'), timezone: read('timezone'), primaryPosition: read('primaryPosition'), secondaryPosition: read('secondaryPosition'), bio: read('bio'), banner: read('banner'), steamId: read('steam'), xboxGamertag: read('xboxGamertag') }, socials: { discord: read('discord'), steam: read('steam'), xbox: read('xboxGamertag'), tiktok: read('tiktok'), youtube: read('youtube'), twitter: read('twitter'), spotify: read('spotify'), riot: read('riot'), ea: read('ea'), psn: read('psn') } }; const data = await VoidArena.request('/api/me/profile-v2', { method: 'PUT', body: JSON.stringify(body) }); fill(data); setStatus('Perfil salvo com sucesso.', 'ok'); }
+  async function logout() {
+    setStatus('Saindo da conta...');
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', cache: 'no-store' }).catch(() => null);
+    window.location.href = '/';
+  }
   form?.elements?.banner?.addEventListener('input', () => { const url = read('banner'); if (bannerEl) bannerEl.style.backgroundImage = url ? `linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.45)), url("${esc(url)}")` : ''; });
   document.getElementById('saveProfileBtn')?.addEventListener('click', () => save().catch((error) => setStatus(`❌ ${error.message}`, 'err')));
+  document.getElementById('profileLogoutBtn')?.addEventListener('click', () => logout());
+  document.getElementById('profileLogoutBtnBottom')?.addEventListener('click', () => logout());
   load().catch((error) => setStatus(`❌ ${error.message}`, 'err'));
 }());
