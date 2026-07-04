@@ -19,6 +19,30 @@
   font-size: 34px;
   line-height: 1;
 }
+.ball {
+  width: auto !important;
+  height: auto !important;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: grid !important;
+  place-items: center !important;
+  opacity: .78 !important;
+  filter: drop-shadow(0 0 18px rgba(255,255,255,.18));
+}
+.ball::before {
+  content: '⚽' !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  font-size: 24px;
+  line-height: 1;
+}
+.ball::after { display: none !important; content: none !important; }
 .hero-message-card h3 { line-height: 1.08; }
 .discord-recommendation {
   margin-top: 14px;
