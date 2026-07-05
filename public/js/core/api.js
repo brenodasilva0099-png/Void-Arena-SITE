@@ -1,7 +1,7 @@
 (function(){
 const VA=window.VoidArena||{};window.VoidArena=VA;if(VA.__stableBootstrapReady)return;VA.__stableBootstrapReady=true;
 const FAV='/assets/hollow-nexus.png?v=6';
-const NAV=[['rankings','jogadores','/pages/jogadores.html','👤 Jogadores'],['jogadores','recrutamento','/pages/recrutamento.html','🤝 Recrutamento'],['recrutamento','pontuacao','/pages/pontuacao.html','🏅 Pontuação'],['pontuacao','placar','/pages/placar.html','🎮 Placar'],['termos','privacidade','/pages/privacidade.html','🔐 Privacidade']];
+const NAV=[['dashboard','atualizacoes','/pages/atualizacoes.html','📰 Atualizações'],['rankings','jogadores','/pages/jogadores.html','👤 Jogadores'],['jogadores','recrutamento','/pages/recrutamento.html','🤝 Recrutamento'],['recrutamento','pontuacao','/pages/pontuacao.html','🏅 Pontuação'],['pontuacao','placar','/pages/placar.html','🎮 Placar'],['termos','privacidade','/pages/privacidade.html','🔐 Privacidade']];
 function fav(){document.querySelectorAll('link[rel="icon"],link[rel="shortcut icon"]').forEach(n=>n.remove());for(const rel of ['icon','shortcut icon']){const l=document.createElement('link');l.rel=rel;l.type='image/png';l.sizes='32x32';l.href=FAV;document.head.appendChild(l)}}
 function css(){if(document.querySelector('link[data-void-cleanup]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='/css/site-cleanup.css?v=5';l.dataset.voidCleanup='1';document.head.appendChild(l)}
 function escapeHtml(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
