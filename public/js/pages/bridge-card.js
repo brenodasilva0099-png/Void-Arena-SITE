@@ -10,13 +10,14 @@
   const sendBtn = document.getElementById('bridgeSendBtn');
   const linkBtn = document.getElementById('bridgeLinkBtn');
   const refreshBtn = document.getElementById('bridgeRefreshBtn');
-  const mentionBtn = document.querySelector('.va-bridge-compose .va-btn.secondary');
+  const mentionBtn = Array.from(document.querySelectorAll('.va-bridge-compose .va-btn.secondary')).find((btn) => /marcar/i.test(btn.textContent || ''));
   const composeEl = document.querySelector('.va-bridge-compose');
   let mentionData = { members: [], roles: [] };
   let mentionOpen = false;
   let mentionSelectedIndex = 0;
 
   function esc(value) { return VoidArena.escapeHtml(value || ''); }
+  function norm(value = '') { return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
   function setStatus(message, type = '') { statusEl.textContent = message; statusEl.className = `va-status va-bridge-status ${type}`.trim(); }
   function channelLabel(channel = {}) { return `${channel.displayName || channel.name || 'canal'} — ${channel.typeName || channel.kind || 'Texto'}`; }
   function renderChannels(channels = [], selected = '') {
@@ -35,8 +36,8 @@
     return rows.length ? `<div class="va-bridge-attachments">${rows.join('')}</div>` : '';
   }
   function mentionItems() {
-    const roles = (mentionData.roles || []).map((item) => ({ ...item, type: 'role', label: item.name || 'Cargo', insert: item.mention || `<@&${item.id}>`, icon: '#', sub: 'Cargo' }));
-    const members = (mentionData.members || []).map((item) => ({ ...item, type: 'member', label: item.name || item.username || 'Usuário', insert: item.mention || `<@${item.id}>`, icon: item.avatar ? `<img src="${esc(item.avatar)}" alt="" />` : '@', sub: item.username ? `@${item.username}` : 'Usuário' }));
+    const roles = (mentionData.roles || []).map((item) => ({ ...item, type: 'role', label: item.name || 'Cargo', insert: item.mention || `<@&${item.id}>`, icon: '#', sub: item.guildName || 'Cargo' }));
+    const members = (mentionData.members || []).map((item) => ({ ...item, type: 'member', label: item.name || item.username || 'Usuário', insert: item.mention || `<@${item.id}>`, icon: item.avatar ? `<img src="${esc(item.avatar)}" alt="" />` : '@', sub: item.username ? `@${item.username}` : (item.guildName || 'Usuário') }));
     return [...roles, ...members];
   }
   function mentionMap() {
@@ -48,7 +49,7 @@
     let html = esc(content);
     mentionMap().forEach((item, raw) => {
       const safeRaw = esc(raw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      html = html.replace(new RegExp(safeRaw, 'g'), `<span class="va-mention-token">${item.type === 'role' ? '@' : '@'}${esc(item.label)}</span>`);
+      html = html.replace(new RegExp(safeRaw, 'g'), `<span class="va-mention-token">@${esc(item.label)}</span>`);
     });
     return html;
   }
@@ -81,17 +82,22 @@
   }
   function filteredMentions(forceAll = false) {
     const token = getMentionQuery();
-    const q = forceAll ? '' : String(token?.query || '').toLowerCase();
-    return mentionItems().filter((item) => !q || String(item.label || '').toLowerCase().includes(q) || String(item.username || '').toLowerCase().includes(q)).slice(0, 30);
+    const q = forceAll ? '' : norm(token?.query || '');
+    return mentionItems().filter((item) => !q || norm(`${item.label} ${item.username || ''} ${item.sub || ''}`).includes(q)).slice(0, 30);
   }
-  function renderMentionMenu(forceAll = false) {
+  function renderMentionMenu(forceAll = false, loading = false) {
     const menu = ensureMentionMenu();
-    const items = filteredMentions(forceAll);
     mentionOpen = true;
+    if (loading) {
+      menu.hidden = false;
+      menu.innerHTML = '<div class="va-mention-empty">Carregando usuários e cargos do Discord...</div>';
+      return;
+    }
+    const items = filteredMentions(forceAll);
     mentionSelectedIndex = Math.min(mentionSelectedIndex, Math.max(0, items.length - 1));
     if (!items.length) {
       menu.hidden = false;
-      menu.innerHTML = '<div class="va-mention-empty">Nenhum usuário ou cargo encontrado.</div>';
+      menu.innerHTML = '<div class="va-mention-empty">Nenhum usuário ou cargo encontrado. Confirme se o BOT está online e com acesso aos membros/cargos.</div>';
       return;
     }
     const roleItems = items.filter((item) => item.type === 'role');
@@ -130,12 +136,15 @@
     closeMentionMenu();
   }
   async function showAllMentions() {
+    renderMentionMenu(true, true);
     if (!mentionData.members?.length && !mentionData.roles?.length) await loadMentions().catch((error) => setStatus(`❌ ${error.message}`, 'err'));
+    mentionSelectedIndex = 0;
     renderMentionMenu(true);
   }
   async function load() {
     setStatus('Carregando ponte Discord ↔ Site e histórico do canal...');
     const data = await VoidArena.request(`/api/bridge/${encodeURIComponent(key)}/state`);
+    mentionData = data.mentions || mentionData;
     titleEl.textContent = data.bridge?.title || titleEl.textContent;
     subtitleEl.textContent = data.settings?.discordChannelId ? `Canal Discord vinculado: ${data.settings.discordChannelId}` : 'Canal Discord: não vinculado';
     inputEl.placeholder = data.bridge?.placeholder || inputEl.placeholder;
