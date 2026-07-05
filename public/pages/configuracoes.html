@@ -63,22 +63,14 @@
   </article>
   <article class="va-card full">
     <h2>Correios / notificações do site</h2>
-    <p>Envie um aviso para aparecer no ícone de Correios dos usuários logados no site.</p>
+    <p>Envie avisos para os Correios. Os alertas do navegador funcionam enquanto o usuário estiver com o site aberto e tiver permitido notificações.</p>
     <form id="siteAnnouncementForm" class="va-form-grid two">
       <label>Título do aviso<input name="title" maxlength="120" placeholder="Ex: Nova função disponível" value="Aviso da Void Arena" required /></label>
       <label class="wide">Mensagem<textarea name="message" maxlength="1000" rows="4" placeholder="Digite o aviso que os jogadores verão nos Correios..." required></textarea></label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar para os Correios</button><button id="openInboxPreviewBtn" class="va-btn" type="button">Ver meus Correios</button></div>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar para os Correios</button><button id="openInboxPreviewBtn" class="va-btn" type="button">Ver meus Correios</button><button id="enableBrowserNotificationsBtn" class="va-btn" type="button">Ativar alerta do navegador</button></div>
     </form>
+    <div id="announcementList" class="va-list"></div>
     <div id="announcementStatus" class="va-status">Aguardando mensagem.</div>
-  </article>
-  <article class="va-card full">
-    <h2>Criar categoria no Discord</h2>
-    <p>Crie uma categoria direto no servidor pelo BOT. Use para organizar eventos, HUBs, canais privados ou áreas novas.</p>
-    <form id="discordCategoryForm" class="va-form-grid two">
-      <label class="wide">Nome da categoria<input name="name" maxlength="80" placeholder="Ex: Void Arena Eventos" required /></label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Criar categoria</button></div>
-    </form>
-    <div id="discordCategoryStatus" class="va-status">Aguardando nome da categoria.</div>
   </article>
   <article class="va-card full">
     <h2>Calls privadas dos times</h2>
