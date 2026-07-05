@@ -8,52 +8,12 @@
   opacity: .72;
   filter: drop-shadow(0 0 18px rgba(255,255,255,.18));
 }
-.pitch-center-circle::before {
-  content: '⚽' !important;
-  position: static !important;
-  width: auto !important;
-  height: auto !important;
-  transform: none !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-  font-size: 34px;
-  line-height: 1;
-}
-.ball {
-  width: auto !important;
-  height: auto !important;
-  min-width: 28px;
-  min-height: 28px;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  display: grid !important;
-  place-items: center !important;
-  opacity: .78 !important;
-  filter: drop-shadow(0 0 18px rgba(255,255,255,.18));
-}
-.ball::before {
-  content: '⚽' !important;
-  position: static !important;
-  width: auto !important;
-  height: auto !important;
-  background: transparent !important;
-  border-radius: 0 !important;
-  font-size: 24px;
-  line-height: 1;
-}
+.pitch-center-circle::before { content: '⚽' !important; position: static !important; width: auto !important; height: auto !important; transform: none !important; background: transparent !important; border-radius: 0 !important; font-size: 34px; line-height: 1; }
+.ball { width: auto !important; height: auto !important; min-width: 28px; min-height: 28px; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; display: grid !important; place-items: center !important; opacity: .78 !important; filter: drop-shadow(0 0 18px rgba(255,255,255,.18)); }
+.ball::before { content: '⚽' !important; position: static !important; width: auto !important; height: auto !important; background: transparent !important; border-radius: 0 !important; font-size: 24px; line-height: 1; }
 .ball::after { display: none !important; content: none !important; }
 .hero-message-card h3 { line-height: 1.08; }
-.discord-recommendation {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border: 1px solid rgba(34,211,238,.26);
-  border-radius: 16px;
-  background: rgba(34,211,238,.08);
-  color: #d8f7ff;
-  font-weight: 850;
-  line-height: 1.45;
-}
+.discord-recommendation { margin-top: 14px; padding: 12px 14px; border: 1px solid rgba(34,211,238,.26); border-radius: 16px; background: rgba(34,211,238,.08); color: #d8f7ff; font-weight: 850; line-height: 1.45; }
 .va-main, .va-card, .va-topbar, .va-grid, .va-shell { min-width: 0; }
 .va-card { overflow-wrap: anywhere; }
 .va-card h1, .va-card h2, .va-card h3, .va-topbar h1, .va-title { overflow-wrap: normal; word-break: normal; }
@@ -61,64 +21,30 @@
 .va-status { display: block; margin-top: 12px; }
 .va-status:empty { display: none; }
 .va-event-team-strip { align-items: flex-start !important; padding-block: 12px !important; }
-.va-event-team-logo {
-  width: 58px !important;
-  height: auto !important;
-  min-height: 74px;
-  display: grid !important;
-  grid-template-rows: 48px auto;
-  place-items: center;
-  gap: 5px;
-  padding: 6px 4px 5px !important;
-  text-decoration: none;
-  color: #f8f7ff;
-  overflow: visible !important;
-}
-.va-event-logo-box {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  background: #050816;
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: inset 0 0 18px rgba(34,211,238,.06);
-}
+.va-event-team-logo { width: 58px !important; height: auto !important; min-height: 74px; display: grid !important; grid-template-rows: 48px auto; place-items: center; gap: 5px; padding: 6px 4px 5px !important; text-decoration: none; color: #f8f7ff; overflow: visible !important; }
+.va-event-logo-box { width: 48px; height: 48px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; background: #050816; border: 1px solid rgba(255,255,255,.08); box-shadow: inset 0 0 18px rgba(34,211,238,.06); }
 .va-event-logo-box img { width: 100%; height: 100%; object-fit: cover; }
 .va-event-logo-box span { font-weight: 1000; font-size: 14px; }
-.va-event-team-logo small {
-  position: static !important;
-  inset: auto !important;
-  width: 100%;
-  padding: 0 !important;
-  background: transparent !important;
-  color: #f8f7ff !important;
-  font-size: 10px !important;
-  line-height: 1.05;
-  text-shadow: none;
-}
+.va-event-team-logo small { position: static !important; inset: auto !important; width: 100%; padding: 0 !important; background: transparent !important; color: #f8f7ff !important; font-size: 10px !important; line-height: 1.05; text-shadow: none; }
 .va-event-team-logo:hover { transform: translateY(-1px); border-color: rgba(34,211,238,.55) !important; }
-.va-home-marquee {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 330px);
-  gap: 18px;
-  align-items: stretch;
-}
+body[data-page="chaveamento"] .va-integrated-bracket::before,
+body[data-page="chaveamento"] .va-integrated-bracket::after,
+body[data-page="chaveamento"] .va-bracket-card::before,
+body[data-page="chaveamento"] .va-bracket-card::after { display: none !important; content: none !important; }
+body[data-page="chaveamento"] .va-integrated-bracket { padding-top: 10px !important; }
+.va-mail-pill { width: 38px; height: 38px; border-radius: 999px; border: 1px solid rgba(139,92,246,.36); background: rgba(20,16,38,.88); color: #f8f7ff; display: inline-grid; place-items: center; margin-left: 8px; cursor: pointer; position: relative; font-size: 18px; box-shadow: inset 0 0 18px rgba(34,211,238,.08); }
+.va-mail-pill:hover { border-color: rgba(34,211,238,.58); transform: translateY(-1px); }
+.va-mail-pill span { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: grid; place-items: center; background: #ef4444; color: white; font-size: 11px; font-weight: 1000; }
+.va-notifications-card { max-width: 720px; }
+.va-notification-item { margin-top: 12px; padding: 14px; border-radius: 16px; border: 1px solid rgba(139,92,246,.24); background: rgba(255,255,255,.045); }
+.va-notification-item strong, .va-notification-item p { display: block; margin: 0 0 8px; }
+.va-notification-item p { color: #d8d0ff; }
+.va-home-marquee { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 330px); gap: 18px; align-items: stretch; }
 .va-home-spotlight.compact { padding: 0; background: transparent; min-height: auto; }
 .va-home-spotlight.compact::after { display: none; }
 .va-home-spotlight.compact h2 { margin: 6px 0 12px; line-height: 1.08; }
 .va-home-spotlight.compact p { margin: 0; line-height: 1.6; }
-.va-home-vap-card {
-  min-height: 180px;
-  padding: 22px;
-  border-radius: 24px;
-  border: 1px solid rgba(34,211,238,.28);
-  background: radial-gradient(circle at 20% 18%,rgba(34,211,238,.20),transparent 34%),linear-gradient(135deg,rgba(34,211,238,.14),rgba(139,92,246,.12));
-  display: grid;
-  align-content: center;
-  gap: 10px;
-}
+.va-home-vap-card { min-height: 180px; padding: 22px; border-radius: 24px; border: 1px solid rgba(34,211,238,.28); background: radial-gradient(circle at 20% 18%,rgba(34,211,238,.20),transparent 34%),linear-gradient(135deg,rgba(34,211,238,.14),rgba(139,92,246,.12)); display: grid; align-content: center; gap: 10px; }
 .va-home-vap-card strong { display: block; font-size: clamp(42px, 7vw, 74px); line-height: .9; color: #67e8f9; letter-spacing: -.06em; }
 .va-home-vap-card span { display: block; color: #f6f1ff; font-weight: 900; line-height: 1.35; }
 .va-home-mini-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
@@ -130,10 +56,5 @@
 .va-home-action-grid a { display: grid; gap: 6px; padding: 15px; border-radius: 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.045); }
 .va-home-action-grid strong, .va-home-action-grid span { display: block; line-height: 1.35; }
 .va-home-action-grid span { color: #c9c1ef; font-size: 13px; font-weight: 800; }
-@media(max-width: 980px) {
-  .va-home-marquee, .va-home-bottom-panel { grid-template-columns: 1fr; }
-  .va-home-action-grid, .va-home-mini-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-}
-@media(max-width: 640px) {
-  .va-home-action-grid, .va-home-mini-grid { grid-template-columns: 1fr; }
-}
+@media(max-width: 980px) { .va-home-marquee, .va-home-bottom-panel { grid-template-columns: 1fr; } .va-home-action-grid, .va-home-mini-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 640px) { .va-home-action-grid, .va-home-mini-grid { grid-template-columns: 1fr; } }
