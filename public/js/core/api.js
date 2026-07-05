@@ -3,7 +3,7 @@
     if (document.querySelector('link[data-void-cleanup]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/css/site-cleanup.css?v=2';
+    link.href = '/css/site-cleanup.css?v=3';
     link.setAttribute('data-void-cleanup', '1');
     document.head.appendChild(link);
   }
