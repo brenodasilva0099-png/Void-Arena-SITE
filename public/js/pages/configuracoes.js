@@ -5,6 +5,8 @@
   const backupStatus = document.getElementById('backupStatus');
   const categoryForm = document.getElementById('discordCategoryForm');
   const categoryStatus = document.getElementById('discordCategoryStatus');
+  const announcementForm = document.getElementById('siteAnnouncementForm');
+  const announcementStatus = document.getElementById('announcementStatus');
   function item(title, text) { return `<div class="va-item"><strong>${VoidArena.escapeHtml(title)}</strong><div class="va-muted">${text}</div></div>`; }
   function status(el, msg, type = '') { if (!el) return; el.textContent = msg; el.className = `va-status ${type}`.trim(); }
   function dbSummary(db = {}) {
@@ -67,9 +69,23 @@
       status(categoryStatus, `❌ ${error.message}`, 'err');
     }
   }
+  async function sendAnnouncement(event) {
+    event.preventDefault();
+    const title = String(announcementForm?.elements?.title?.value || '').trim();
+    const message = String(announcementForm?.elements?.message?.value || '').trim();
+    if (!message) return status(announcementStatus, 'Digite a mensagem do aviso.', 'err');
+    status(announcementStatus, 'Enviando para os Correios...');
+    try {
+      const data = await VoidArena.request('/api/notifications/announcement', { method: 'POST', body: JSON.stringify({ title, message }) });
+      status(announcementStatus, `✅ ${data.message || 'Aviso enviado.'}`, 'ok');
+      announcementForm.elements.message.value = '';
+    } catch (error) { status(announcementStatus, `❌ ${error.message}`, 'err'); }
+  }
   document.getElementById('reloadConfigBtn')?.addEventListener('click', load);
   document.getElementById('createBackupBtn')?.addEventListener('click', createBackup);
   document.getElementById('restoreBackupBtn')?.addEventListener('click', restoreBackup);
+  document.getElementById('openInboxPreviewBtn')?.addEventListener('click', () => VoidArena.openNotifications?.());
   categoryForm?.addEventListener('submit', createDiscordCategory);
+  announcementForm?.addEventListener('submit', sendAnnouncement);
   VoidArena.bootLayout('config').then(load).catch((error) => status(configStatus, `❌ ${error.message}`, 'err'));
 }());
