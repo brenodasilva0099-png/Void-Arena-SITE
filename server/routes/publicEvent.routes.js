@@ -191,6 +191,8 @@ function registerPublicEventRoutes(app) {
         method: 'POST',
         body: JSON.stringify({
           eventId: event.id,
+          eventName: event.title || event.name || event.id,
+          eventTitle: event.title || event.name || event.id,
           teamId,
           teamName: team.name || '',
           teamTag: team.tag || '',
