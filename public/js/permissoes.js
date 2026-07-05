@@ -9,7 +9,10 @@ const keys = [
   ['bracket', 'Chaveamento'],
   ['results', 'Resultados'],
   ['rankings', 'Rankings'],
+  ['players', 'Jogadores'],
+  ['recruitment', 'Recrutamento'],
   ['scoring', 'Pontuação'],
+  ['placar', 'Placar'],
   ['chat', 'Chat Geral'],
   ['teamChats', 'Chat de Times'],
   ['scrims', 'Scrims'],
@@ -60,7 +63,7 @@ function timeout(ms) {
 
 async function requestPermissions() {
   return Promise.race([
-    VoidArena.request('/api/owner/role-permissions'),
+    VoidArena.request('/api/owner/role-permissions', { timeoutMs: 10000 }),
     timeout(12000)
   ]);
 }
@@ -104,7 +107,7 @@ async function save() {
   statusEl.textContent = 'Salvando permissões na Hub/Storage do BOT...';
   statusEl.className = 'va-status';
   try {
-    const data = await VoidArena.request('/api/owner/role-permissions', { method: 'PUT', body: JSON.stringify({ permissions: next }) });
+    const data = await VoidArena.request('/api/owner/role-permissions', { method: 'PUT', body: JSON.stringify({ permissions: next }), timeoutMs: 10000 });
     permissions = data.permissions || next;
     statusEl.textContent = 'Permissões salvas e sincronizadas com o BOT.';
     statusEl.className = 'va-status ok';
