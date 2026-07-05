@@ -15,6 +15,7 @@
   function dbSummary(db = {}) { return `Usuários: ${db.users || 0} • Times: ${db.teams || 0} • Eventos: ${db.events || 0} • Partidas: ${db.trainingSubmissions || 0} • Mensagens: ${db.messages || 0}`; }
   function esc(value = '') { return VoidArena.escapeHtml(value); }
   function categoryId() { return String(matchVoicesForm?.elements?.categoryId?.value || '1523133579570184194').trim(); }
+  function listedVoiceIds() { return Array.from(document.querySelectorAll('[data-match-voice-id]')).map((input) => input.dataset.matchVoiceId).filter(Boolean); }
 
   async function load() {
     status(configStatus, 'Carregando status...');
@@ -144,16 +145,26 @@
     } catch (error) { status(matchVoiceStatus, `❌ ${error.message}`, 'err'); }
   }
 
-  async function deleteMatchVoices() {
-    const channelIds = Array.from(document.querySelectorAll('[data-match-voice-id]:checked')).map((input) => input.dataset.matchVoiceId).filter(Boolean);
-    if (!channelIds.length) return status(matchVoiceStatus, 'Selecione pelo menos uma call para apagar.', 'err');
-    if (!confirm(`Apagar ${channelIds.length} call(s) selecionada(s)?`)) return;
-    status(matchVoiceStatus, 'Apagando calls selecionadas...');
+  async function deleteVoiceIds(channelIds = [], modeLabel = 'selecionada(s)') {
+    if (!channelIds.length) return status(matchVoiceStatus, 'Nenhuma call carregada para apagar.', 'err');
+    if (!confirm(`Apagar ${channelIds.length} call(s) ${modeLabel}?`)) return;
+    status(matchVoiceStatus, 'Apagando calls...');
     try {
-      const data = await VoidArena.request('/api/discord/match-voices', { method: 'DELETE', body: JSON.stringify({ channelIds, categoryId: categoryId() }), timeoutMs: 15000 });
+      const data = await VoidArena.request('/api/discord/match-voices', { method: 'DELETE', body: JSON.stringify({ channelIds, categoryId: categoryId() }), timeoutMs: 20000 });
       status(matchVoiceStatus, `✅ ${data.message || `${data.deleted?.length || 0} call(s) apagada(s).`}`, 'ok');
       await loadMatchVoices();
     } catch (error) { status(matchVoiceStatus, `❌ ${error.message}`, 'err'); }
+  }
+
+  async function deleteMatchVoices() {
+    const channelIds = Array.from(document.querySelectorAll('[data-match-voice-id]:checked')).map((input) => input.dataset.matchVoiceId).filter(Boolean);
+    if (!channelIds.length) return status(matchVoiceStatus, 'Selecione pelo menos uma call para apagar.', 'err');
+    await deleteVoiceIds(channelIds, 'selecionada(s)');
+  }
+
+  async function clearAllMatchVoices() {
+    const channelIds = listedVoiceIds();
+    await deleteVoiceIds(channelIds, 'listada(s) nessa categoria');
   }
 
   document.getElementById('reloadConfigBtn')?.addEventListener('click', load);
@@ -163,6 +174,7 @@
   document.getElementById('enableBrowserNotificationsBtn')?.addEventListener('click', enableBrowserNotifications);
   document.getElementById('loadMatchVoicesBtn')?.addEventListener('click', loadMatchVoices);
   document.getElementById('deleteMatchVoicesBtn')?.addEventListener('click', deleteMatchVoices);
+  document.getElementById('clearAllMatchVoicesBtn')?.addEventListener('click', clearAllMatchVoices);
   announcementForm?.addEventListener('submit', sendAnnouncement);
   VoidArena.bootLayout('config').then(load).catch((error) => status(configStatus, `❌ ${error.message}`, 'err'));
 }());
