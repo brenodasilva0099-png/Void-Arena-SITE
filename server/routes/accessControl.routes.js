@@ -2,6 +2,7 @@ const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
 
 const PUBLIC_KEYS = new Set(['dashboard', 'inicio', 'perfil', 'terms', 'termos']);
+const STRICT_PERMISSION_KEYS = new Set(['forms', 'matches']);
 const PAGE_TO_PERMISSION = {
   dashboard: null,
   inicio: null,
@@ -27,8 +28,12 @@ const PAGE_TO_PERMISSION = {
   estatisticas: 'stats',
   stats: 'stats',
   analise: 'matches',
+  'analise-partidas': 'matches',
+  analysis: 'matches',
+  partidas: 'matches',
   matches: 'matches',
   formularios: 'forms',
+  formulario: 'forms',
   forms: 'forms',
   permissoes: 'config',
   config: 'config',
@@ -96,7 +101,10 @@ function isPageAllowed({ pageKey, user, roleIds, permissions }) {
   const allConfigured = configuredKeys(permissions);
   const keysToTry = [permissionKey, ...(FALLBACK_KEYS[permissionKey] || [])];
   const hasAnyConfigForPage = keysToTry.some((item) => allConfigured.has(item));
-  if (!hasAnyConfigForPage) return { allowed: true, reason: 'not_configured' };
+  if (!hasAnyConfigForPage) {
+    if (STRICT_PERMISSION_KEYS.has(permissionKey)) return { allowed: false, reason: 'strict_not_configured', permissionKey, keysToTry };
+    return { allowed: true, reason: 'not_configured' };
+  }
 
   const ids = new Set(roleIds.map((id) => String(id || '').trim()).filter(Boolean));
   const allowed = Object.entries(permissions).some(([roleId, rolePermissions]) => (
