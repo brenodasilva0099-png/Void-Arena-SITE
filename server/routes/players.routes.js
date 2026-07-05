@@ -1,5 +1,6 @@
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { callBot } = require('../services/botApi.service');
 const { createRecruitmentNotification } = require('./notifications.routes');
 
 const RECRUITMENT_CHANNEL_ID = 'recruitment-board';
@@ -19,6 +20,33 @@ function extractDiscordId(value = '') {
   if (mention) return mention[1];
   if (/^\d{16,22}$/.test(raw)) return raw;
   return '';
+}
+
+function publicRole(role = {}) {
+  return { id: role.id || '', name: clean(role.name || '', 80), guildId: role.guildId || '', guildName: role.guildName || '' };
+}
+function filterPublicRoles(roles = []) {
+  const blocked = new Set(['everyone', '@everyone']);
+  return (Array.isArray(roles) ? roles : []).map(publicRole).filter((role) => role.id && role.name && !blocked.has(String(role.name).toLowerCase())).slice(0, 12);
+}
+async function readRolesForDiscordId(discordId = '') {
+  const id = String(discordId || '').trim();
+  if (!id) return [];
+  try {
+    const data = await callBot(`/internal/discord/member-roles/${encodeURIComponent(id)}`, { method: 'GET' });
+    return filterPublicRoles(data.roles || []);
+  } catch { return []; }
+}
+async function attachDiscordRoles(players = []) {
+  const ids = Array.from(new Set(players.map((player) => String(player.discordId || '').trim()).filter(Boolean)));
+  const map = new Map();
+  const chunkSize = 5;
+  for (let index = 0; index < ids.length; index += chunkSize) {
+    const chunk = ids.slice(index, index + chunkSize);
+    const results = await Promise.all(chunk.map(async (id) => [id, await readRolesForDiscordId(id)]));
+    results.forEach(([id, roles]) => map.set(id, roles));
+  }
+  return players.map((player) => ({ ...player, roles: map.get(String(player.discordId || '').trim()) || [] }));
 }
 
 async function safeSessionUser(req) { try { return await getSessionUser(req); } catch { return null; } }
@@ -128,7 +156,8 @@ function registerPlayersRoutes(app) {
       const [users, teams, viewer] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => []), safeSessionUser(req)]);
       const activeUsers = users.filter((user) => !user.deletedAt);
       const viewerTeams = teams.filter((team) => canManageTeam(viewer, team)).map(publicTeam);
-      return res.json({ success: true, players: buildDirectory(activeUsers, teams), teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
+      const players = await attachDiscordRoles(buildDirectory(activeUsers, teams));
+      return res.json({ success: true, players, teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, players: [], teams: [], viewerTeams: [] });
     }
