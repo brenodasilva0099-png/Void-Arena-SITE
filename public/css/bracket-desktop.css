@@ -14,7 +14,7 @@ body[data-page="chaveamento"] .va-integrated-bracket {
   min-width: 1260px;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 14px 28px 24px;
+  padding: 12px 28px 24px;
   border: 1px solid rgba(34, 211, 238, .20);
   border-radius: 24px;
   background:
@@ -28,10 +28,10 @@ body[data-page="chaveamento"] .va-integrated-bracket .bracket-board { display: n
 body[data-page="chaveamento"] .bracket-header { display: none !important; }
 body[data-page="chaveamento"] #adaptiveBracket { margin-top: 0; display: block; min-width: 1180px; }
 body[data-page="chaveamento"] .va-model-bracket-wrap { display: grid; gap: 12px; }
-body[data-page="chaveamento"] .va-model-title { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 12px; padding-bottom: 4px; }
-body[data-page="chaveamento"] .va-model-title .va-eyebrow { margin: 0; font-size: 12px; }
-body[data-page="chaveamento"] .va-model-title h2 { margin: 0; color: #67e8f9; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; }
-body[data-page="chaveamento"] .va-model-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+body[data-page="chaveamento"] .va-model-title { display: grid; place-items: center; gap: 2px; padding: 0 0 10px; text-align: center; }
+body[data-page="chaveamento"] .va-model-title h2 { margin: 0; color: #67e8f9; font-size: clamp(25px, 2.8vw, 36px); line-height: 1; letter-spacing: .025em; text-transform: uppercase; }
+body[data-page="chaveamento"] .va-model-event-name { margin: 0; color: #ddd6fe; font-weight: 950; font-size: 14px; letter-spacing: .02em; }
+body[data-page="chaveamento"] .va-model-meta { display: none !important; }
 body[data-page="chaveamento"] .va-model-bracket {
   min-height: var(--model-height, 620px);
   display: grid;
