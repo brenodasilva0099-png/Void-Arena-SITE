@@ -23,6 +23,7 @@
   function statusLabel(status = '') { return ({ open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado', approved: 'Validado', accepted: 'Validado', pending: 'Pendente' })[status] || status || 'Pendente'; }
   function statusClass(status = '') { if (['open', 'approved', 'accepted'].includes(status)) return 'ok'; if (status === 'running' || status === 'pending') return 'warn'; if (status === 'finished' || status === 'rejected') return 'err'; return ''; }
   function feeText(event) { return event.isFree || !String(event.entryFee || event.registrationFee || '').trim() ? 'F2P' : String(event.entryFee || event.registrationFee); }
+  function formatEventDate(value = '') { const raw = String(value || '').trim(); if (!raw) return 'a definir'; return raw.replace('T', ' ').replace(/:00$/, '').slice(0, 16); }
   function dtToInput(value = '') { if (!value) return ''; const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value).slice(0, 16); const pad = (n) => String(n).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
   function teamById(id = '') { return teams.find((team) => String(team.id || '') === String(id || '')) || null; }
   function registrationTeam(registration = {}) {
@@ -32,10 +33,13 @@
     return { id: registration.teamId || '', name, tag: registration.teamTag || name.slice(0, 3), logo: registration.teamLogo || '' };
   }
   function initialsFromTeam(team = null) { return esc((team?.tag || team?.name || 'TM').slice(0, 2).toUpperCase()); }
-  function teamLogo(team = null) {
+  function teamLogoInner(team = null) {
     if (!team) return '<span>TM</span>';
     if (team.logo) return `<img src="${esc(team.logo)}" alt="${esc(team.name || team.tag || 'Time')}" />`;
     return `<span>${initialsFromTeam(team)}</span>`;
+  }
+  function teamLogo(team = null) {
+    return `<span class="va-event-logo-box">${teamLogoInner(team)}</span>`;
   }
   function validRegistrations(event = {}) {
     return (Array.isArray(event.registrations) ? event.registrations : []).filter((registration) => !['rejected', 'cancelled'].includes(String(registration.status || '').toLowerCase()));
@@ -45,9 +49,12 @@
     if (!registrations.length) return '<div class="va-event-team-strip empty"><span>Nenhum time inscrito/validado ainda.</span></div>';
     return `<div class="va-event-team-strip" title="Times inscritos/validados">${registrations.map((registration) => {
       const team = registrationTeam(registration);
+      const teamId = registration.teamId || team?.id || '';
       const label = team?.name || registration.teamName || 'Time inscrito';
+      const tag = team?.tag || registration.teamTag || label;
       const status = String(registration.status || 'pending').toLowerCase();
-      return `<div class="va-event-team-logo ${statusClass(status)}" title="${esc(label)} • ${esc(statusLabel(status))}">${teamLogo(team)}<small>${esc((team?.tag || label).slice(0, 6))}</small></div>`;
+      const href = teamId ? `/pages/times.html?openTeam=${encodeURIComponent(teamId)}` : '/pages/times.html';
+      return `<a class="va-event-team-logo ${statusClass(status)}" href="${esc(href)}" title="${esc(label)} • ${esc(statusLabel(status))}">${teamLogo(team)}<small>${esc(String(tag).slice(0, 8))}</small></a>`;
     }).join('')}</div>`;
   }
 
@@ -60,7 +67,7 @@
     return `<article class="va-event-card" data-event-id="${esc(event.id)}">
       <div class="va-event-topline"><span class="va-badge ${statusClass(event.status)}">${esc(statusLabel(event.status))}</span><span class="va-muted">${registered}/${limit || '?'} times</span><button class="va-icon-btn" type="button" data-manual-dm-event="${esc(event.id)}" title="Reenviar DM do evento">📣</button><button class="va-icon-btn" type="button" data-config-event="${esc(event.id)}" title="Configurar evento">⚙️</button></div>
       <div class="va-event-main"><div class="va-event-icon">🏆</div><div><h3>${esc(event.title || event.name || 'Evento')}</h3><p>${esc(description)}</p></div></div>
-      <div class="va-kpi-row"><span class="va-badge">${esc(event.matchFormat || 'MD1')}</span><span class="va-badge">${esc(event.mode || event.structure || 'Mata-mata')}</span><span class="va-badge">Início: ${esc(event.startAt || 'a definir')}</span><span class="va-badge">Taxa: ${esc(feeText(event))}</span><span class="va-badge">Recompensa: ${esc(reward)}</span></div>
+      <div class="va-kpi-row"><span class="va-badge">${esc(event.matchFormat || 'MD1')}</span><span class="va-badge">${esc(event.mode || event.structure || 'Mata-mata')}</span><span class="va-badge">Início: ${esc(formatEventDate(event.startAt))}</span><span class="va-badge">Taxa: ${esc(feeText(event))}</span><span class="va-badge">Recompensa: ${esc(reward)}</span></div>
       ${eventTeamLogos(event)}
       <div class="va-event-progress"><span style="width:${limit ? Math.min(100, (registered / limit) * 100) : 0}%"></span></div>
       <div class="va-actions"><button class="va-btn primary" type="button" data-register-event="${esc(event.id)}" ${available ? '' : 'disabled'}>${available ? 'Enviar inscrição para validação' : 'Inscrições indisponíveis'}</button></div>
@@ -85,7 +92,7 @@
       const teamId = registration.teamId || team?.id || '';
       const label = team?.name || registration.teamName || 'Time inscrito';
       const status = String(registration.status || 'pending').toLowerCase();
-      return `<div class="va-event-manage-team" data-remove-team-id="${esc(teamId)}"><div class="va-event-manage-logo ${statusClass(status)}">${teamLogo(team)}</div><div><strong>${esc(label)}</strong><span>${esc(statusLabel(status))}${team?.tag ? ` • ${esc(team.tag)}` : ''}</span></div><button class="va-btn danger mini" type="button" data-remove-event-team="${esc(teamId)}">Remover</button></div>`;
+      return `<div class="va-event-manage-team" data-remove-team-id="${esc(teamId)}"><div class="va-event-manage-logo ${statusClass(status)}">${teamLogoInner(team)}</div><div><strong>${esc(label)}</strong><span>${esc(statusLabel(status))}${team?.tag ? ` • ${esc(team.tag)}` : ''}</span></div><button class="va-btn danger mini" type="button" data-remove-event-team="${esc(teamId)}">Remover</button></div>`;
     }).join('');
     registeredManager.querySelectorAll('[data-remove-event-team]').forEach((btn) => btn.addEventListener('click', () => removeTeamFromEvent(event.id, btn.dataset.removeEventTeam)));
   }
