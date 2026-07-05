@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atualizações | Void Arena</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/updates.css" />
+</head>
+<body class="va-organized-body" data-page="atualizacoes">
+  <div class="va-shell">
+    <aside class="va-sidebar">
+      <div class="va-brand">
+        <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
+        <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+      </div>
+      <nav class="va-nav">
+        <div class="va-nav-title">Principal</div>
+        <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
+        <a data-nav-key="atualizacoes" href="/pages/atualizacoes.html">📰 Atualizações</a>
+        <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
+        <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
+        <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
+        <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
+        <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
+        <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
+        <div class="va-nav-title">Comunicação</div>
+        <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
+        <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
+        <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
+        <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
+        <div class="va-nav-title">Admin</div>
+        <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
+        <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
+        <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
+        <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+      </nav>
+    </aside>
+
+    <main class="va-main">
+      <header class="va-topbar">
+        <div>
+          <p class="va-eyebrow">Novidades da Arena</p>
+          <h1 class="va-title">Atualizações</h1>
+          <p class="va-subtitle">Acompanhe o que entrou agora no site/bot e o histórico do que já foi adicionado antes.</p>
+        </div>
+        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
+      </header>
+
+      <section class="va-grid va-updates-hero">
+        <article class="va-card va-update-highlight">
+          <span class="va-version-pill">Void Arena 5.1.3 • Atual</span>
+          <h2 class="va-update-title">Painel mais organizado, chat com menções e histórico público de mudanças.</h2>
+          <p class="va-muted">Esta página centraliza as mudanças para jogadores, capitães e staff saberem o que entrou sem precisar procurar em mensagens soltas.</p>
+          <div class="va-actions">
+            <a class="va-btn primary" href="#ultimas">Ver últimas mudanças</a>
+            <a class="va-btn" href="#anteriores">Ver histórico anterior</a>
+          </div>
+        </article>
+        <article class="va-card">
+          <p class="va-eyebrow">Resumo rápido</p>
+          <h2>O que mudou?</h2>
+          <div class="va-update-summary">
+            <span><strong>Site</strong><b>novas áreas</b></span>
+            <span><strong>Bot</strong><b>filas/calls/placar</b></span>
+            <span><strong>Jogadores</strong><b>perfil e recrutamento</b></span>
+            <span><strong>Admin</strong><b>permissões e validação</b></span>
+          </div>
+        </article>
+      </section>
+
+      <section class="va-updates-layout" id="ultimas">
+        <div class="va-timeline">
+          <article class="va-card va-update-card">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>05/07/2026</span><span>Site + Bot</span><span>Atual</span></div>
+            <h3>Central de atualizações adicionada</h3>
+            <p class="va-muted">Nova página para registrar o que entrou no projeto e separar mudanças novas do histórico anterior.</p>
+            <ul class="va-update-list">
+              <li class="site">Criada a página Atualizações no estilo visual da Void Arena.</li>
+              <li class="site">Adicionado resumo da versão atual e histórico por data.</li>
+              <li class="site">Atalho de Atualizações adicionado no menu lateral do site.</li>
+            </ul>
+          </article>
+
+          <article class="va-card va-update-card">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>05/07/2026</span><span>Chat</span><span>Melhoria</span></div>
+            <h3>Menções estilo Discord no chat do site</h3>
+            <p class="va-muted">O chat vinculado ao Discord agora tem busca de usuários e cargos para facilitar mensagens com marcação.</p>
+            <ul class="va-update-list">
+              <li class="site">Botão Marcar @ mostra cargos e usuários do Discord.</li>
+              <li class="site">Ao digitar @nome, o site filtra sugestões automaticamente.</li>
+              <li class="bot">As mensagens enviadas ao Discord usam menção real de usuário ou cargo.</li>
+            </ul>
+          </article>
+
+          <article class="va-card va-update-card">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>05/07/2026</span><span>Café com Leite</span><span>Bot</span></div>
+            <h3>Fila Café com Leite separada do Placar</h3>
+            <p class="va-muted">O fluxo do Café com Leite ficou separado para evitar bagunça entre fila, resultado e ranking.</p>
+            <ul class="va-update-list">
+              <li class="bot">Canal Café com Leite mostra apenas botões de fila 3x3 e 5x5.</li>
+              <li class="bot">Canal Placar fica separado para ranking, patentes e link do site.</li>
+              <li class="bot">Mensagem da fila agora menciona o canal correto do Placar.</li>
+              <li class="bot">Bot tenta fixar automaticamente as mensagens principais.</li>
+            </ul>
+          </article>
+
+          <article class="va-card va-update-card">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>05/07/2026</span><span>Jogadores</span><span>Recrutamento</span></div>
+            <h3>Banco de jogadores e recrutamento melhorados</h3>
+            <p class="va-muted">As áreas de jogadores e recrutamento foram separadas e ganharam funções mais claras para capitães e jogadores livres.</p>
+            <ul class="va-update-list">
+              <li class="site">Página Jogadores mostra usuários livres e vinculados a times.</li>
+              <li class="site">Perfil público de jogador pode ser aberto pela lista.</li>
+              <li class="site">Capitães podem enviar convite de recrutamento.</li>
+              <li class="site">Jogadores podem pedir peneira/avaliação para times.</li>
+              <li class="fix">Capitães podem cancelar/remover solicitações pendentes.</li>
+            </ul>
+          </article>
+
+          <article class="va-card va-update-card">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>05/07/2026</span><span>Eventos</span><span>Validação</span></div>
+            <h3>Eventos, times inscritos e validação ajustados</h3>
+            <p class="va-muted">A tela de eventos ficou mais visual e a validação de times foi refinada para reduzir erro de evento antigo.</p>
+            <ul class="va-update-list">
+              <li class="site">Times inscritos/validados aparecem com logo no card do evento.</li>
+              <li class="site">Clique na logo do time abre o perfil público do time.</li>
+              <li class="fix">Data/hora do evento foi ajustada para remover o T confuso.</li>
+              <li class="bot">Validação do bot passou a buscar o nome atualizado do evento quando possível.</li>
+            </ul>
+          </article>
+
+          <article class="va-card va-update-card" id="anteriores">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>Histórico anterior</span><span>Base pública</span></div>
+            <h3>Funções que já estavam entrando antes</h3>
+            <p class="va-muted">Resumo do que foi construído na base anterior do site e bot.</p>
+            <div class="va-release-grid">
+              <div class="va-release-card"><strong>Login e perfil</strong><small>Login com Discord, perfil público, avatar, banner e conexões.</small></div>
+              <div class="va-release-card"><strong>Times</strong><small>Cadastro de times, capitão, titulares, reservas, logo, tag e perfil público.</small></div>
+              <div class="va-release-card"><strong>Eventos</strong><small>Eventos públicos, inscrição por capitão e validação via Discord.</small></div>
+              <div class="va-release-card"><strong>Chaveamento</strong><small>Modelos garantidos para limites 4, 8, 12, 16, 20, 24, 28 e 32 times.</small></div>
+              <div class="va-release-card"><strong>Resultados</strong><small>HUBs de resultado, histórico, prints e fluxo de validação.</small></div>
+              <div class="va-release-card"><strong>Rankings</strong><small>Ranking competitivo de times e jogadores preparado para estatísticas validadas.</small></div>
+              <div class="va-release-card"><strong>Comunicação</strong><small>Chat, Scrims e Estatísticas com ponte Discord ↔ Site.</small></div>
+              <div class="va-release-card"><strong>Legal</strong><small>Termos de Uso, Política de Privacidade e rodapé de direitos reservados.</small></div>
+            </div>
+          </article>
+        </div>
+
+        <aside class="va-update-side">
+          <article class="va-card">
+            <p class="va-eyebrow">Status</p>
+            <h2>Base atual</h2>
+            <div class="va-mini-roadmap">
+              <span><strong>Site</strong><small>Base pública com páginas principais funcionando.</small></span>
+              <span><strong>Bot</strong><small>Integração Discord, validações, filas, placar e mensagens.</small></span>
+              <span><strong>Próximo foco</strong><small>Lapidar bugs de carregamento, permissões e fluxo de eventos.</small></span>
+            </div>
+          </article>
+          <article class="va-card">
+            <p class="va-eyebrow">Links rápidos</p>
+            <div class="va-actions" style="display:grid;gap:10px">
+              <a class="va-btn" href="/pages/eventos.html">Eventos</a>
+              <a class="va-btn" href="/pages/jogadores.html">Jogadores</a>
+              <a class="va-btn" href="/pages/recrutamento.html">Recrutamento</a>
+              <a class="va-btn" href="/pages/placar.html">Placar</a>
+            </div>
+          </article>
+        </aside>
+      </section>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/pages/static.js"></script>
+</body>
+</html>
