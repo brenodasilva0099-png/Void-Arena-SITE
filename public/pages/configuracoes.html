@@ -81,6 +81,16 @@
     <div id="discordCategoryStatus" class="va-status">Aguardando nome da categoria.</div>
   </article>
   <article class="va-card full">
+    <h2>Calls privadas dos times</h2>
+    <p>Liste as calls criadas pelo chaveamento dentro da categoria e selecione quais quer apagar.</p>
+    <form id="matchVoicesForm" class="va-form-grid two">
+      <label>Categoria das calls<input name="categoryId" value="1523133579570184194" placeholder="ID da categoria Discord" /></label>
+      <div class="va-actions"><button id="loadMatchVoicesBtn" class="va-btn" type="button">Carregar calls</button><button id="deleteMatchVoicesBtn" class="va-btn danger" type="button">Apagar selecionadas</button></div>
+    </form>
+    <div id="matchVoiceList" class="va-list"></div>
+    <div id="matchVoiceStatus" class="va-status">Aguardando carregamento das calls.</div>
+  </article>
+  <article class="va-card full">
     <h2>Checklist da base 5.0</h2>
     <div class="va-checklist">
       <span>✅ Páginas separadas</span><span>✅ Painel completo preservado</span><span>✅ Ponte SITE → BOT</span><span>✅ Backups via BOT</span><span>✅ Permissões por cargo</span><span>✅ Chaveamento premium integrado</span>
