@@ -10,6 +10,11 @@
   const sendBtn = document.getElementById('bridgeSendBtn');
   const linkBtn = document.getElementById('bridgeLinkBtn');
   const refreshBtn = document.getElementById('bridgeRefreshBtn');
+  const mentionBtn = document.querySelector('.va-bridge-compose .va-btn.secondary');
+  const composeEl = document.querySelector('.va-bridge-compose');
+  let mentionData = { members: [], roles: [] };
+  let mentionOpen = false;
+  let mentionSelectedIndex = 0;
 
   function esc(value) { return VoidArena.escapeHtml(value || ''); }
   function setStatus(message, type = '') { statusEl.textContent = message; statusEl.className = `va-status va-bridge-status ${type}`.trim(); }
@@ -29,9 +34,104 @@
     });
     return rows.length ? `<div class="va-bridge-attachments">${rows.join('')}</div>` : '';
   }
+  function mentionItems() {
+    const roles = (mentionData.roles || []).map((item) => ({ ...item, type: 'role', label: item.name || 'Cargo', insert: item.mention || `<@&${item.id}>`, icon: '#', sub: 'Cargo' }));
+    const members = (mentionData.members || []).map((item) => ({ ...item, type: 'member', label: item.name || item.username || 'Usuário', insert: item.mention || `<@${item.id}>`, icon: item.avatar ? `<img src="${esc(item.avatar)}" alt="" />` : '@', sub: item.username ? `@${item.username}` : 'Usuário' }));
+    return [...roles, ...members];
+  }
+  function mentionMap() {
+    const map = new Map();
+    mentionItems().forEach((item) => map.set(item.insert, item));
+    return map;
+  }
+  function renderContent(content = '') {
+    let html = esc(content);
+    mentionMap().forEach((item, raw) => {
+      const safeRaw = esc(raw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      html = html.replace(new RegExp(safeRaw, 'g'), `<span class="va-mention-token">${item.type === 'role' ? '@' : '@'}${esc(item.label)}</span>`);
+    });
+    return html;
+  }
   function renderMessages(messages = []) {
-    messagesEl.innerHTML = messages.length ? messages.map((msg) => `<article class="va-bridge-msg ${esc(msg.source || 'site')}"><strong>${esc(msg.authorName || 'Void Arena')}</strong>${msg.content ? `<div>${esc(msg.content)}</div>` : ''}${attachmentHtml(msg.attachments || [])}<small class="va-muted">${esc(msg.source || 'site')} • ${msg.createdAt ? new Date(msg.createdAt).toLocaleString('pt-BR') : ''}</small></article>`).join('') : '<div class="va-bridge-empty">Nenhuma mensagem ainda. Vincule um canal ou envie uma mensagem por aqui.</div>';
+    messagesEl.innerHTML = messages.length ? messages.map((msg) => `<article class="va-bridge-msg ${esc(msg.source || 'site')}"><strong>${esc(msg.authorName || 'Void Arena')}</strong>${msg.content ? `<div>${renderContent(msg.content)}</div>` : ''}${attachmentHtml(msg.attachments || [])}<small class="va-muted">${esc(msg.source || 'site')} • ${msg.createdAt ? new Date(msg.createdAt).toLocaleString('pt-BR') : ''}</small></article>`).join('') : '<div class="va-bridge-empty">Nenhuma mensagem ainda. Vincule um canal ou envie uma mensagem por aqui.</div>';
     messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+  async function loadMentions() {
+    const data = await VoidArena.request(`/api/bridge/${encodeURIComponent(key)}/mentions`, { timeoutMs: 9000 });
+    mentionData = { members: data.members || [], roles: data.roles || [] };
+    return mentionData;
+  }
+  function getMentionQuery() {
+    const pos = inputEl.selectionStart || 0;
+    const before = inputEl.value.slice(0, pos);
+    const match = before.match(/(^|\s)@([^\s@<>]*)$/);
+    if (!match) return null;
+    return { query: match[2] || '', start: pos - match[2].length - 1, end: pos };
+  }
+  function ensureMentionMenu() {
+    let menu = document.getElementById('bridgeMentionMenu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 'bridgeMentionMenu';
+      menu.className = 'va-mention-menu';
+      menu.hidden = true;
+      composeEl?.appendChild(menu);
+    }
+    return menu;
+  }
+  function filteredMentions(forceAll = false) {
+    const token = getMentionQuery();
+    const q = forceAll ? '' : String(token?.query || '').toLowerCase();
+    return mentionItems().filter((item) => !q || String(item.label || '').toLowerCase().includes(q) || String(item.username || '').toLowerCase().includes(q)).slice(0, 30);
+  }
+  function renderMentionMenu(forceAll = false) {
+    const menu = ensureMentionMenu();
+    const items = filteredMentions(forceAll);
+    mentionOpen = true;
+    mentionSelectedIndex = Math.min(mentionSelectedIndex, Math.max(0, items.length - 1));
+    if (!items.length) {
+      menu.hidden = false;
+      menu.innerHTML = '<div class="va-mention-empty">Nenhum usuário ou cargo encontrado.</div>';
+      return;
+    }
+    const roleItems = items.filter((item) => item.type === 'role');
+    const memberItems = items.filter((item) => item.type === 'member');
+    let globalIndex = 0;
+    function group(title, list) {
+      if (!list.length) return '';
+      return `<div class="va-mention-group"><span>${title}</span>${list.map((item) => {
+        const index = globalIndex++;
+        return `<button type="button" class="va-mention-option ${index === mentionSelectedIndex ? 'active' : ''}" data-mention-index="${index}" data-mention-value="${esc(item.insert)}"><i>${item.icon}</i><b>${esc(item.label)}</b><small>${esc(item.sub || '')}</small></button>`;
+      }).join('')}</div>`;
+    }
+    menu.innerHTML = group('Cargos', roleItems) + group('Usuários', memberItems);
+    menu.hidden = false;
+    menu.querySelectorAll('[data-mention-value]').forEach((btn) => btn.addEventListener('click', () => insertMention(btn.dataset.mentionValue || '')));
+  }
+  function closeMentionMenu() {
+    const menu = ensureMentionMenu();
+    menu.hidden = true;
+    mentionOpen = false;
+    mentionSelectedIndex = 0;
+  }
+  function insertMention(value = '') {
+    if (!value) return;
+    const token = getMentionQuery();
+    const start = token ? token.start : inputEl.selectionStart;
+    const end = token ? token.end : inputEl.selectionEnd;
+    const before = inputEl.value.slice(0, start);
+    const after = inputEl.value.slice(end);
+    const spacer = before && !/\s$/.test(before) ? ' ' : '';
+    const next = `${before}${spacer}${value} ${after}`;
+    inputEl.value = next;
+    const caret = (before + spacer + value + ' ').length;
+    inputEl.focus();
+    inputEl.setSelectionRange(caret, caret);
+    closeMentionMenu();
+  }
+  async function showAllMentions() {
+    if (!mentionData.members?.length && !mentionData.roles?.length) await loadMentions().catch((error) => setStatus(`❌ ${error.message}`, 'err'));
+    renderMentionMenu(true);
   }
   async function load() {
     setStatus('Carregando ponte Discord ↔ Site e histórico do canal...');
@@ -56,12 +156,30 @@
     setStatus('Enviando mensagem...');
     await VoidArena.request(`/api/bridge/${encodeURIComponent(key)}/messages`, { method: 'POST', body: JSON.stringify({ content }) });
     inputEl.value = '';
+    closeMentionMenu();
     await load();
     setStatus('Mensagem enviada.', 'ok');
   }
   linkBtn.addEventListener('click', link);
   refreshBtn.addEventListener('click', load);
   sendBtn.addEventListener('click', send);
-  inputEl.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } });
-  VoidArena.bootLayout(active).then(load).catch((error) => setStatus(`❌ ${error.message}`, 'err'));
+  mentionBtn?.addEventListener('click', showAllMentions);
+  inputEl.addEventListener('input', async () => {
+    if (getMentionQuery()) {
+      if (!mentionData.members?.length && !mentionData.roles?.length) await loadMentions().catch(() => null);
+      renderMentionMenu(false);
+    } else closeMentionMenu();
+  });
+  inputEl.addEventListener('keydown', (event) => {
+    if (mentionOpen && ['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) {
+      const items = filteredMentions(false);
+      if (event.key === 'Escape') { event.preventDefault(); closeMentionMenu(); return; }
+      if (event.key === 'ArrowDown') { event.preventDefault(); mentionSelectedIndex = Math.min(items.length - 1, mentionSelectedIndex + 1); renderMentionMenu(false); return; }
+      if (event.key === 'ArrowUp') { event.preventDefault(); mentionSelectedIndex = Math.max(0, mentionSelectedIndex - 1); renderMentionMenu(false); return; }
+      if ((event.key === 'Enter' || event.key === 'Tab') && items[mentionSelectedIndex]) { event.preventDefault(); insertMention(items[mentionSelectedIndex].insert); return; }
+    }
+    if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); }
+  });
+  document.addEventListener('click', (event) => { if (!event.target.closest('.va-bridge-compose')) closeMentionMenu(); });
+  VoidArena.bootLayout(active).then(async () => { await loadMentions().catch(() => null); await load(); }).catch((error) => setStatus(`❌ ${error.message}`, 'err'));
 }());
