@@ -1,4 +1,9 @@
 /* Void Arena cleanup: login background + page stability */
+.va-nav { display: flex !important; flex-direction: column !important; }
+.va-nav > * { order: 50; }
+.va-nav > .va-nav-title:first-child { order: 0; }
+.va-nav [data-nav-key="atualizacoes"] { order: 1; }
+.va-nav [data-nav-key="dashboard"] { order: 2; }
 .pitch-center-circle { border: 0 !important; width: 74px !important; height: 74px !important; display: grid !important; place-items: center !important; opacity: .72; filter: drop-shadow(0 0 18px rgba(255,255,255,.18)); }
 .pitch-center-circle::before { content: '⚽' !important; position: static !important; width: auto !important; height: auto !important; transform: none !important; background: transparent !important; border-radius: 0 !important; font-size: 34px; line-height: 1; }
 .ball { width: auto !important; height: auto !important; min-width: 28px; min-height: 28px; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; display: grid !important; place-items: center !important; opacity: .78 !important; filter: drop-shadow(0 0 18px rgba(255,255,255,.18)); }
