@@ -103,11 +103,16 @@ async function notifyCaptains(event, reason, options = {}) {
   }).catch((error) => ({ success: false, message: error.message, skipped: true }));
 }
 
+function registrationTeamId(registration = {}) {
+  return String(registration.teamId || registration.id || '').trim();
+}
+
 function registerPublicEventRoutes(app) {
   removeRoutes(app, [
     ['get', '/api/events'],
     ['post', '/api/events'],
     ['put', '/api/events/:eventId'],
+    ['delete', '/api/events/:eventId/registrations/:teamId'],
     ['post', '/api/events/:eventId/announce'],
     ['post', '/api/events/:eventId/register']
   ]);
@@ -137,6 +142,23 @@ function registerPublicEventRoutes(app) {
       const teams = await storage.readTeams().catch(() => []);
       const notice = event.status === 'open' ? await notifyCaptains(safeEvent(event, teams), 'edited', { forceNew: false }) : { success: true, skipped: true };
       return res.json({ success: true, event: safeEvent(event, teams), notice });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.delete('/api/events/:eventId/registrations/:teamId', requireOwner, async (req, res) => {
+    try {
+      const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]);
+      const existing = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
+      if (!existing) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' });
+      const teamId = cleanText(req.params.teamId || '', 100);
+      const before = Array.isArray(existing.registrations) ? existing.registrations : [];
+      const after = before.filter((registration) => registrationTeamId(registration) !== teamId);
+      if (after.length === before.length) return res.status(404).json({ success: false, message: 'Time nao estava inscrito nesse evento.' });
+      const event = await storage.saveTournamentEvent({ ...existing, registrations: after, updatedAt: new Date().toISOString() });
+      const team = teams.find((item) => String(item.id || '') === teamId) || null;
+      return res.json({ success: true, event: safeEvent(event, teams), removedTeamId: teamId, message: team ? `Time ${team.name || team.tag || teamId} removido do evento.` : 'Time removido do evento.' });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
