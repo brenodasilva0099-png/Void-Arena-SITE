@@ -29,8 +29,8 @@
   function collectSettings() { return collectSettingsSafe(); }
   function updateBoardLabels() { const nameEl = document.getElementById('boardTournamentName'); const formatEl = document.getElementById('boardMatchFormatLabel'); const settings = collectSettingsSafe(); if (nameEl) nameEl.textContent = settings.tournamentName || 'Rematch Championship'; if (formatEl) formatEl.textContent = `${settings.matchFormat || 'MD1'} • ${settings.teamLimit || 16} TIMES`; updateActiveEventStatus(); }
   function fillSettings(settings = {}) { currentSettings = { ...currentSettings, teamSource: 'all', ...(settings || {}), teamLimit: normalizeLimit(settings.teamLimit || currentSettings.teamLimit || 16) }; if (!settingsForm) return; fillEventSelect(currentEvents); Object.entries(currentSettings).forEach(([key, value]) => { const field = settingsForm.elements[key]; if (!field) return; if (field.type === 'checkbox') field.checked = value !== false; else field.value = value ?? ''; }); updateBoardLabels(); }
-  function compactList(items = []) { return items.filter(Boolean).length; }
   function fillArray(items = [], size = 0) { const arr = Array.isArray(items) ? items.slice(0, size) : []; while (arr.length < size) arr.push(null); return arr; }
+  function bracketEventTitle() { const event = selectedEvent(); const settings = collectSettingsSafe(); return event?.title || event?.name || settings.tournamentName || currentSettings.tournamentName || 'Evento sem nome'; }
   function slotSource(limit) { return fillArray(currentBracket.slots, limit); }
   function teamLine(team, fallback) { return `<div class="va-model-team ${team ? '' : 'empty'}">${teamLabel(team, fallback)}</div>`; }
   function matchCard(pair = [], label = 'Jogo', index = 0) { return `<div class="va-model-match"><strong>${safe(label)} ${String(index + 1).padStart(2, '0')}</strong>${teamLine(pair[0], `Vaga ${index * 2 + 1}`)}${teamLine(pair[1], `Vaga ${index * 2 + 2}`)}</div>`; }
@@ -54,27 +54,14 @@
     const rightCols = [];
     leftCols.push(col(entryLabel, cardsFromPairs(pairSplit.left, entryLabel, 0), 'entry'));
     rightCols.unshift(col(entryLabel, cardsFromPairs(pairSplit.right, entryLabel, pairSplit.left.length), 'entry'));
-    if (limit > 16) {
-      leftCols.push(col('Oitavas', cardsFromSingles(round16.slice(0, 8), 8, 'Oitavas', 0), 'round16'));
-      rightCols.unshift(col('Oitavas', cardsFromSingles(round16.slice(8, 16), 8, 'Oitavas', 8), 'round16'));
-    }
-    if (limit >= 12) {
-      leftCols.push(col('Quartas', cardsFromSingles(quarters.slice(0, 4), 4, 'Quartas', 0), 'quarters'));
-      rightCols.unshift(col('Quartas', cardsFromSingles(quarters.slice(4, 8), 4, 'Quartas', 4), 'quarters'));
-    }
-    if (limit >= 8) {
-      leftCols.push(col('Semifinal', cardsFromSingles(semis.slice(0, 2), 2, 'Semi', 0), 'semis'));
-      rightCols.unshift(col('Semifinal', cardsFromSingles(semis.slice(2, 4), 2, 'Semi', 2), 'semis'));
-    }
-    const meta = limit > 16 ? `<div class="va-model-meta"><span class="va-badge">${limit} vagas</span><span class="va-badge">Entrada: ${Math.ceil(limit / 2)} jogos</span><span class="va-badge">Árvore expandida até a final</span></div>` : `<div class="va-model-meta"><span class="va-badge">Modelo ${limit} times</span><span class="va-badge">${compactList(currentBracket.slots)}/${limit} preenchidos</span></div>`;
-    adaptiveEl.innerHTML = `<div class="va-model-bracket-wrap"><div class="va-model-title"><p class="va-eyebrow">Modelo garantido</p><h2>${limit} times</h2>${meta}</div><div class="va-model-bracket model-${limit}" style="--model-height:${height}px">${leftCols.join('')}${finalColumn()}${rightCols.join('')}</div></div>`;
+    if (limit > 16) { leftCols.push(col('Oitavas', cardsFromSingles(round16.slice(0, 8), 8, 'Oitavas', 0), 'round16')); rightCols.unshift(col('Oitavas', cardsFromSingles(round16.slice(8, 16), 8, 'Oitavas', 8), 'round16')); }
+    if (limit >= 12) { leftCols.push(col('Quartas', cardsFromSingles(quarters.slice(0, 4), 4, 'Quartas', 0), 'quarters')); rightCols.unshift(col('Quartas', cardsFromSingles(quarters.slice(4, 8), 4, 'Quartas', 4), 'quarters')); }
+    if (limit >= 8) { leftCols.push(col('Semifinal', cardsFromSingles(semis.slice(0, 2), 2, 'Semi', 0), 'semis')); rightCols.unshift(col('Semifinal', cardsFromSingles(semis.slice(2, 4), 2, 'Semi', 2), 'semis')); }
+    const eventTitle = bracketEventTitle();
+    adaptiveEl.innerHTML = `<div class="va-model-bracket-wrap"><div class="va-model-title"><h2>Chaveamento</h2><p class="va-model-event-name">${safe(eventTitle)}</p></div><div class="va-model-bracket model-${limit}" style="--model-height:${height}px">${leftCols.join('')}${finalColumn()}${rightCols.join('')}</div></div>`;
   }
   function fillSlots(selector, list, fallbackPrefix) { document.querySelectorAll(selector).forEach((el) => { const index = Number(el.dataset.slot ?? el.dataset.index ?? 0); const team = list?.[index] || null; el.classList.toggle('is-empty', !team); const fallback = `${fallbackPrefix} ${String(index + 1).padStart(2, '0')}`; el.innerHTML = teamLabel(team, fallback); el.title = team ? teamName(team, '') : ''; }); }
-  function render(bracket = {}) {
-    currentBracket = { slotSize: normalizeLimit(bracket.slotSize || bracket.teamLimit || currentSettings.teamLimit || 16), teamLimit: normalizeLimit(bracket.teamLimit || currentSettings.teamLimit || bracket.slotSize || 16), slots: Array.isArray(bracket.slots) ? bracket.slots : [], round16: Array.isArray(bracket.round16) ? bracket.round16 : [], quarters: Array.isArray(bracket.quarters) ? bracket.quarters : [], semis: Array.isArray(bracket.semis) ? bracket.semis : [], finals: Array.isArray(bracket.finals) ? bracket.finals : [], matchProgress: bracket.matchProgress || {}, eventId: bracket.eventId || '' };
-    fillSlots('.team-slot[data-slot]', slotSource(Math.min(boardLimit(), 16)), 'Vaga');
-    renderAdaptive();
-  }
+  function render(bracket = {}) { currentBracket = { slotSize: normalizeLimit(bracket.slotSize || bracket.teamLimit || currentSettings.teamLimit || 16), teamLimit: normalizeLimit(bracket.teamLimit || currentSettings.teamLimit || bracket.slotSize || 16), slots: Array.isArray(bracket.slots) ? bracket.slots : [], round16: Array.isArray(bracket.round16) ? bracket.round16 : [], quarters: Array.isArray(bracket.quarters) ? bracket.quarters : [], semis: Array.isArray(bracket.semis) ? bracket.semis : [], finals: Array.isArray(bracket.finals) ? bracket.finals : [], matchProgress: bracket.matchProgress || {}, eventId: bracket.eventId || '' }; fillSlots('.team-slot[data-slot]', slotSource(Math.min(boardLimit(), 16)), 'Vaga'); renderAdaptive(); }
   async function load() { setStatus('Carregando chaveamento do evento ativo...'); const data = await VoidArena.request('/api/dashboard/snapshot'); currentEvents = data.events || []; currentTeams = data.teams || []; fillSettings(data.settings || {}); render(data.bracket || {}); setStatus('Chaveamento carregado e persistido.', 'ok'); }
   async function saveSettings() { setStatus('Salvando configurações do torneio/evento...'); const payload = collectSettings(); const data = await VoidArena.request('/api/tournament/settings-v2', { method: 'PUT', body: JSON.stringify(payload) }); fillSettings(data.settings || payload); render({ ...currentBracket, teamLimit: payload.teamLimit, slotSize: payload.teamLimit }); setStatus(`Modelo ${payload.teamLimit} times salvo.`, 'ok'); return payload; }
   async function generate() { setStatus('Gerando chaveamento balanceado e sincronizando HUBs...'); try { const payload = await saveSettings(); const data = await VoidArena.request('/api/bracket/generate-v2', { method: 'POST', body: JSON.stringify(payload) }); fillSettings(data.settings || currentSettings); render(data.bracket || {}); const hubs = data.resultHubs; setStatus(hubs?.success === false ? `Chaveamento gerado, mas HUBs falharam: ${hubs.message}` : `Modelo ${payload.teamLimit} times aplicado usando ${data.sourceLabel || 'times selecionados'} e HUBs sincronizadas.`, hubs?.success === false ? 'err' : 'ok'); } catch (error) { setStatus(`❌ ${error.message}`, 'err'); } }
