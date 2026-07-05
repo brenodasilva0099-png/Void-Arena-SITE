@@ -53,6 +53,16 @@
 .va-event-team-logo img { width: 100%; height: 100%; object-fit: cover; }
 .va-event-team-logo > span { font-weight: 1000; color: #f8f7ff; font-size: 15px; }
 .va-event-team-logo small { position: absolute; left: 4px; right: 4px; bottom: 3px; padding: 2px 4px; border-radius: 8px; background: rgba(0,0,0,.58); color: #fff; font-size: 9px; font-weight: 1000; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.va-event-settings-teams { margin-top: 6px; padding: 14px; border: 1px solid rgba(255,255,255,.10); border-radius: 18px; background: rgba(255,255,255,.035); }
+.va-event-manage-teams { display: grid; gap: 10px; }
+.va-event-manage-empty { color: var(--va-muted); font-weight: 850; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.04); }
+.va-event-manage-team { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(255,255,255,.09); border-radius: 16px; background: rgba(2,6,23,.32); }
+.va-event-manage-logo { width: 48px; height: 48px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(139,92,246,.35); background: #080b19; font-weight: 1000; }
+.va-event-manage-logo.ok { border-color: rgba(34,197,94,.48); }
+.va-event-manage-logo.warn { border-color: rgba(245,158,11,.48); }
+.va-event-manage-logo img { width: 100%; height: 100%; object-fit: cover; }
+.va-event-manage-team strong, .va-event-manage-team span { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.va-event-manage-team span { color: var(--va-muted); font-weight: 850; font-size: 13px; margin-top: 2px; }
 .va-event-progress { height: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 14px; }
 .va-event-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--va-purple), var(--va-cyan)); }
 .va-icon-btn { width: 38px; height: 38px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(139,92,246,.12); color: var(--va-text); cursor: pointer; font-size: 17px; margin-left: auto; }
@@ -60,4 +70,4 @@
 .va-event-settings-modal { max-width: 900px; width: min(900px, calc(100vw - 28px)); max-height: calc(100vh - 36px); overflow: auto; }
 .va-btn[disabled] { opacity: .55; cursor: not-allowed; filter: grayscale(.35); }
 @media (max-width: 980px) { .va-flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .va-roster-row { grid-template-columns: 1fr; } .va-connections-grid,.va-social-card-grid { grid-template-columns: 1fr; } .va-profile-public-grid,.va-public-head { grid-template-columns: 1fr; } .va-public-head{margin-top:-72px} }
-@media (max-width: 620px) { .va-flow-grid { grid-template-columns: 1fr; } .va-event-main { align-items: flex-start; } .va-logo-input-wrap { grid-template-columns: 1fr; } }
+@media (max-width: 620px) { .va-flow-grid { grid-template-columns: 1fr; } .va-event-main { align-items: flex-start; } .va-logo-input-wrap { grid-template-columns: 1fr; } .va-event-manage-team { grid-template-columns: 42px 1fr; } .va-event-manage-team .va-btn { grid-column: 1 / -1; } }
