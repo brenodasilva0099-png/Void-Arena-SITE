@@ -3,8 +3,10 @@
   const backupSummary = document.getElementById('backupSummary');
   const configStatus = document.getElementById('configStatus');
   const backupStatus = document.getElementById('backupStatus');
+  const categoryForm = document.getElementById('discordCategoryForm');
+  const categoryStatus = document.getElementById('discordCategoryStatus');
   function item(title, text) { return `<div class="va-item"><strong>${VoidArena.escapeHtml(title)}</strong><div class="va-muted">${text}</div></div>`; }
-  function status(el, msg, type = '') { el.textContent = msg; el.className = `va-status ${type}`.trim(); }
+  function status(el, msg, type = '') { if (!el) return; el.textContent = msg; el.className = `va-status ${type}`.trim(); }
   function dbSummary(db = {}) {
     return `Usuários: ${db.users || 0} • Times: ${db.teams || 0} • Eventos: ${db.events || 0} • Partidas: ${db.trainingSubmissions || 0} • Mensagens: ${db.messages || 0}`;
   }
@@ -52,8 +54,22 @@
       await load();
     } catch (error) { status(backupStatus, `❌ ${error.message}`, 'err'); }
   }
+  async function createDiscordCategory(event) {
+    event.preventDefault();
+    const name = String(categoryForm?.elements?.name?.value || '').trim();
+    if (!name) return status(categoryStatus, 'Digite o nome da categoria.', 'err');
+    status(categoryStatus, 'Criando categoria no Discord...');
+    try {
+      const data = await VoidArena.request('/api/discord/categories', { method: 'POST', body: JSON.stringify({ name }) });
+      status(categoryStatus, `✅ ${data.message || 'Categoria pronta.'} ${data.category?.name ? `• ${data.category.name}` : ''}`, 'ok');
+      categoryForm.reset();
+    } catch (error) {
+      status(categoryStatus, `❌ ${error.message}`, 'err');
+    }
+  }
   document.getElementById('reloadConfigBtn')?.addEventListener('click', load);
   document.getElementById('createBackupBtn')?.addEventListener('click', createBackup);
   document.getElementById('restoreBackupBtn')?.addEventListener('click', restoreBackup);
+  categoryForm?.addEventListener('submit', createDiscordCategory);
   VoidArena.bootLayout('config').then(load).catch((error) => status(configStatus, `❌ ${error.message}`, 'err'));
 }());
