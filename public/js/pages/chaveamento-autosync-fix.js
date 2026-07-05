@@ -3,60 +3,11 @@
   const statusEl = document.getElementById('bracketStatus');
 
   function esc(value) { return window.VoidArena?.escapeHtml?.(value || '') || String(value || ''); }
-  function setStatus(message, type = '') {
-    if (!statusEl) return;
-    statusEl.textContent = message;
-    statusEl.className = `va-status ${type}`.trim();
-  }
-
-  function ensureGroupsBox() {
-    let box = document.getElementById('generatedGroupsBox');
-    if (!box) {
-      box = document.createElement('article');
-      box.id = 'generatedGroupsBox';
-      box.className = 'va-card full va-generated-groups';
-      box.hidden = true;
-      document.querySelector('.va-bracket-card')?.insertAdjacentElement('afterend', box);
-    }
-    return box;
-  }
-
-  function renderGroups(groups = []) {
-    const box = ensureGroupsBox();
-    if (!Array.isArray(groups) || !groups.length) {
-      box.hidden = true;
-      box.innerHTML = '';
-      return;
-    }
-    box.hidden = false;
-    box.innerHTML = `<div class="va-section-head"><div><p class="va-eyebrow">Fase de grupos</p><h2>Grupos sorteados</h2><p class="va-muted">Times organizados automaticamente conforme a estrutura selecionada.</p></div></div><div class="va-groups-grid">${groups.map((group) => `<section class="va-group-card"><h3>${esc(group.name || 'Grupo')}</h3>${(group.teams || group.teamIds || []).map((team, index) => `<div class="va-group-team"><span>${index + 1}</span><strong>${esc(team.name || team.tag || team)}</strong><small>${esc(team.tag || '')}</small></div>`).join('') || '<p class="va-muted">Grupo vazio.</p>'}</section>`).join('')}</div>`;
-  }
-
-  if (window.VoidArena?.request && !window.VoidArena.__groupsPatch) {
-    const original = window.VoidArena.request;
-    window.VoidArena.request = async function patchedRequest(path, options = {}) {
-      const data = await original(path, options);
-      if (String(path).includes('/api/bracket/generate-v2')) renderGroups(data.groups || []);
-      return data;
-    };
-    window.VoidArena.__groupsPatch = true;
-  }
-
-  async function syncAfterGenerate() {
-    await new Promise((resolve) => setTimeout(resolve, 4200));
-    try {
-      const data = await VoidArena.request('/api/result-hubs/sync', { method: 'POST', body: '{}' });
-      const result = data.resultHubs || {};
-      const detail = `${result.created || 0} criadas • ${result.reused || 0} atualizadas • ${result.totalMatches || 0} confrontos${result.errors?.length ? ` • ${result.errors.length} erro(s)` : ''}`;
-      if (result.success === false || result.errors?.length) {
-        setStatus(`Chaveamento salvo, mas revise as HUBs: ${result.message || detail}`, 'err');
-      } else {
-        setStatus(`Chaveamento salvo. HUBs sincronizadas: ${detail}.`, 'ok');
-      }
-    } catch (error) {
-      setStatus(`Chaveamento salvo, mas a sincronização extra das HUBs falhou: ${error.message}`, 'err');
-    }
-  }
-
+  function setStatus(message, type = '') { if (!statusEl) return; statusEl.textContent = message; statusEl.className = `va-status ${type}`.trim(); }
+  function ensureGroupStyles() { if (document.getElementById('generatedGroupsStyles')) return; const style = document.createElement('style'); style.id = 'generatedGroupsStyles'; style.textContent = `.va-generated-groups{margin-top:16px}.va-groups-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.va-group-card{border:1px solid rgba(139,92,246,.28);border-radius:18px;padding:14px;background:rgba(255,255,255,.04)}.va-group-card h3{margin:0 0 10px;color:#67e8f9}.va-group-team{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:9px 10px;border-radius:12px;background:rgba(2,6,23,.45);margin-top:8px}.va-group-team span{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;background:rgba(139,92,246,.35);font-weight:900}.va-group-team small{color:#a5f3fc;font-weight:900}`; document.head.appendChild(style); }
+  function ensureGroupsBox() { ensureGroupStyles(); let box = document.getElementById('generatedGroupsBox'); if (!box) { box = document.createElement('article'); box.id = 'generatedGroupsBox'; box.className = 'va-card full va-generated-groups'; box.hidden = true; document.querySelector('.va-bracket-card')?.insertAdjacentElement('afterend', box); } return box; }
+  function renderGroups(groups = []) { const box = ensureGroupsBox(); if (!Array.isArray(groups) || !groups.length) { box.hidden = true; box.innerHTML = ''; return; } box.hidden = false; box.innerHTML = `<div class="va-section-head"><div><p class="va-eyebrow">Fase de grupos</p><h2>Grupos sorteados</h2><p class="va-muted">Times organizados automaticamente conforme a estrutura selecionada.</p></div></div><div class="va-groups-grid">${groups.map((group) => `<section class="va-group-card"><h3>${esc(group.name || 'Grupo')}</h3>${(group.teams || group.teamIds || []).map((team, index) => `<div class="va-group-team"><span>${index + 1}</span><strong>${esc(team.name || team.tag || team)}</strong><small>${esc(team.tag || '')}</small></div>`).join('') || '<p class="va-muted">Grupo vazio.</p>'}</section>`).join('')}</div>`; }
+  if (window.VoidArena?.request && !window.VoidArena.__groupsPatch) { const original = window.VoidArena.request; window.VoidArena.request = async function patchedRequest(path, options = {}) { const data = await original(path, options); if (String(path).includes('/api/bracket/generate-v2')) renderGroups(data.groups || []); return data; }; window.VoidArena.__groupsPatch = true; }
+  async function syncAfterGenerate() { await new Promise((resolve) => setTimeout(resolve, 4200)); try { const data = await VoidArena.request('/api/result-hubs/sync', { method: 'POST', body: '{}' }); const result = data.resultHubs || {}; const detail = `${result.created || 0} criadas • ${result.reused || 0} atualizadas • ${result.totalMatches || 0} confrontos${result.errors?.length ? ` • ${result.errors.length} erro(s)` : ''}`; if (result.success === false || result.errors?.length) setStatus(`Chaveamento salvo, mas revise as HUBs: ${result.message || detail}`, 'err'); else setStatus(`Chaveamento salvo. HUBs sincronizadas: ${detail}.`, 'ok'); } catch (error) { setStatus(`Chaveamento salvo, mas a sincronização extra das HUBs falhou: ${error.message}`, 'err'); } }
   button?.addEventListener('click', syncAfterGenerate);
 }());
