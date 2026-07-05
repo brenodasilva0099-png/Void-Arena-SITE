@@ -28,9 +28,9 @@ function registerBridgeRoutes(app) {
       const bridge = bridgeConfig(req.params.key);
       if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
       const settings = await bridge.readSettings().catch(() => ({ enabled: false, siteChannelId: bridge.siteChannelId, discordChannelId: '' }));
-      const [history, channelsData] = await Promise.all([importHistory(bridge, settings), readChannels()]);
+      const [history, channelsData, mentions] = await Promise.all([importHistory(bridge, settings), readChannels(), readMentions()]);
       const messages = await storage.readChatMessages({ channelId: bridge.siteChannelId, limit: 120 }).catch(() => []);
-      return res.json({ success: true, bridge: { key: req.params.key, title: bridge.title, placeholder: bridge.placeholder }, settings: { enabled: Boolean(settings.enabled), siteChannelId: bridge.siteChannelId, discordChannelId: settings.discordChannelId || '' }, history, messages: messages.map(publicMessage), channels: channelsData.channels, message: channelsData.channelMessage || (history.imported ? `Histórico importado: ${history.imported} mensagem(ns).` : '') });
+      return res.json({ success: true, bridge: { key: req.params.key, title: bridge.title, placeholder: bridge.placeholder }, settings: { enabled: Boolean(settings.enabled), siteChannelId: bridge.siteChannelId, discordChannelId: settings.discordChannelId || '' }, history, messages: messages.map(publicMessage), channels: channelsData.channels, mentions: { members: mentions.members, roles: mentions.roles }, message: channelsData.channelMessage || mentions.message || (history.imported ? `Histórico importado: ${history.imported} mensagem(ns).` : '') });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 
