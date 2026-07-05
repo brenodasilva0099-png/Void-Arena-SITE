@@ -1,12 +1,17 @@
 const storage = require('../storage');
-const { getSessionUser } = require('../services/access.service');
+const { getSessionUser, requireOwner } = require('../services/access.service');
 
 const NOTIFICATION_CHANNEL = 'user-notifications';
+const ANNOUNCEMENT_CHANNEL = 'site-announcements';
 const RECRUITMENT_CHANNEL = 'recruitment-board';
 
 function requireSession(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ success: false, message: 'Faça login para continuar.' });
   return next();
+}
+
+function clean(value = '', max = 800) {
+  return String(value || '').trim().slice(0, max);
 }
 
 function parseMessage(message = {}) {
@@ -64,12 +69,39 @@ function registerNotificationRoutes(app) {
   app.get('/api/notifications', requireSession, async (req, res) => {
     try {
       const user = await getSessionUser(req);
-      const messages = await storage.readChatMessages({ channelId: NOTIFICATION_CHANNEL, limit: 120 }).catch(() => []);
-      const notifications = messages.map(parseMessage).filter((item) => isForUser(item, user));
-      const unread = notifications.filter((item) => !['read', 'accepted', 'declined', 'archived'].includes(String(item.status || '').toLowerCase())).length;
+      const [directMessages, announcements] = await Promise.all([
+        storage.readChatMessages({ channelId: NOTIFICATION_CHANNEL, limit: 120 }).catch(() => []),
+        storage.readChatMessages({ channelId: ANNOUNCEMENT_CHANNEL, limit: 20 }).catch(() => [])
+      ]);
+      const personal = directMessages.map(parseMessage).filter((item) => isForUser(item, user));
+      const publicItems = announcements.map(parseMessage).map((item) => ({ ...item, type: item.type || 'announcement', status: item.status || 'info' }));
+      const notifications = [...personal, ...publicItems].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      const unread = personal.filter((item) => !['read', 'accepted', 'declined', 'archived'].includes(String(item.status || '').toLowerCase())).length;
       return res.json({ success: true, notifications: notifications.reverse(), unread });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, notifications: [], unread: 0 });
+    }
+  });
+
+  app.post('/api/notifications/announcement', requireSession, requireOwner, async (req, res) => {
+    try {
+      const user = await getSessionUser(req);
+      const title = clean(req.body?.title || 'Aviso da Void Arena', 120);
+      const message = clean(req.body?.message, 1000);
+      if (!message) return res.status(400).json({ success: false, message: 'Digite a mensagem do aviso.' });
+      const createdAt = new Date().toISOString();
+      const saved = await storage.saveChatMessage({
+        channelId: ANNOUNCEMENT_CHANNEL,
+        source: 'system',
+        authorId: user?.id || '',
+        authorName: userName(user || {}),
+        content: JSON.stringify({ type: 'announcement', title, message, note: message, status: 'info', sender: publicUser(user || {}), createdAt }),
+        attachments: [],
+        createdAt
+      });
+      return res.json({ success: true, message: 'Aviso enviado para os Correios dos usuários logados.', notification: parseMessage(saved) });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
     }
   });
 
