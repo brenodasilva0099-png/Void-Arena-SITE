@@ -22,6 +22,8 @@ const keys = [
 
 let permissions = {};
 let roles = [];
+let loading = false;
+let loadAttempts = 0;
 
 function esc(value = '') { return VoidArena.escapeHtml(value); }
 
@@ -52,11 +54,25 @@ function render() {
       </div>`).join('')}`;
 }
 
-async function load() {
-  statusEl.textContent = 'Carregando permissões direto do BOT...';
+function timeout(ms) {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error('Tempo limite atingido. Tentando novamente...')), ms));
+}
+
+async function requestPermissions() {
+  return Promise.race([
+    VoidArena.request('/api/owner/role-permissions'),
+    timeout(12000)
+  ]);
+}
+
+async function load({ retry = true } = {}) {
+  if (loading) return;
+  loading = true;
+  loadAttempts += 1;
+  statusEl.textContent = loadAttempts > 1 ? `Carregando permissões direto do BOT... tentativa ${loadAttempts}` : 'Carregando permissões direto do BOT...';
   statusEl.className = 'va-status';
   try {
-    const data = await VoidArena.request('/api/owner/role-permissions');
+    const data = await requestPermissions();
     permissions = data.permissions || {};
     roles = Array.isArray(data.roles) ? data.roles : [];
     render();
@@ -64,8 +80,16 @@ async function load() {
     statusEl.textContent = data.message ? `${suffix} ${data.message}` : `${suffix} Definições conectadas ao storage do BOT.`;
     statusEl.className = roles.length ? 'va-status ok' : 'va-status err';
   } catch (error) {
+    if (retry && loadAttempts < 3) {
+      loading = false;
+      statusEl.textContent = `${error.message} Recarregando em 2 segundos...`;
+      setTimeout(() => load({ retry: true }), 2000);
+      return;
+    }
     statusEl.textContent = `❌ ${error.message}`;
     statusEl.className = 'va-status err';
+  } finally {
+    loading = false;
   }
 }
 
@@ -91,5 +115,8 @@ async function save() {
 }
 
 saveBtn.addEventListener('click', save);
-reloadBtn.addEventListener('click', load);
-VoidArena.bootLayout('permissoes').then(load).catch((error) => { statusEl.textContent = `❌ ${error.message}`; statusEl.className = 'va-status err'; });
+reloadBtn.addEventListener('click', () => { loadAttempts = 0; load({ retry: true }); });
+Promise.race([
+  VoidArena.bootLayout('permissoes'),
+  new Promise((resolve) => setTimeout(resolve, 2500))
+]).then(() => load({ retry: true })).catch((error) => { statusEl.textContent = `❌ ${error.message}`; statusEl.className = 'va-status err'; });
