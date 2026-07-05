@@ -1,4 +1,5 @@
 const storage = require('../storage');
+const { callBot } = require('../services/botApi.service');
 
 function requireSession(req, res, next) {
   if (!req.session?.userId) return res.status(401).json({ success: false, message: 'Faça login para continuar.' });
@@ -21,7 +22,32 @@ function normalizeProfile(raw = {}) {
     bannerSource: clean(raw.bannerSource, 40), bio: clean(raw.bio, 220), steamId: clean(raw.steamId, 80), xboxGamertag: clean(raw.xboxGamertag, 80)
   };
 }
-function publicUser(user = {}) { return { id: user.id || '', name: user.name || '', discordId: user.discordId || '', provider: user.provider || '', avatar: user.avatar || '', profile: normalizeProfile(user.profile || {}), socials: normalizeSocials(user.socials || {}), createdAt: user.createdAt || null, updatedAt: user.updatedAt || null, canDeleteAccount: !user.discordId && String(user.provider || '').toLowerCase() !== 'discord' }; }
+function publicRole(role = {}) {
+  return {
+    id: role.id || '',
+    name: clean(role.name || '', 80),
+    guildId: role.guildId || '',
+    guildName: role.guildName || ''
+  };
+}
+function filterPublicRoles(roles = []) {
+  const blocked = new Set(['everyone', '@everyone']);
+  return (Array.isArray(roles) ? roles : [])
+    .map(publicRole)
+    .filter((role) => role.id && role.name && !blocked.has(String(role.name).toLowerCase()))
+    .slice(0, 12);
+}
+async function readDiscordRoles(discordId = '') {
+  const safeId = String(discordId || '').trim();
+  if (!safeId) return [];
+  try {
+    const data = await callBot(`/internal/discord/member-roles/${encodeURIComponent(safeId)}`, { method: 'GET' });
+    return filterPublicRoles(data.roles || []);
+  } catch {
+    return [];
+  }
+}
+function publicUser(user = {}, roles = []) { return { id: user.id || '', name: user.name || '', discordId: user.discordId || '', provider: user.provider || '', avatar: user.avatar || '', profile: normalizeProfile(user.profile || {}), socials: normalizeSocials(user.socials || {}), roles: filterPublicRoles(roles), createdAt: user.createdAt || null, updatedAt: user.updatedAt || null, canDeleteAccount: !user.discordId && String(user.provider || '').toLowerCase() !== 'discord' }; }
 function playerMatchesUser(player = {}, user = {}) {
   const ids = [user.id, user.discordId, user.name, user.profile?.username].map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
   return ids.includes(String(player.id || '').trim().toLowerCase()) || ids.includes(String(player.discordId || '').trim().toLowerCase()) || ids.includes(String(player.name || '').trim().toLowerCase());
@@ -51,8 +77,8 @@ function registerProfileV2Routes(app) {
   app.get('/api/me/profile-v2', requireSession, async (req, res) => {
     const [user, teams] = await Promise.all([storage.findUserById(req.session.userId), storage.readTeams().catch(() => [])]);
     if (!user || user.deletedAt) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
-    const team = findCurrentTeam(teams, user);
-    return res.json({ success: true, user: publicUser(user), currentTeam: team || null, stats: buildStats(user, team) });
+    const [team, roles] = await Promise.all([Promise.resolve(findCurrentTeam(teams, user)), readDiscordRoles(user.discordId)]);
+    return res.json({ success: true, user: publicUser(user, roles), roles, currentTeam: team || null, stats: buildStats(user, team) });
   });
 
   app.put('/api/me/profile-v2', requireSession, async (req, res) => {
@@ -67,8 +93,8 @@ function registerProfileV2Routes(app) {
       updatedAt: new Date().toISOString()
     });
     const teams = await storage.readTeams().catch(() => []);
-    const team = findCurrentTeam(teams, saved);
-    return res.json({ success: true, user: publicUser(saved), currentTeam: team || null, stats: buildStats(saved, team) });
+    const [team, roles] = await Promise.all([Promise.resolve(findCurrentTeam(teams, saved)), readDiscordRoles(saved.discordId)]);
+    return res.json({ success: true, user: publicUser(saved, roles), roles, currentTeam: team || null, stats: buildStats(saved, team) });
   });
 
   app.delete('/api/me/profile-v2', requireSession, async (req, res) => {
