@@ -23,6 +23,10 @@ function parseMessage(message = {}) {
   }
 }
 
+function isVisible(item = {}) {
+  return !['archived', 'deleted', 'hidden'].includes(String(item.status || '').toLowerCase());
+}
+
 function userName(user = {}) {
   return user?.profile?.username || user?.name || user?.discordId || 'Jogador';
 }
@@ -65,21 +69,34 @@ function addUserToTeam(team = {}, user = {}) {
   return next;
 }
 
+async function readAnnouncements(limit = 80) {
+  const messages = await storage.readChatMessages({ channelId: ANNOUNCEMENT_CHANNEL, limit }).catch(() => []);
+  return messages.map(parseMessage).filter(isVisible).map((item) => ({ ...item, type: item.type || 'announcement', status: item.status || 'info' }));
+}
+
 function registerNotificationRoutes(app) {
   app.get('/api/notifications', requireSession, async (req, res) => {
     try {
       const user = await getSessionUser(req);
       const [directMessages, announcements] = await Promise.all([
         storage.readChatMessages({ channelId: NOTIFICATION_CHANNEL, limit: 120 }).catch(() => []),
-        storage.readChatMessages({ channelId: ANNOUNCEMENT_CHANNEL, limit: 20 }).catch(() => [])
+        readAnnouncements(30)
       ]);
-      const personal = directMessages.map(parseMessage).filter((item) => isForUser(item, user));
-      const publicItems = announcements.map(parseMessage).map((item) => ({ ...item, type: item.type || 'announcement', status: item.status || 'info' }));
-      const notifications = [...personal, ...publicItems].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-      const unread = personal.filter((item) => !['read', 'accepted', 'declined', 'archived'].includes(String(item.status || '').toLowerCase())).length;
+      const personal = directMessages.map(parseMessage).filter((item) => isVisible(item) && isForUser(item, user));
+      const notifications = [...personal, ...announcements].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+      const unread = personal.filter((item) => !['read', 'accepted', 'declined', 'archived'].includes(String(item.status || '').toLowerCase())).length + announcements.length;
       return res.json({ success: true, notifications: notifications.reverse(), unread });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, notifications: [], unread: 0 });
+    }
+  });
+
+  app.get('/api/notifications/announcements', requireSession, requireOwner, async (_req, res) => {
+    try {
+      const announcements = await readAnnouncements(100);
+      return res.json({ success: true, announcements: announcements.reverse() });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message, announcements: [] });
     }
   });
 
@@ -100,6 +117,25 @@ function registerNotificationRoutes(app) {
         createdAt
       });
       return res.json({ success: true, message: 'Aviso enviado para os Correios dos usuários logados.', notification: parseMessage(saved) });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.delete('/api/notifications/announcements', requireSession, requireOwner, async (req, res) => {
+    try {
+      const ids = Array.from(new Set(Array.isArray(req.body?.ids) ? req.body.ids : []))
+        .map((id) => String(id || '').trim()).filter(Boolean);
+      if (!ids.length) return res.status(400).json({ success: false, message: 'Selecione pelo menos uma notificação.' });
+      const messages = await storage.readChatMessages({ channelId: ANNOUNCEMENT_CHANNEL, limit: 200 }).catch(() => []);
+      let archived = 0;
+      for (const raw of messages) {
+        if (!ids.includes(String(raw.id))) continue;
+        const item = parseMessage(raw);
+        await storage.updateChatMessage(raw.id, { content: JSON.stringify({ ...item, status: 'archived', archivedAt: new Date().toISOString() }) }, { channelId: ANNOUNCEMENT_CHANNEL });
+        archived += 1;
+      }
+      return res.json({ success: true, archived, message: `${archived} notificação(ões) removida(s).` });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
