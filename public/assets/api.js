@@ -5,6 +5,7 @@
   VA.__stableBootstrapReady = true;
 
   const NAV_LINKS = [
+    ['dashboard', 'atualizacoes', '/pages/atualizacoes.html', '📰 Atualizações'],
     ['rankings', 'jogadores', '/pages/jogadores.html', '👤 Jogadores'],
     ['jogadores', 'recrutamento', '/pages/recrutamento.html', '🤝 Recrutamento'],
     ['recrutamento', 'pontuacao', '/pages/pontuacao.html', '🏅 Pontuação'],
