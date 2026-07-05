@@ -15,6 +15,7 @@ const { registerPlacarRoutes } = require('../server/routes/placar.routes');
 const { registerPlayersRoutes } = require('../server/routes/players.routes');
 const { registerTeamExtrasRoutes } = require('../server/routes/teamExtras.routes');
 const { registerDiscordAdminRoutes } = require('../server/routes/discordAdmin.routes');
+const { registerNotificationRoutes } = require('../server/routes/notifications.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -31,6 +32,7 @@ registerPlacarRoutes(app);
 registerPlayersRoutes(app);
 registerTeamExtrasRoutes(app);
 registerDiscordAdminRoutes(app);
+registerNotificationRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
