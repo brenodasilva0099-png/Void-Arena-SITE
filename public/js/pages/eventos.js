@@ -11,6 +11,7 @@
   const settingsTitle = document.getElementById('eventSettingsTitle');
   const settingsStatus = document.getElementById('eventSettingsStatus');
   const manualDmBtn = document.getElementById('eventManualDmBtn');
+  const registeredManager = document.getElementById('eventRegisteredTeamsManager');
   let events = [];
   let teams = [];
 
@@ -19,23 +20,31 @@
   function setRegisterStatus(message, type = '') { registerStatus.textContent = message; registerStatus.className = `va-status ${type}`.trim(); }
   function setSettingsStatus(message, type = '') { settingsStatus.textContent = message; settingsStatus.className = `va-status ${type}`.trim(); }
   function count(event) { return Array.isArray(event.registrations) ? event.registrations.filter((r) => !['rejected', 'cancelled'].includes(String(r.status || '').toLowerCase())).length : Number(event.registeredCount || 0) || 0; }
-  function statusLabel(status = '') { return ({ open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado', approved: 'Validado', accepted: 'Validado', pending: 'Pendente' })[status] || status || 'Aberto'; }
+  function statusLabel(status = '') { return ({ open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado', approved: 'Validado', accepted: 'Validado', pending: 'Pendente' })[status] || status || 'Pendente'; }
   function statusClass(status = '') { if (['open', 'approved', 'accepted'].includes(status)) return 'ok'; if (status === 'running' || status === 'pending') return 'warn'; if (status === 'finished' || status === 'rejected') return 'err'; return ''; }
   function feeText(event) { return event.isFree || !String(event.entryFee || event.registrationFee || '').trim() ? 'F2P' : String(event.entryFee || event.registrationFee); }
   function dtToInput(value = '') { if (!value) return ''; const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value).slice(0, 16); const pad = (n) => String(n).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
   function teamById(id = '') { return teams.find((team) => String(team.id || '') === String(id || '')) || null; }
+  function registrationTeam(registration = {}) {
+    const team = registration.team || teamById(registration.teamId);
+    if (team) return team;
+    const name = registration.teamName || registration.name || 'Time inscrito';
+    return { id: registration.teamId || '', name, tag: registration.teamTag || name.slice(0, 3), logo: registration.teamLogo || '' };
+  }
+  function initialsFromTeam(team = null) { return esc((team?.tag || team?.name || 'TM').slice(0, 2).toUpperCase()); }
   function teamLogo(team = null) {
-    if (!team) return '<span>?</span>';
+    if (!team) return '<span>TM</span>';
     if (team.logo) return `<img src="${esc(team.logo)}" alt="${esc(team.name || team.tag || 'Time')}" />`;
-    return `<span>${esc((team.tag || team.name || 'T').slice(0, 2).toUpperCase())}</span>`;
+    return `<span>${initialsFromTeam(team)}</span>`;
+  }
+  function validRegistrations(event = {}) {
+    return (Array.isArray(event.registrations) ? event.registrations : []).filter((registration) => !['rejected', 'cancelled'].includes(String(registration.status || '').toLowerCase()));
   }
   function eventTeamLogos(event = {}) {
-    const registrations = (Array.isArray(event.registrations) ? event.registrations : [])
-      .filter((registration) => !['rejected', 'cancelled'].includes(String(registration.status || '').toLowerCase()))
-      .slice(0, 32);
+    const registrations = validRegistrations(event).slice(0, 32);
     if (!registrations.length) return '<div class="va-event-team-strip empty"><span>Nenhum time inscrito/validado ainda.</span></div>';
     return `<div class="va-event-team-strip" title="Times inscritos/validados">${registrations.map((registration) => {
-      const team = teamById(registration.teamId);
+      const team = registrationTeam(registration);
       const label = team?.name || registration.teamName || 'Time inscrito';
       const status = String(registration.status || 'pending').toLowerCase();
       return `<div class="va-event-team-logo ${statusClass(status)}" title="${esc(label)} • ${esc(statusLabel(status))}">${teamLogo(team)}<small>${esc((team?.tag || label).slice(0, 6))}</small></div>`;
@@ -64,8 +73,40 @@
   function openRegister(eventId) { const event = events.find((item) => String(item.id) === String(eventId)); if (!event || !modal || !form) return; form.elements.eventId.value = event.id; title.textContent = `Inscrever em ${event.title || event.name || 'evento'}`; info.textContent = `${count(event)}/${event.teamLimit || '?'} times aceitos • ${event.matchFormat || 'MD1'} • ${statusLabel(event.status)} • ${feeText(event)}`; form.elements.teamId.innerHTML = '<option value="">Selecione seu time</option>' + teams.map((team) => `<option value="${esc(team.id)}">${esc(team.name)} ${team.tag ? `(${esc(team.tag)})` : ''}</option>`).join(''); setRegisterStatus(teams.length ? 'A inscrição cria um pedido no canal de validação do Discord. O time só entra no evento após aprovação.' : 'Nenhum time encontrado. Crie um time antes de inscrever.'); modal.hidden = false; }
   function closeRegister() { if (modal) modal.hidden = true; }
 
-  function openSettings(eventId) { const event = events.find((item) => String(item.id) === String(eventId)); if (!event || !settingsModal || !settingsForm) return; settingsTitle.textContent = `Editar ${event.title || event.name || 'evento'}`; settingsForm.elements.eventId.value = event.id; settingsForm.elements.title.value = event.title || event.name || ''; settingsForm.elements.startAt.value = dtToInput(event.startAt || ''); settingsForm.elements.status.value = event.status || 'open'; settingsForm.elements.matchFormat.value = event.matchFormat || 'MD1'; settingsForm.elements.structure.value = event.structure || 'single_elimination'; settingsForm.elements.mode.value = event.mode || ''; settingsForm.elements.teamLimit.value = String(event.teamLimit || 16); settingsForm.elements.reward.value = event.reward || event.prize || ''; settingsForm.elements.entryFee.value = event.entryFee || event.registrationFee || ''; settingsForm.elements.isFree.checked = event.isFree === true || !String(event.entryFee || event.registrationFee || '').trim(); settingsForm.elements.paymentInstructions.value = event.paymentInstructions || ''; settingsForm.elements.description.value = event.description || ''; setSettingsStatus('Salve as mudanças ou use Reenviar DM do evento para mandar/atualizar manualmente as DMs dos capitães.'); settingsModal.hidden = false; }
+  function renderRegisteredManager(event = {}) {
+    if (!registeredManager) return;
+    const registrations = validRegistrations(event);
+    if (!registrations.length) {
+      registeredManager.innerHTML = '<div class="va-event-manage-empty">Nenhum time inscrito/validado nesse evento.</div>';
+      return;
+    }
+    registeredManager.innerHTML = registrations.map((registration) => {
+      const team = registrationTeam(registration);
+      const teamId = registration.teamId || team?.id || '';
+      const label = team?.name || registration.teamName || 'Time inscrito';
+      const status = String(registration.status || 'pending').toLowerCase();
+      return `<div class="va-event-manage-team" data-remove-team-id="${esc(teamId)}"><div class="va-event-manage-logo ${statusClass(status)}">${teamLogo(team)}</div><div><strong>${esc(label)}</strong><span>${esc(statusLabel(status))}${team?.tag ? ` • ${esc(team.tag)}` : ''}</span></div><button class="va-btn danger mini" type="button" data-remove-event-team="${esc(teamId)}">Remover</button></div>`;
+    }).join('');
+    registeredManager.querySelectorAll('[data-remove-event-team]').forEach((btn) => btn.addEventListener('click', () => removeTeamFromEvent(event.id, btn.dataset.removeEventTeam)));
+  }
+
+  function openSettings(eventId) { const event = events.find((item) => String(item.id) === String(eventId)); if (!event || !settingsModal || !settingsForm) return; settingsTitle.textContent = `Editar ${event.title || event.name || 'evento'}`; settingsForm.elements.eventId.value = event.id; settingsForm.elements.title.value = event.title || event.name || ''; settingsForm.elements.startAt.value = dtToInput(event.startAt || ''); settingsForm.elements.status.value = event.status || 'open'; settingsForm.elements.matchFormat.value = event.matchFormat || 'MD1'; settingsForm.elements.structure.value = event.structure || 'single_elimination'; settingsForm.elements.mode.value = event.mode || ''; settingsForm.elements.teamLimit.value = String(event.teamLimit || 16); settingsForm.elements.reward.value = event.reward || event.prize || ''; settingsForm.elements.entryFee.value = event.entryFee || event.registrationFee || ''; settingsForm.elements.isFree.checked = event.isFree === true || !String(event.entryFee || event.registrationFee || '').trim(); settingsForm.elements.paymentInstructions.value = event.paymentInstructions || ''; settingsForm.elements.description.value = event.description || ''; renderRegisteredManager(event); setSettingsStatus('Salve as mudanças ou remova um time inscrito/validado abaixo.'); settingsModal.hidden = false; }
   function closeSettings() { if (settingsModal) settingsModal.hidden = true; }
+
+  async function removeTeamFromEvent(eventId, teamId) {
+    if (!eventId || !teamId) return;
+    if (!confirm('Remover esse time do evento? O cadastro do time no site não será apagado.')) return;
+    setSettingsStatus('Removendo time do evento...');
+    try {
+      const data = await VoidArena.request(`/api/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(teamId)}`, { method: 'DELETE' });
+      setSettingsStatus(data.message || 'Time removido do evento.', 'ok');
+      await render();
+      const updated = events.find((item) => String(item.id) === String(eventId));
+      if (updated) renderRegisteredManager(updated);
+    } catch (error) {
+      setSettingsStatus(`Erro ao remover time: ${error.message}`, 'err');
+    }
+  }
 
   async function manualEventDm(eventId, targetStatus = setStatus) {
     if (!eventId) return;
@@ -89,7 +130,7 @@
 
   form?.addEventListener('submit', async (event) => { event.preventDefault(); const eventId = form.elements.eventId.value; const teamId = form.elements.teamId.value; if (!teamId) return setRegisterStatus('Selecione um time.', 'err'); setRegisterStatus('Enviando pedido para o canal de validação do Discord...'); try { const data = await VoidArena.request(`/api/events/${encodeURIComponent(eventId)}/register`, { method: 'POST', body: JSON.stringify({ teamId }) }); setRegisterStatus(data.alreadyRegistered ? 'Esse time já está aceito no evento.' : data.alreadyPending ? 'Esse time já tem validação pendente no Discord.' : 'Pedido enviado para validação no Discord. Aguarde a staff aprovar antes do time entrar no evento.', 'ok'); await render(); } catch (error) { setRegisterStatus(`Erro na inscrição: ${error.message}`, 'err'); } });
 
-  settingsForm?.addEventListener('submit', async (event) => { event.preventDefault(); const eventId = settingsForm.elements.eventId.value; const body = { title: settingsForm.elements.title.value, startAt: settingsForm.elements.startAt.value, status: settingsForm.elements.status.value, matchFormat: settingsForm.elements.matchFormat.value, structure: settingsForm.elements.structure.value, mode: settingsForm.elements.mode.value, teamLimit: Number(settingsForm.elements.teamLimit.value || 16), reward: settingsForm.elements.reward.value, entryFee: settingsForm.elements.isFree.checked ? '' : settingsForm.elements.entryFee.value, isFree: settingsForm.elements.isFree.checked, paymentInstructions: settingsForm.elements.paymentInstructions.value, description: settingsForm.elements.description.value }; setSettingsStatus('Salvando definições...'); try { await VoidArena.request(`/api/events/${encodeURIComponent(eventId)}`, { method: 'PUT', body: JSON.stringify(body) }); setSettingsStatus('Definições salvas. Use Reenviar DM do evento se quiser mandar a atualização agora.', 'ok'); await render(); } catch (error) { setSettingsStatus(`Erro ao salvar: ${error.message}`, 'err'); } });
+  settingsForm?.addEventListener('submit', async (event) => { event.preventDefault(); const eventId = settingsForm.elements.eventId.value; const body = { title: settingsForm.elements.title.value, startAt: settingsForm.elements.startAt.value, status: settingsForm.elements.status.value, matchFormat: settingsForm.elements.matchFormat.value, structure: settingsForm.elements.structure.value, mode: settingsForm.elements.mode.value, teamLimit: Number(settingsForm.elements.teamLimit.value || 16), reward: settingsForm.elements.reward.value, entryFee: settingsForm.elements.isFree.checked ? '' : settingsForm.elements.entryFee.value, isFree: settingsForm.elements.isFree.checked, paymentInstructions: settingsForm.elements.paymentInstructions.value, description: settingsForm.elements.description.value }; setSettingsStatus('Salvando definições...'); try { await VoidArena.request(`/api/events/${encodeURIComponent(eventId)}`, { method: 'PUT', body: JSON.stringify(body) }); setSettingsStatus('Definições salvas. Use Reenviar DM do evento se quiser mandar a atualização agora.', 'ok'); await render(); const updated = events.find((item) => String(item.id) === String(eventId)); if (updated) renderRegisteredManager(updated); } catch (error) { setSettingsStatus(`Erro ao salvar: ${error.message}`, 'err'); } });
 
   try { await VoidArena.bootLayout('eventos'); await render(); } catch (e) { setStatus(`❌ ${e.message}`, 'err'); }
 }());
