@@ -60,6 +60,45 @@
 .va-card p, .va-muted, .va-status, .va-subtitle { line-height: 1.55; white-space: normal; }
 .va-status { display: block; margin-top: 12px; }
 .va-status:empty { display: none; }
+.va-event-team-strip { align-items: flex-start !important; padding-block: 12px !important; }
+.va-event-team-logo {
+  width: 58px !important;
+  height: auto !important;
+  min-height: 74px;
+  display: grid !important;
+  grid-template-rows: 48px auto;
+  place-items: center;
+  gap: 5px;
+  padding: 6px 4px 5px !important;
+  text-decoration: none;
+  color: #f8f7ff;
+  overflow: visible !important;
+}
+.va-event-logo-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #050816;
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: inset 0 0 18px rgba(34,211,238,.06);
+}
+.va-event-logo-box img { width: 100%; height: 100%; object-fit: cover; }
+.va-event-logo-box span { font-weight: 1000; font-size: 14px; }
+.va-event-team-logo small {
+  position: static !important;
+  inset: auto !important;
+  width: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  color: #f8f7ff !important;
+  font-size: 10px !important;
+  line-height: 1.05;
+  text-shadow: none;
+}
+.va-event-team-logo:hover { transform: translateY(-1px); border-color: rgba(34,211,238,.55) !important; }
 .va-home-marquee {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 330px);
