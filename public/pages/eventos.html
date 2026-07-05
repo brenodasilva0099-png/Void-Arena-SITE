@@ -122,6 +122,10 @@
       <label class="va-check-row"><input name="isFree" type="checkbox" /> <span>Marcar como F2P / gratuito</span></label>
       <label class="wide">Instruções de pagamento/validação<textarea name="paymentInstructions" maxlength="420" placeholder="Explique onde enviar comprovante ou como validar a inscrição."></textarea></label>
       <label class="wide">Descrição<textarea name="description" maxlength="320"></textarea></label>
+      <div class="va-event-settings-teams wide">
+        <div class="va-section-head mini"><div><h3>Times inscritos/validados</h3><p>Remova um time do evento sem apagar o cadastro dele do site.</p></div></div>
+        <div id="eventRegisteredTeamsManager" class="va-event-manage-teams"></div>
+      </div>
       <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar definições</button><button id="eventManualDmBtn" class="va-btn secondary" type="button">Reenviar DM do evento</button><button class="va-btn" type="button" data-event-settings-close>Cancelar</button></div>
     </form>
     <div id="eventSettingsStatus" class="va-status"></div>
