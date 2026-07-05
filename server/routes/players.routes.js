@@ -1,5 +1,6 @@
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { createRecruitmentNotification } = require('./notifications.routes');
 
 const RECRUITMENT_CHANNEL_ID = 'recruitment-board';
 
@@ -117,7 +118,7 @@ function buildDirectory(users = [], teams = []) {
     }
   });
 
-  users.forEach((user) => {
+  users.filter((user) => !user.deletedAt).forEach((user) => {
     const key = playerKey({ userId: user.id, discordId: user.discordId, name: userName(user) });
     if (map.has(key)) return;
     upsert({
@@ -177,8 +178,9 @@ function registerPlayersRoutes(app) {
         storage.readTeams().catch(() => []),
         safeSessionUser(req)
       ]);
+      const activeUsers = users.filter((user) => !user.deletedAt);
       const viewerTeams = teams.filter((team) => canManageTeam(viewer, team)).map(publicTeam);
-      return res.json({ success: true, players: buildDirectory(users, teams), teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
+      return res.json({ success: true, players: buildDirectory(activeUsers, teams), teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, players: [], teams: [], viewerTeams: [] });
     }
@@ -210,7 +212,7 @@ function registerPlayersRoutes(app) {
       if (type === 'recruitment') {
         if (!canManageTeam(viewer, team)) throw new Error('Só capitão/dono desse time pode solicitar recrutamento.');
         if (!playerId && !playerName) throw new Error('Selecione o jogador que deseja recrutar.');
-        title = `Recrutamento solicitado por ${team.name}`;
+        title = `Convite de recrutamento enviado por ${team.name}`;
       } else if (type === 'trial') {
         title = `Peneira solicitada para ${team.name}`;
       } else {
@@ -240,7 +242,12 @@ function registerPlayersRoutes(app) {
         createdAt: payload.createdAt
       });
 
-      return res.status(201).json({ success: true, request: parseRecruitmentMessage(saved) });
+      let notification = null;
+      if (type === 'recruitment') {
+        notification = await createRecruitmentNotification({ viewer, team, playerId, playerName, request: parseRecruitmentMessage(saved), note }).catch(() => null);
+      }
+
+      return res.status(201).json({ success: true, request: parseRecruitmentMessage(saved), notification });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
