@@ -34,8 +34,8 @@
   }
   function rolesHtml(roles = []) {
     const list = (Array.isArray(roles) ? roles : []).filter((role) => role?.name).slice(0, 10);
-    if (!list.length) return '<span class="va-muted">Nenhum cargo público encontrado.</span>';
-    return list.map((role) => `<span class="va-role-chip">${esc(role.name)}</span>`).join('');
+    const chips = list.length ? list.map((role) => `<span class="va-role-chip">${esc(role.name)}</span>`).join('') : '<span class="va-muted">Nenhum cargo público encontrado.</span>';
+    return `<div class="va-role-panel"><strong>Cargos no servidor</strong><div class="va-role-list">${chips}</div></div>`;
   }
   function ensureRolesPreview() {
     let el = document.getElementById('profileRolesPreview');
