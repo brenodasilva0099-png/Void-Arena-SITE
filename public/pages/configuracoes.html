@@ -39,7 +39,7 @@
     <main class="va-main">
       <header class="va-topbar">
         <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
+          <p class="va-eyebrow">Void Arena 5.1.3</p>
           <h1 class="va-title">Configurações</h1>
           <p class="va-subtitle">Configurações, saúde do sistema e backups prontos para uso.</p>
         </div>
@@ -60,6 +60,15 @@
     <div id="backupSummary" class="va-list"></div>
     <div class="va-actions"><button id="createBackupBtn" class="va-btn primary" type="button">Salvar backup agora</button><button id="restoreBackupBtn" class="va-btn danger" type="button">Restaurar último</button></div>
     <div id="backupStatus" class="va-status">Aguardando...</div>
+  </article>
+  <article class="va-card full">
+    <h2>Criar categoria no Discord</h2>
+    <p>Crie uma categoria direto no servidor pelo BOT. Use para organizar eventos, HUBs, canais privados ou áreas novas.</p>
+    <form id="discordCategoryForm" class="va-form-grid two">
+      <label class="wide">Nome da categoria<input name="name" maxlength="80" placeholder="Ex: Void Arena Eventos" required /></label>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Criar categoria</button></div>
+    </form>
+    <div id="discordCategoryStatus" class="va-status">Aguardando nome da categoria.</div>
   </article>
   <article class="va-card full">
     <h2>Checklist da base 5.0</h2>
