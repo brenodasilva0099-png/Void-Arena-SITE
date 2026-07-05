@@ -8,6 +8,7 @@
   const connectionsEl = document.getElementById('profileConnectionsPreview');
   const teamCardEl = document.getElementById('currentTeamCard');
   const statsEl = document.getElementById('playerStatsCard');
+  const deleteBtn = document.getElementById('deleteLocalAccountBtn');
   let currentUser = null;
   function setStatus(message, type = '') { statusEl.textContent = message; statusEl.className = `va-status ${type}`.trim(); }
   function value(name, val = '') { if (form?.elements?.[name]) form.elements[name].value = val || ''; }
@@ -41,6 +42,7 @@
     value('username', profile.username || user.name || ''); value('realName', profile.realName || ''); value('country', profile.country || ''); value('region', profile.region || profile.competitiveRegion || ''); value('timezone', profile.timezone || ''); value('primaryPosition', profile.primaryPosition || ''); value('secondaryPosition', profile.secondaryPosition || ''); value('bio', profile.bio || ''); value('banner', profile.banner || profile.discordBanner || ''); value('discord', discordValue); value('steam', socials.steam || profile.steamId || ''); value('xboxGamertag', socials.xbox || profile.xboxGamertag || ''); value('tiktok', socials.tiktok || ''); value('youtube', socials.youtube || ''); value('twitter', socials.twitter || ''); value('spotify', socials.spotify || ''); value('riot', socials.riot || ''); value('ea', socials.ea || ''); value('psn', socials.psn || '');
     const displayName = profile.username || user.name || 'Perfil'; nameEl.textContent = displayName; metaEl.textContent = [profile.country, profile.region || profile.competitiveRegion, profile.primaryPosition].filter(Boolean).join(' • ') || 'Perfil público do jogador'; avatarEl.innerHTML = user.avatar ? `<img src="${esc(user.avatar)}" alt="Avatar" />` : esc(displayName.slice(0, 1).toUpperCase()); const banner = profile.banner || profile.discordBanner || ''; if (bannerEl) bannerEl.style.backgroundImage = banner ? `linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.45)), url("${esc(banner)}")` : '';
     renderConnections({ ...socials, discord: discordValue }); renderTeam(payload.currentTeam || null); renderStats(payload.stats || {});
+    if (deleteBtn) deleteBtn.hidden = !user.canDeleteAccount;
   }
   async function load() { await VoidArena.bootLayout('perfil'); const data = await VoidArena.request('/api/me/profile-v2'); fill(data); setStatus('Perfil carregado.', 'ok'); }
   async function save() { setStatus('Salvando perfil...'); const body = { profile: { username: read('username'), realName: read('realName'), country: read('country'), region: read('region'), timezone: read('timezone'), primaryPosition: read('primaryPosition'), secondaryPosition: read('secondaryPosition'), bio: read('bio'), banner: read('banner'), steamId: read('steam'), xboxGamertag: read('xboxGamertag') }, socials: { discord: read('discord'), steam: read('steam'), xbox: read('xboxGamertag'), tiktok: read('tiktok'), youtube: read('youtube'), twitter: read('twitter'), spotify: read('spotify'), riot: read('riot'), ea: read('ea'), psn: read('psn') } }; const data = await VoidArena.request('/api/me/profile-v2', { method: 'PUT', body: JSON.stringify(body) }); fill(data); setStatus('Perfil salvo com sucesso.', 'ok'); }
@@ -49,9 +51,17 @@
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include', cache: 'no-store' }).catch(() => null);
     window.location.href = '/';
   }
+  async function deleteLocalAccount() {
+    if (!currentUser?.canDeleteAccount) return setStatus('Essa conta foi criada/logada pelo Discord e não pode ser excluída por aqui.', 'err');
+    if (!confirm('Excluir esta conta local? Essa ação remove o login local e encerra sua sessão.')) return;
+    setStatus('Excluindo conta local...');
+    await VoidArena.request('/api/me/profile-v2', { method: 'DELETE', body: '{}' });
+    window.location.href = '/';
+  }
   form?.elements?.banner?.addEventListener('input', () => { const url = read('banner'); if (bannerEl) bannerEl.style.backgroundImage = url ? `linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.45)), url("${esc(url)}")` : ''; });
   document.getElementById('saveProfileBtn')?.addEventListener('click', () => save().catch((error) => setStatus(`❌ ${error.message}`, 'err')));
   document.getElementById('profileLogoutBtn')?.addEventListener('click', () => logout());
   document.getElementById('profileLogoutBtnBottom')?.addEventListener('click', () => logout());
+  deleteBtn?.addEventListener('click', () => deleteLocalAccount().catch((error) => setStatus(`❌ ${error.message}`, 'err')));
   load().catch((error) => setStatus(`❌ ${error.message}`, 'err'));
 }());
