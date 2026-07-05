@@ -17,7 +17,7 @@ const keys = [
   ['teamChats', 'Chat de Times'],
   ['scrims', 'Scrims'],
   ['stats', 'Estatísticas'],
-  ['matches', 'Análise'],
+  ['matches', 'Partidas / Análise'],
   ['forms', 'Formulários'],
   ['backup', 'Backup'],
   ['config', 'Hub Config BOT']
@@ -43,7 +43,7 @@ function render() {
   permissionRows.innerHTML = `
     <div class="va-item">
       <strong>Sincronizado com a Hub Config BOT</strong>
-      <p class="va-muted">Essa tela lê e salva as mesmas definições do BOT. Se você alterar na hub/config do bot, clique em Recarregar cargos para atualizar aqui; se alterar aqui, o BOT recebe a nova definição.</p>
+      <p class="va-muted">Essa tela lê e salva as mesmas definições do BOT. Formulários e Partidas/Análise exigem cargo configurado aqui, igual o controle de capitães.</p>
     </div>
     ${roles.map((role) => `
       <div class="va-permission-role" data-role-id="${esc(role.id)}">
