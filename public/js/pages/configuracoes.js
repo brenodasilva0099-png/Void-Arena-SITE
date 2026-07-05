@@ -3,19 +3,16 @@
   const backupSummary = document.getElementById('backupSummary');
   const configStatus = document.getElementById('configStatus');
   const backupStatus = document.getElementById('backupStatus');
-  const categoryForm = document.getElementById('discordCategoryForm');
-  const categoryStatus = document.getElementById('discordCategoryStatus');
   const announcementForm = document.getElementById('siteAnnouncementForm');
   const announcementStatus = document.getElementById('announcementStatus');
+  const announcementList = document.getElementById('announcementList');
   const matchVoicesForm = document.getElementById('matchVoicesForm');
   const matchVoiceList = document.getElementById('matchVoiceList');
   const matchVoiceStatus = document.getElementById('matchVoiceStatus');
 
   function item(title, text) { return `<div class="va-item"><strong>${VoidArena.escapeHtml(title)}</strong><div class="va-muted">${text}</div></div>`; }
   function status(el, msg, type = '') { if (!el) return; el.textContent = msg; el.className = `va-status ${type}`.trim(); }
-  function dbSummary(db = {}) {
-    return `Usuários: ${db.users || 0} • Times: ${db.teams || 0} • Eventos: ${db.events || 0} • Partidas: ${db.trainingSubmissions || 0} • Mensagens: ${db.messages || 0}`;
-  }
+  function dbSummary(db = {}) { return `Usuários: ${db.users || 0} • Times: ${db.teams || 0} • Eventos: ${db.events || 0} • Partidas: ${db.trainingSubmissions || 0} • Mensagens: ${db.messages || 0}`; }
   function esc(value = '') { return VoidArena.escapeHtml(value); }
   function categoryId() { return String(matchVoicesForm?.elements?.categoryId?.value || '1523133579570184194').trim(); }
 
@@ -44,6 +41,7 @@
       status(backupStatus, 'Backup indisponível.', 'err');
     }
     status(configStatus, 'Status carregado.', 'ok');
+    await loadAnnouncements();
   }
 
   async function createBackup() {
@@ -66,18 +64,40 @@
     } catch (error) { status(backupStatus, `❌ ${error.message}`, 'err'); }
   }
 
-  async function createDiscordCategory(event) {
-    event.preventDefault();
-    const name = String(categoryForm?.elements?.name?.value || '').trim();
-    if (!name) return status(categoryStatus, 'Digite o nome da categoria.', 'err');
-    status(categoryStatus, 'Criando categoria no Discord...');
-    try {
-      const data = await VoidArena.request('/api/discord/categories', { method: 'POST', body: JSON.stringify({ name }) });
-      status(categoryStatus, `✅ ${data.message || 'Categoria pronta.'} ${data.category?.name ? `• ${data.category.name}` : ''}`, 'ok');
-      categoryForm.reset();
-    } catch (error) {
-      status(categoryStatus, `❌ ${error.message}`, 'err');
+  function renderAnnouncements(items = []) {
+    if (!announcementList) return;
+    if (!items.length) {
+      announcementList.innerHTML = '<div class="va-item"><strong>Nenhuma notificação enviada</strong><div class="va-muted">Os avisos enviados aparecerão aqui para remoção futura.</div></div>';
+      return;
     }
+    announcementList.innerHTML = `<div class="va-actions"><button id="deleteAnnouncementsBtn" class="va-btn danger" type="button">Excluir notificações selecionadas</button></div>` + items.map((note) => `
+      <label class="va-item" style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start">
+        <input type="checkbox" data-announcement-id="${esc(note.id)}" />
+        <span><strong>${esc(note.title || 'Aviso')}</strong><div class="va-muted">${esc(note.message || note.note || '')}</div><small class="va-muted">${esc(VoidArena.formatDate(note.createdAt))}</small></span>
+      </label>`).join('');
+    document.getElementById('deleteAnnouncementsBtn')?.addEventListener('click', deleteAnnouncements);
+  }
+
+  async function loadAnnouncements() {
+    if (!announcementList) return;
+    try {
+      const data = await VoidArena.request('/api/notifications/announcements', { timeoutMs: 9000 });
+      renderAnnouncements(data.announcements || []);
+    } catch (error) {
+      announcementList.innerHTML = `<div class="va-item"><strong>Não foi possível carregar avisos</strong><div class="va-muted">${esc(error.message)}</div></div>`;
+    }
+  }
+
+  async function deleteAnnouncements() {
+    const ids = Array.from(document.querySelectorAll('[data-announcement-id]:checked')).map((input) => input.dataset.announcementId).filter(Boolean);
+    if (!ids.length) return status(announcementStatus, 'Selecione pelo menos uma notificação enviada.', 'err');
+    if (!confirm(`Excluir ${ids.length} notificação(ões) dos Correios?`)) return;
+    status(announcementStatus, 'Removendo notificações...');
+    try {
+      const data = await VoidArena.request('/api/notifications/announcements', { method: 'DELETE', body: JSON.stringify({ ids }), timeoutMs: 12000 });
+      status(announcementStatus, `✅ ${data.message || 'Notificações removidas.'}`, 'ok');
+      await loadAnnouncements();
+    } catch (error) { status(announcementStatus, `❌ ${error.message}`, 'err'); }
   }
 
   async function sendAnnouncement(event) {
@@ -90,6 +110,14 @@
       const data = await VoidArena.request('/api/notifications/announcement', { method: 'POST', body: JSON.stringify({ title, message }) });
       status(announcementStatus, `✅ ${data.message || 'Aviso enviado.'}`, 'ok');
       announcementForm.elements.message.value = '';
+      await loadAnnouncements();
+    } catch (error) { status(announcementStatus, `❌ ${error.message}`, 'err'); }
+  }
+
+  async function enableBrowserNotifications() {
+    try {
+      const result = await VoidArena.enableBrowserNotifications?.();
+      status(announcementStatus, result || 'Permissão de notificação atualizada.', 'ok');
     } catch (error) { status(announcementStatus, `❌ ${error.message}`, 'err'); }
   }
 
@@ -112,10 +140,8 @@
     try {
       const data = await VoidArena.request(`/api/discord/match-voices?categoryId=${encodeURIComponent(categoryId())}`, { timeoutMs: 12000 });
       renderMatchVoices(data.channels || []);
-      status(matchVoiceStatus, `${data.channels?.length || 0} call(s) encontrada(s).`, 'ok');
-    } catch (error) {
-      status(matchVoiceStatus, `❌ ${error.message}`, 'err');
-    }
+      status(matchVoiceStatus, `${data.channels?.length || 0} call(s) encontrada(s).${data.fallback ? ' Modo compatibilidade: redeploy do BOT ativa exclusão.' : ''}`, 'ok');
+    } catch (error) { status(matchVoiceStatus, `❌ ${error.message}`, 'err'); }
   }
 
   async function deleteMatchVoices() {
@@ -127,18 +153,16 @@
       const data = await VoidArena.request('/api/discord/match-voices', { method: 'DELETE', body: JSON.stringify({ channelIds, categoryId: categoryId() }), timeoutMs: 15000 });
       status(matchVoiceStatus, `✅ ${data.message || `${data.deleted?.length || 0} call(s) apagada(s).`}`, 'ok');
       await loadMatchVoices();
-    } catch (error) {
-      status(matchVoiceStatus, `❌ ${error.message}`, 'err');
-    }
+    } catch (error) { status(matchVoiceStatus, `❌ ${error.message}`, 'err'); }
   }
 
   document.getElementById('reloadConfigBtn')?.addEventListener('click', load);
   document.getElementById('createBackupBtn')?.addEventListener('click', createBackup);
   document.getElementById('restoreBackupBtn')?.addEventListener('click', restoreBackup);
   document.getElementById('openInboxPreviewBtn')?.addEventListener('click', () => VoidArena.openNotifications?.());
+  document.getElementById('enableBrowserNotificationsBtn')?.addEventListener('click', enableBrowserNotifications);
   document.getElementById('loadMatchVoicesBtn')?.addEventListener('click', loadMatchVoices);
   document.getElementById('deleteMatchVoicesBtn')?.addEventListener('click', deleteMatchVoices);
-  categoryForm?.addEventListener('submit', createDiscordCategory);
   announcementForm?.addEventListener('submit', sendAnnouncement);
   VoidArena.bootLayout('config').then(load).catch((error) => status(configStatus, `❌ ${error.message}`, 'err'));
 }());
