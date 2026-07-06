@@ -1,5 +1,7 @@
 const BOT_API_URL = String(process.env.BOT_API_URL || 'http://localhost:3002').replace(/\/$/, '');
 const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
+const STORAGE_TIMEOUT_MS = Number(process.env.SITE_BOT_STORAGE_TIMEOUT_MS || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 45000) || 45000;
+const STORAGE_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_RETRIES || 2) || 2);
 
 function internalHeaders(extra = {}) {
   return {
@@ -12,24 +14,40 @@ function internalHeaders(extra = {}) {
   };
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function callBotStorage(method, args = []) {
   if (!BOT_API_URL) {
     throw new Error('BOT_API_URL não configurado. O SITE separado precisa chamar a API interna do BOT.');
   }
 
-  const response = await fetch(`${BOT_API_URL}/internal/storage/${method}`, {
-    method: 'POST',
-    headers: internalHeaders(),
-    body: JSON.stringify({ args })
-  });
+  let lastError = null;
 
-  const data = await response.json().catch(() => ({}));
+  for (let attempt = 1; attempt <= STORAGE_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(`${BOT_API_URL}/internal/storage/${method}`, {
+        method: 'POST',
+        timeoutMs: STORAGE_TIMEOUT_MS,
+        headers: internalHeaders(),
+        body: JSON.stringify({ args })
+      });
 
-  if (!response.ok || data.success === false) {
-    throw new Error(data.message || `Falha no storage remoto do bot (${response.status}).`);
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || `Falha no storage remoto do bot (${response.status}).`);
+      }
+
+      return data.result;
+    } catch (error) {
+      lastError = error;
+      if (attempt < STORAGE_RETRIES) await wait(1200 * attempt);
+    }
   }
 
-  return data.result;
+  throw lastError;
 }
 
 function remoteStorageMethod(method) {
