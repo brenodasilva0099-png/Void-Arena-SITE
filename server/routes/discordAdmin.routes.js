@@ -23,6 +23,7 @@ function registerDiscordAdminRoutes(app) {
   removeRoutes(app, [
     ['post', '/api/discord/categories'],
     ['get', '/api/discord/match-voices'],
+    ['post', '/api/discord/match-voices/create'],
     ['delete', '/api/discord/match-voices']
   ]);
 
@@ -56,12 +57,28 @@ function registerDiscordAdminRoutes(app) {
           success: true,
           fallback: true,
           categoryId,
-          message: 'Listagem em modo compatibilidade. Para apagar calls, redeploy/reinicie o BOT com a rota nova.',
+          message: 'Listagem em modo compatibilidade. Para apagar/criar calls, redeploy/reinicie o BOT com a rota nova.',
           channels: filterMatchVoicesFromChannels(fallback, categoryId)
         });
       } catch (fallbackError) {
         return res.status(400).json({ success: false, message: error.message || fallbackError.message, channels: [] });
       }
+    }
+  });
+
+  app.post('/api/discord/match-voices/create', requireOwner, async (req, res) => {
+    try {
+      const teamName = String(req.body?.teamName || req.body?.name || '').trim().slice(0, 80);
+      const categoryId = String(req.body?.categoryId || req.body?.discordMatchCategoryId || '').trim();
+      const playerIds = Array.isArray(req.body?.playerIds) ? req.body.playerIds.map((id) => String(id || '').trim()).filter(Boolean) : [];
+      if (!teamName) return res.status(400).json({ success: false, message: 'Escolha/informe o time para criar a call.' });
+      const data = await callBot('/internal/discord/match-voices/create', {
+        method: 'POST',
+        body: JSON.stringify({ teamName, categoryId, playerIds })
+      });
+      return res.json(data);
+    } catch (error) {
+      return res.status(400).json({ success: false, message: `${error.message} Redeploy/reinicie o BOT para ativar criação manual de call pelo site.` });
     }
   });
 
