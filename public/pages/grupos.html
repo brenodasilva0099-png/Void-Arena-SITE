@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fase de grupos | Void Arena</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+</head>
+<body class="va-organized-body" data-page="grupos">
+  <div class="va-shell">
+    <aside class="va-sidebar">
+      <div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div>
+      <nav class="va-nav">
+        <div class="va-nav-title">Principal</div>
+        <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
+        <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
+        <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
+        <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
+        <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
+        <a data-nav-key="grupos" href="/pages/grupos.html">🧮 Fase de grupos</a>
+        <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
+        <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
+        <a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a>
+        <div class="va-nav-title">Comunicação</div>
+        <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
+        <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
+        <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
+        <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
+        <div class="va-nav-title">Admin</div>
+        <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
+        <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
+        <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
+        <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+      </nav>
+    </aside>
+    <main class="va-main">
+      <header class="va-topbar"><div><p class="va-eyebrow">Grupos + Playoffs</p><h1 class="va-title">Fase de grupos e pontuação</h1><p class="va-subtitle">Sorteie, organize e atualize os pontos dos times antes do mata-mata.</p></div><a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a></header>
+      <section class="va-grid">
+        <article class="va-card full">
+          <div class="va-section-head"><div><h2>Controle dos grupos</h2><p class="va-muted">Esta tela substitui a área antiga que aparecia embaixo do chaveamento.</p></div><div class="va-actions"><a class="va-btn" href="/pages/chaveamento.html">Abrir chaveamento</a><button id="reloadGroupsBtn" class="va-btn" type="button">Recarregar</button></div></div>
+          <form id="groupsControlForm" class="va-form-grid">
+            <label>Quantidade de grupos<select name="groupCount"><option value="2">2 grupos</option><option value="4" selected>4 grupos</option><option value="8">8 grupos</option></select></label>
+            <label>Origem do sorteio<select name="source"><option value="bracket">Times do chaveamento atual</option><option value="all">Todos os times cadastrados</option></select></label>
+            <label>Limite de times<select name="teamLimit"><option value="4">4 times</option><option value="8">8 times</option><option value="12">12 times</option><option value="16" selected>16 times</option><option value="20">20 times</option><option value="24">24 times</option><option value="28">28 times</option><option value="32">32 times</option></select></label>
+          </form>
+          <div class="va-actions"><button id="drawGroupsBtn" class="va-btn primary" type="button">🎲 Sortear grupos</button><button id="editGroupsBtn" class="va-btn" type="button">⚙️ Editar organização</button><button id="saveGroupsBtn" class="va-btn" type="button">💾 Salvar pontuação</button></div>
+          <div id="groupsStatus" class="va-status">Carregando...</div>
+        </article>
+        <article class="va-card full" id="groupsEditorCard" hidden><div class="va-section-head"><div><h2>Editar organização</h2><p class="va-muted">Troque os times de lugar para equilibrar os grupos antes dos jogos.</p></div></div><div id="groupsEditor"></div><div class="va-actions"><button id="saveOrganizationBtn" class="va-btn primary" type="button">Salvar organização</button><button id="closeEditorBtn" class="va-btn" type="button">Fechar</button></div></article>
+        <article class="va-card full"><div class="va-section-head"><div><h2>Tabelas dos grupos</h2><p class="va-muted">Edite Pts/J/V/E/D/GP/GC. SG é calculado automaticamente.</p></div></div><div id="groupsBoard" class="va-groups-board"></div></article>
+      </section>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/pages/grupos.js"></script>
+</body>
+</html>
