@@ -9,6 +9,21 @@ function bracketSlotSize(limit = 16) {
   return normalizeTeamLimit(limit);
 }
 
+function sanitizeGroupName(value = '', index = 0) {
+  const fallback = `Grupo ${String.fromCharCode(65 + index)}`;
+  return String(value || fallback).trim().slice(0, 40) || fallback;
+}
+
+function normalizeGroups(groups = []) {
+  if (!Array.isArray(groups)) return [];
+  return groups.map((group, index) => ({
+    name: sanitizeGroupName(group?.name, index),
+    teams: (Array.isArray(group?.teams) ? group.teams : Array.isArray(group?.teamIds) ? group.teamIds : [])
+      .map((item) => typeof item === 'string' ? item : (item?.id || null))
+      .filter(Boolean)
+  })).filter((group) => group.teams.length);
+}
+
 function normalizeBracketData(data = {}) {
   const inferred = data.teamLimit || data.slotSize || (Array.isArray(data.slots) ? data.slots.length : 16) || 16;
   const teamLimit = normalizeTeamLimit(inferred);
@@ -34,6 +49,7 @@ function normalizeBracketData(data = {}) {
     quarters: fill(data.quarters, 8),
     semis: fill(data.semis, 4),
     finals: fill(data.finals, 2),
+    groups: normalizeGroups(data.groups || []),
     matchProgress: {
       slots: fillProgress(data.matchProgress?.slots, slotSize),
       round16: fillProgress(data.matchProgress?.round16, 16),
@@ -71,13 +87,18 @@ function normalizeBracketForResponse(bracket = {}, teams = [], users = []) {
   const byId = new Map(teams.map((team) => { const safe = sanitizeTeam(team, usersById); return [safe.id, safe]; }));
   const normalized = normalizeBracketData(bracket);
   const mapSlots = (items) => items.map((id) => id ? (byId.get(id) || { id, name: 'Time removido', tag: '---' }) : null);
+  const mapGroups = (groups = []) => groups.map((group) => ({
+    name: group.name,
+    teams: mapSlots(group.teams || [])
+  }));
   return {
     ...normalized,
     slots: mapSlots(normalized.slots),
     round16: mapSlots(normalized.round16),
     quarters: mapSlots(normalized.quarters),
     semis: mapSlots(normalized.semis),
-    finals: mapSlots(normalized.finals)
+    finals: mapSlots(normalized.finals),
+    groups: mapGroups(normalized.groups)
   };
 }
 
@@ -158,6 +179,7 @@ module.exports = {
   generateBracketSlots,
   generateAdaptiveBracket,
   generateGroups,
+  normalizeGroups,
   matchPairsForSlots,
   nextTargetForSlotMatch
 };
