@@ -6,7 +6,7 @@ const statusEl = document.getElementById('status');
 const keys = [
   ['events', 'Eventos'],
   ['teams', 'Times'],
-  ['bracket', 'Chaveamento'],
+  ['bracket', 'Chaveamento / Fase de grupos'],
   ['results', 'Resultados'],
   ['rankings', 'Rankings'],
   ['players', 'Jogadores'],
@@ -43,12 +43,13 @@ function render() {
   permissionRows.innerHTML = `
     <div class="va-item">
       <strong>Sincronizado com a Hub Config BOT</strong>
-      <p class="va-muted">Essa tela lê e salva as mesmas definições do BOT. Formulários e Partidas/Análise exigem cargo configurado aqui, igual o controle de capitães.</p>
+      <p class="va-muted">Essa tela lê todos os cargos do servidor pelo BOT e salva as mesmas definições no storage do BOT. Formulários e Partidas/Análise exigem cargo configurado aqui, igual o controle de capitães.</p>
     </div>
     ${roles.map((role) => `
       <div class="va-permission-role" data-role-id="${esc(role.id)}">
         <div class="va-permission-role-head">
           <strong>${esc(role.name)}</strong>
+          <span class="va-badge">ID ${esc(role.id)}</span>
           <span class="va-badge">${esc(role.guildName || 'Discord')}</span>
         </div>
         <div class="va-permission-checks">
