@@ -16,7 +16,8 @@ if (typeof originalFetch === 'function' && !global.__VOID_ARENA_FETCH_TIMEOUT_PA
       return originalFetch(input, init);
     }
 
-    const timeoutMs = Number(init.timeoutMs || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 6500) || 6500;
+    // Render Free pode deixar o BOT dormindo. 6.5s era pouco e quebrava login/salvamento.
+    const timeoutMs = Number(init.timeoutMs || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 45000) || 45000;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
