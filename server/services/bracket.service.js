@@ -1,3 +1,5 @@
+const { normalizeTeamLogo } = require('./teamLogo.service');
+
 const SUPPORTED_TEAM_LIMITS = [4, 8, 12, 16, 20, 24, 28, 32];
 
 function normalizeTeamLimit(value = 16) {
@@ -50,6 +52,7 @@ function normalizeBracketData(data = {}) {
     semis: fill(data.semis, 4),
     finals: fill(data.finals, 2),
     groups: normalizeGroups(data.groups || []),
+    groupStandings: data.groupStandings || data.standings || {},
     matchProgress: {
       slots: fillProgress(data.matchProgress?.slots, slotSize),
       round16: fillProgress(data.matchProgress?.round16, 16),
@@ -64,11 +67,13 @@ function normalizeBracketData(data = {}) {
 
 function sanitizeTeam(team = {}, usersById = new Map()) {
   const owner = usersById.get(String(team.ownerUserId || '')) || null;
+  const logo = normalizeTeamLogo(team);
   return {
     id: team.id,
     name: team.name || 'Time',
     tag: team.tag || '',
-    logo: team.logo || '',
+    logo,
+    logoUrl: logo,
     players: Array.isArray(team.players) ? team.players : [],
     reserves: Array.isArray(team.reserves) ? team.reserves : [],
     playerAccounts: team.playerAccounts || {},
@@ -76,6 +81,7 @@ function sanitizeTeam(team = {}, usersById = new Map()) {
     ownerName: owner?.profile?.username || owner?.name || team.ownerName || team.captainName || '',
     ownerAvatar: owner?.avatar || '',
     captainName: owner?.profile?.username || owner?.name || team.captainName || '',
+    captainDiscordId: team.captainDiscordId || '',
     createdAt: team.createdAt || null,
     updatedAt: team.updatedAt || null,
     socials: team.socials || {}
@@ -86,7 +92,7 @@ function normalizeBracketForResponse(bracket = {}, teams = [], users = []) {
   const usersById = new Map(users.map((user) => [String(user.id || ''), user]));
   const byId = new Map(teams.map((team) => { const safe = sanitizeTeam(team, usersById); return [safe.id, safe]; }));
   const normalized = normalizeBracketData(bracket);
-  const mapSlots = (items) => items.map((id) => id ? (byId.get(id) || { id, name: 'Time removido', tag: '---' }) : null);
+  const mapSlots = (items) => items.map((id) => id ? (byId.get(id) || { id, name: 'Time removido', tag: '---', logo: '' }) : null);
   const mapGroups = (groups = []) => groups.map((group) => ({
     name: group.name,
     teams: mapSlots(group.teams || [])
