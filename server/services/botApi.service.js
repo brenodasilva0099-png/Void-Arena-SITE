@@ -42,11 +42,20 @@ async function fetchGuildBrand() {
   return data?.guild || null;
 }
 
+async function fetchBotBrand() {
+  const data = await tryBot('/internal/discord/bot-brand', {
+    method: 'GET',
+    headers: { Accept: 'application/json' }
+  }, { success: false, bot: null, guild: null });
+  return data || { success: false, bot: null, guild: null };
+}
+
 module.exports = {
   BOT_API_URL,
   BOT_API_KEY,
   botHeaders,
   callBot,
   tryBot,
-  fetchGuildBrand
+  fetchGuildBrand,
+  fetchBotBrand
 };
