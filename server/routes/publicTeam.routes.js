@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { normalizeTeamLogo } = require('../services/teamLogo.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 function requireLogin(req, res, next) {
@@ -50,6 +51,7 @@ function enrichTeam(team = {}, users = [], viewer = null) {
   const owner = usersById.get(String(team.ownerUserId || '')) || null;
   const accounts = team.playerAccounts || {};
   const viewerCanManage = canManageTeam(viewer, team);
+  const logo = normalizeTeamLogo(team);
 
   const mapPlayer = (name, account, type, index) => {
     const discordId = splitDiscordId(account || name);
@@ -60,7 +62,7 @@ function enrichTeam(team = {}, users = [], viewer = null) {
   const players = (Array.isArray(team.players) ? team.players : []).map((item, index) => mapPlayer(item, accounts.players?.[index] || '', 'player', index));
   const reserves = (Array.isArray(team.reserves) ? team.reserves : []).map((item, index) => mapPlayer(item, accounts.reserves?.[index] || '', 'reserve', index));
 
-  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: team.logo || '', ownerUserId: team.ownerUserId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || team.captainName || players[0]?.name || 'nao definido'), ownerAvatar: owner?.avatar || team.ownerAvatar || '', captainName: owner ? userDisplay(owner) : (team.captainName || players[0]?.name || 'nao definido'), captainDiscordId: owner?.discordId || team.captainDiscordId || players[0]?.discordId || '', players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: viewerCanManage, createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
+  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo, logoUrl: logo, ownerUserId: team.ownerUserId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || team.captainName || players[0]?.name || 'nao definido'), ownerAvatar: owner?.avatar || team.ownerAvatar || '', captainName: owner ? userDisplay(owner) : (team.captainName || players[0]?.name || 'nao definido'), captainDiscordId: owner?.discordId || team.captainDiscordId || players[0]?.discordId || '', players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: viewerCanManage, createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
 }
 
 function canManageTeam(user = null, team = {}) {
@@ -88,7 +90,8 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
   const now = new Date().toISOString();
   const ownerUserId = existing?.ownerUserId || user.id || '';
   const ownerName = existing?.ownerName || userDisplay(user);
-  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo: safeLogo(body.logo), ownerUserId, ownerName, captainName: existing?.captainName || ownerName, captainDiscordId: existing?.captainDiscordId || user.discordId || playerIds.find(Boolean) || '', players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, socials: { discord: clean(body.socials?.discord || body.socialDiscord || '', 180), instagram: clean(body.socials?.instagram || body.socialInstagram || '', 160), youtube: clean(body.socials?.youtube || body.socialYoutube || '', 180), tiktok: clean(body.socials?.tiktok || body.socialTikTok || '', 160), steam: clean(body.socials?.steam || body.socialSteam || '', 180), xbox: clean(body.socials?.xbox || body.socialXbox || '', 160), website: clean(body.socials?.website || body.socialWebsite || '', 180) }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
+  const logo = normalizeTeamLogo({ logo: body.logo, logoUrl: body.logoUrl, escudo: body.escudo, image: body.image }) || normalizeTeamLogo(existing || {}) || safeLogo(body.logo);
+  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo, logoUrl: logo, ownerUserId, ownerName, captainName: existing?.captainName || ownerName, captainDiscordId: existing?.captainDiscordId || user.discordId || playerIds.find(Boolean) || '', players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, socials: { discord: clean(body.socials?.discord || body.socialDiscord || '', 180), instagram: clean(body.socials?.instagram || body.socialInstagram || '', 160), youtube: clean(body.socials?.youtube || body.socialYoutube || '', 180), tiktok: clean(body.socials?.tiktok || body.socialTikTok || '', 160), steam: clean(body.socials?.steam || body.socialSteam || '', 180), xbox: clean(body.socials?.xbox || body.socialXbox || '', 160), website: clean(body.socials?.website || body.socialWebsite || '', 180) }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
 }
 
 function registerPublicTeamRoutes(app) {
