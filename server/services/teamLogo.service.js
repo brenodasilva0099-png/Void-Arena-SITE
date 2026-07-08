@@ -8,25 +8,6 @@ function isUsableImageSource(value = '') {
   return Boolean(raw && (raw.startsWith('data:image/') || /^https?:\/\//i.test(raw) || raw.startsWith('/')));
 }
 
-function sourceFromObject(value = null) {
-  if (!value || typeof value !== 'object') return '';
-  const candidates = [
-    value.url,
-    value.proxyUrl,
-    value.proxyURL,
-    value.src,
-    value.href,
-    value.image,
-    value.imageUrl,
-    value.logo,
-    value.logoUrl,
-    value.logoURL,
-    value.attachmentUrl,
-    value.downloadUrl
-  ];
-  return candidates.map(pickString).find(isUsableImageSource) || '';
-}
-
 function normalizeTeamLogo(team = {}, fallback = '') {
   const candidates = [
     team.logo,
@@ -36,24 +17,6 @@ function normalizeTeamLogo(team = {}, fallback = '') {
     team.escudo,
     team.escudoUrl,
     team.escudoURL,
-    team.shield,
-    team.shieldUrl,
-    team.badge,
-    team.badgeUrl,
-    team.icon,
-    team.iconUrl,
-    team.avatar,
-    team.avatarUrl,
-    team.image,
-    team.imageUrl,
-    team.picture,
-    team.photo,
-    team.thumbnail,
-    sourceFromObject(team.logoFile),
-    sourceFromObject(team.logoAttachment),
-    sourceFromObject(team.attachment),
-    sourceFromObject(team.file),
-    sourceFromObject(team.media),
     fallback
   ];
 
