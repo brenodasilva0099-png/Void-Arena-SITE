@@ -17,7 +17,8 @@
   function teamId(team) { return typeof team === 'string' ? team : String(team?.id || ''); }
   function teamName(team, fallback) { return team?.name || team?.tag || fallback; }
   function initials(team, fallback = '?') { return safe((team?.tag || team?.name || fallback).slice(0, 2).toUpperCase()); }
-  function teamLabel(team, fallback) { if (!team) return `<span>${safe(fallback)}</span>`; const logo = team.logo ? `<img src="${safe(team.logo)}" alt="" />` : initials(team, fallback); const tag = team?.tag && team?.tag !== team?.name ? `<small>${safe(team.tag)}</small>` : ''; return `<span class="va-inline-team-logo">${logo}</span><span>${safe(teamName(team, fallback))}${tag}</span>`; }
+  function teamLogoUrl(team) { const id = teamId(team); if (id) return `/api/team-logo/${encodeURIComponent(id)}?v=${encodeURIComponent(team?.updatedAt || team?.logoUpdatedAt || id)}`; return String(team?.logo || team?.logoUrl || '').trim(); }
+  function teamLabel(team, fallback) { if (!team) return `<span>${safe(fallback)}</span>`; const src = teamLogoUrl(team); const logo = src ? `<img src="${safe(src)}" alt="" loading="lazy" />` : initials(team, fallback); const tag = team?.tag && team?.tag !== team?.name ? `<small>${safe(team.tag)}</small>` : ''; return `<span class="va-inline-team-logo">${logo}</span><span>${safe(teamName(team, fallback))}${tag}</span>`; }
   function setStatus(message, type = '') { if (statusEl) { statusEl.textContent = message; statusEl.className = `va-status ${type}`.trim(); } if (miniStatusEl) miniStatusEl.textContent = String(message || '').replace(/^❌\s*/, ''); }
   function selectedEvent() { const id = String(settingsForm?.elements?.activeEventId?.value || currentSettings.activeEventId || '').trim(); return currentEvents.find((event) => String(event.id || '') === id) || null; }
   function selectedTeamSource() { return String(settingsForm?.elements?.teamSource?.value || currentSettings.teamSource || 'all') === 'registered' ? 'registered' : 'all'; }
@@ -47,18 +48,13 @@
     const pairSplit = splitPairs(limit);
     const entryLabel = limit === 4 ? 'Semifinal' : limit === 8 ? 'Quartas' : limit <= 16 ? (limit === 12 ? 'Entrada' : 'Oitavas') : 'Entrada';
     const height = Math.max(560, Math.ceil(limit / 2) * 92);
-    const round16 = fillArray(currentBracket.round16, 16);
-    const quarters = fillArray(currentBracket.quarters, 8);
-    const semis = fillArray(currentBracket.semis, 4);
-    const leftCols = [];
-    const rightCols = [];
-    leftCols.push(col(entryLabel, cardsFromPairs(pairSplit.left, entryLabel, 0), 'entry'));
-    rightCols.unshift(col(entryLabel, cardsFromPairs(pairSplit.right, entryLabel, pairSplit.left.length), 'entry'));
+    const round16 = fillArray(currentBracket.round16, 16); const quarters = fillArray(currentBracket.quarters, 8); const semis = fillArray(currentBracket.semis, 4);
+    const leftCols = []; const rightCols = [];
+    leftCols.push(col(entryLabel, cardsFromPairs(pairSplit.left, entryLabel, 0), 'entry')); rightCols.unshift(col(entryLabel, cardsFromPairs(pairSplit.right, entryLabel, pairSplit.left.length), 'entry'));
     if (limit > 16) { leftCols.push(col('Oitavas', cardsFromSingles(round16.slice(0, 8), 8, 'Oitavas', 0), 'round16')); rightCols.unshift(col('Oitavas', cardsFromSingles(round16.slice(8, 16), 8, 'Oitavas', 8), 'round16')); }
     if (limit >= 12) { leftCols.push(col('Quartas', cardsFromSingles(quarters.slice(0, 4), 4, 'Quartas', 0), 'quarters')); rightCols.unshift(col('Quartas', cardsFromSingles(quarters.slice(4, 8), 4, 'Quartas', 4), 'quarters')); }
     if (limit >= 8) { leftCols.push(col('Semifinal', cardsFromSingles(semis.slice(0, 2), 2, 'Semi', 0), 'semis')); rightCols.unshift(col('Semifinal', cardsFromSingles(semis.slice(2, 4), 2, 'Semi', 2), 'semis')); }
-    const eventTitle = bracketEventTitle();
-    adaptiveEl.innerHTML = `<div class="va-model-bracket-wrap"><div class="va-model-title"><h2>Chaveamento</h2><p class="va-model-event-name">${safe(eventTitle)}</p></div><div class="va-model-bracket model-${limit}" style="--model-height:${height}px">${leftCols.join('')}${finalColumn()}${rightCols.join('')}</div></div>`;
+    const eventTitle = bracketEventTitle(); adaptiveEl.innerHTML = `<div class="va-model-bracket-wrap"><div class="va-model-title"><h2>Chaveamento</h2><p class="va-model-event-name">${safe(eventTitle)}</p></div><div class="va-model-bracket model-${limit}" style="--model-height:${height}px">${leftCols.join('')}${finalColumn()}${rightCols.join('')}</div></div>`;
   }
   function fillSlots(selector, list, fallbackPrefix) { document.querySelectorAll(selector).forEach((el) => { const index = Number(el.dataset.slot ?? el.dataset.index ?? 0); const team = list?.[index] || null; el.classList.toggle('is-empty', !team); const fallback = `${fallbackPrefix} ${String(index + 1).padStart(2, '0')}`; el.innerHTML = teamLabel(team, fallback); el.title = team ? teamName(team, '') : ''; }); }
   function render(bracket = {}) { currentBracket = { slotSize: normalizeLimit(bracket.slotSize || bracket.teamLimit || currentSettings.teamLimit || 16), teamLimit: normalizeLimit(bracket.teamLimit || currentSettings.teamLimit || bracket.slotSize || 16), slots: Array.isArray(bracket.slots) ? bracket.slots : [], round16: Array.isArray(bracket.round16) ? bracket.round16 : [], quarters: Array.isArray(bracket.quarters) ? bracket.quarters : [], semis: Array.isArray(bracket.semis) ? bracket.semis : [], finals: Array.isArray(bracket.finals) ? bracket.finals : [], matchProgress: bracket.matchProgress || {}, eventId: bracket.eventId || '' }; fillSlots('.team-slot[data-slot]', slotSource(Math.min(boardLimit(), 16)), 'Vaga'); renderAdaptive(); }
@@ -72,16 +68,7 @@
   function closeManualEditor() { if (manualModal) manualModal.hidden = true; }
   function collectManualBracket() { const settings = collectSettings(); const limit = normalizeLimit(settings.teamLimit); const fill = (arr = [], size) => { const next = [...arr].map(teamId).slice(0, size); while (next.length < size) next.push(null); return next; }; const next = { slotSize: limit, teamLimit: limit, eventId: settings.activeEventId || currentBracket.eventId || '', slots: fill(currentBracket.slots, limit), round16: fill(currentBracket.round16, 16), quarters: fill(currentBracket.quarters, 8), semis: fill(currentBracket.semis, 4), finals: fill(currentBracket.finals, 2), matchProgress: currentBracket.matchProgress || {} }; document.querySelectorAll('[data-manual-round][data-manual-index]').forEach((select) => { const round = select.dataset.manualRound; const index = Number(select.dataset.manualIndex || 0); if (!Array.isArray(next[round])) next[round] = []; next[round][index] = select.value || null; }); return next; }
   async function saveManualEditor() { if (manualStatus) manualStatus.textContent = 'Salvando posições...'; try { const data = await VoidArena.request('/api/bracket', { method: 'PUT', body: JSON.stringify(collectManualBracket()) }); render(data.bracket || {}); closeManualEditor(); const hubs = data.resultHubs || {}; setStatus(`Posições salvas. HUBs: ${hubs.created || 0} criadas • ${hubs.reused || 0} atualizadas.`, hubs.errors?.length ? 'err' : 'ok'); } catch (error) { if (manualStatus) manualStatus.textContent = `❌ ${error.message}`; } }
-  document.getElementById('reloadBracketBtn')?.addEventListener('click', load);
-  document.getElementById('generateBracketBtn')?.addEventListener('click', generate);
-  document.getElementById('saveSettingsBtn')?.addEventListener('click', saveSettings);
-  document.getElementById('syncHubsBtn')?.addEventListener('click', syncHubs);
-  document.getElementById('openManualEditorBtn')?.addEventListener('click', openManualEditor);
-  document.getElementById('closeManualEditorBtn')?.addEventListener('click', closeManualEditor);
-  document.getElementById('cancelManualEditorBtn')?.addEventListener('click', closeManualEditor);
-  document.getElementById('saveManualEditorBtn')?.addEventListener('click', saveManualEditor);
-  settingsForm?.elements?.activeEventId?.addEventListener('change', () => { applyEventToForm(selectedEvent()); });
-  settingsForm?.elements?.teamSource?.addEventListener('change', updateActiveEventStatus);
-  settingsForm?.addEventListener('input', () => { updateBoardLabels(); render({ ...currentBracket, teamLimit: collectSettingsSafe().teamLimit, slotSize: collectSettingsSafe().teamLimit }); });
+  document.getElementById('reloadBracketBtn')?.addEventListener('click', load); document.getElementById('generateBracketBtn')?.addEventListener('click', generate); document.getElementById('saveSettingsBtn')?.addEventListener('click', saveSettings); document.getElementById('syncHubsBtn')?.addEventListener('click', syncHubs); document.getElementById('openManualEditorBtn')?.addEventListener('click', openManualEditor); document.getElementById('closeManualEditorBtn')?.addEventListener('click', closeManualEditor); document.getElementById('cancelManualEditorBtn')?.addEventListener('click', closeManualEditor); document.getElementById('saveManualEditorBtn')?.addEventListener('click', saveManualEditor);
+  settingsForm?.elements?.activeEventId?.addEventListener('change', () => { applyEventToForm(selectedEvent()); }); settingsForm?.elements?.teamSource?.addEventListener('change', updateActiveEventStatus); settingsForm?.addEventListener('input', () => { updateBoardLabels(); render({ ...currentBracket, teamLimit: collectSettingsSafe().teamLimit, slotSize: collectSettingsSafe().teamLimit }); });
   VoidArena.bootLayout('chaveamento').then(load).catch((error) => setStatus(`❌ ${error.message}`, 'err'));
 }());
