@@ -4,6 +4,7 @@ const { registerDiscordBrandRoutes } = require('../routes/discordBrand.routes');
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { requireOwner } = require('../services/access.service');
+const { normalizeTeamLogo } = require('../services/teamLogo.service');
 
 function parseResultRecord(message = {}) {
   try {
@@ -37,7 +38,21 @@ function userPayload(user = {}) {
 }
 
 function teamPayload(team = {}) {
-  return { id: team.id, name: team.name, tag: team.tag || '', ownerUserId: team.ownerUserId || '', players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {} };
+  const logo = normalizeTeamLogo(team);
+  return {
+    id: team.id,
+    name: team.name,
+    tag: team.tag || '',
+    logo,
+    logoUrl: logo,
+    ownerUserId: team.ownerUserId || '',
+    players: Array.isArray(team.players) ? team.players : [],
+    reserves: Array.isArray(team.reserves) ? team.reserves : [],
+    playerDetails: Array.isArray(team.playerDetails) ? team.playerDetails : [],
+    reserveDetails: Array.isArray(team.reserveDetails) ? team.reserveDetails : [],
+    playerAccounts: team.playerAccounts || {},
+    socials: team.socials || {}
+  };
 }
 
 async function sendHubsToBot(bracket = {}, settings = {}) {
