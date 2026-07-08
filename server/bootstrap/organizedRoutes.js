@@ -1,5 +1,6 @@
 const { removeRoutes } = require('../utils/expressRoutes');
 const { registerOrganizedRouteOverrides } = require('../routes/organized.routes');
+const { registerBotBrandRoutes } = require('../routes/botBrand.routes');
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { requireOwner } = require('../services/access.service');
@@ -88,6 +89,7 @@ function registerOrganizedRoutes(app) {
   registerPublicResultRoutes(app);
   registerOrganizedRouteOverrides(app);
   registerHubSyncFix(app);
+  registerBotBrandRoutes(app);
   const removedCount = report.filter((item) => item.removed).length;
   console.log('Void Arena 5.1.2: ' + removedCount + ' rotas antigas substituidas pela estrutura nova.');
 }
