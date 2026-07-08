@@ -19,7 +19,8 @@
   function teamName(team) { return String(team?.name || team?.tag || team || 'Time'); }
   function teamTag(team) { return String(team?.tag || '').trim(); }
   function initials(team, fallback = '?') { return esc(String(team?.tag || team?.name || fallback).slice(0, 2).toUpperCase()); }
-  function logo(team, fallback = '?') { return team?.logo ? `<img src="${esc(team.logo)}" alt="" />` : `<span>${initials(team, fallback)}</span>`; }
+  function teamLogoUrl(team) { const id = teamId(team); if (id) return `/api/team-logo/${encodeURIComponent(id)}?v=${encodeURIComponent(team?.updatedAt || team?.logoUpdatedAt || id)}`; return String(team?.logo || team?.logoUrl || '').trim(); }
+  function logo(team, fallback = '?') { const src = teamLogoUrl(team); return src ? `<img src="${esc(src)}" alt="" loading="lazy" />` : `<span>${initials(team, fallback)}</span>`; }
   function toNumber(value) { return Math.max(0, Number(value || 0) || 0); }
   function normalizeRow(raw = {}) {
     const item = {
