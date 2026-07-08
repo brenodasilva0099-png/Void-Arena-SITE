@@ -4,6 +4,7 @@
   if (VA.__stableBootstrapReady) return;
   VA.__stableBootstrapReady = true;
 
+  const FAV = '/assets/void-arena-brand.svg?v=1';
   const NAV_LINKS = [
     ['dashboard', 'atualizacoes', '/pages/atualizacoes.html', '📰 Atualizações'],
     ['rankings', 'jogadores', '/pages/jogadores.html', '👤 Jogadores'],
@@ -17,9 +18,21 @@
     if (document.querySelector('link[data-void-cleanup]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/css/site-cleanup.css?v=5';
+    link.href = '/css/site-cleanup.css?v=6';
     link.setAttribute('data-void-cleanup', '1');
     document.head.appendChild(link);
+  }
+
+  function ensureFavicon() {
+    document.querySelectorAll('link[rel="icon"],link[rel="shortcut icon"]').forEach((node) => node.remove());
+    ['icon', 'shortcut icon'].forEach((rel) => {
+      const link = document.createElement('link');
+      link.rel = rel;
+      link.type = 'image/svg+xml';
+      link.sizes = 'any';
+      link.href = FAV;
+      document.head.appendChild(link);
+    });
   }
 
   function escapeHtml(value = '') { return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char])); }
@@ -48,8 +61,8 @@
 
   function formatDate(value) { if (!value) return 'sem data'; const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }
   async function loadMe() { const data = await request('/api/me', { timeoutMs: 9000 }); return data.user; }
-  async function loadBrand() { try { const data = await request('/api/brand/server', { timeoutMs: 4500 }); return data.server || { name: 'Hollow Nexus', icon: '/assets/hollow-nexus.png' }; } catch { return { name: 'Hollow Nexus', icon: '/assets/hollow-nexus.png' }; } }
-  function applyBrand(brand = {}) { const icon = brand.icon || brand.fallbackIcon || '/assets/hollow-nexus.png'; const name = brand.name || 'Hollow Nexus'; document.querySelectorAll('[data-server-name]').forEach((el) => { el.textContent = name; }); document.querySelectorAll('[data-server-icon]').forEach((img) => { img.src = icon; img.alt = `Ícone ${name}`; }); document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; }); let favicon = document.querySelector('link[rel="icon"]') || document.querySelector('link[rel="shortcut icon"]'); if (!favicon) { favicon = document.createElement('link'); favicon.rel = 'icon'; document.head.appendChild(favicon); } favicon.href = icon; }
+  async function loadBrand() { try { const data = await request('/api/brand/server', { timeoutMs: 4500 }); return data.server || { name: 'Hollow Nexus', icon: FAV }; } catch { return { name: 'Hollow Nexus', icon: FAV }; } }
+  function applyBrand(brand = {}) { const icon = FAV; const name = brand.name || 'Hollow Nexus'; document.querySelectorAll('[data-server-name]').forEach((el) => { el.textContent = name; }); document.querySelectorAll('[data-server-icon]').forEach((img) => { img.src = icon; img.alt = `Ícone ${name}`; }); document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; }); ensureFavicon(); }
   function addNavLink(nav, afterKey, key, href, text) { if (nav.querySelector(`[data-nav-key="${key}"]`)) return; const anchor = nav.querySelector(`[data-nav-key="${afterKey}"]`); const link = document.createElement('a'); link.setAttribute('data-nav-key', key); link.href = href; link.textContent = text; if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link); }
   function ensureExtraNavLinks() { document.querySelectorAll('.va-nav').forEach((nav) => { NAV_LINKS.forEach(([afterKey, key, href, text]) => addNavLink(nav, afterKey, key, href, text)); }); }
   function ensureLegalFooter() { const main = document.querySelector('.va-main'); if (!main || main.querySelector(':scope > .va-site-footer')) return; const footer = document.createElement('footer'); footer.className = 'va-site-footer'; footer.innerHTML = '<span><strong>© 2026 Void Arena / Hollow Nexus.</strong> Todos os direitos reservados.</span><span><a href="/pages/termos.html">Termos de Uso</a> · <a href="/pages/privacidade.html">Política de Privacidade</a></span><span>Não afiliado ao Discord, Steam, EA, Xbox, TikTok, Spotify, Riot ou PlayStation.</span>'; main.appendChild(footer); }
@@ -64,9 +77,10 @@
   function showAccessDenied(pageKey = '') { const main = document.querySelector('.va-main'); if (!main) return; main.querySelectorAll('.va-grid, section:not(.va-access-denied), article:not(.va-access-denied)').forEach((el) => { if (!el.closest('.va-topbar')) el.remove(); }); const denied = document.createElement('section'); denied.className = 'va-card full va-access-denied'; denied.innerHTML = `<p class="va-eyebrow">Acesso bloqueado</p><h2>Área sem permissão</h2><p class="va-muted">Seu cargo atual do Discord não tem acesso liberado para esta área: <strong>${escapeHtml(pageKey)}</strong>.</p>`; main.appendChild(denied); }
   function applyAccessMap(access = {}, activeKey = '') { if (!access || !Object.keys(access).length) return true; document.querySelectorAll('[data-nav-key]').forEach((link) => { const key = link.getAttribute('data-nav-key'); link.hidden = Object.prototype.hasOwnProperty.call(access, key) && access[key] === false; }); if (activeKey && Object.prototype.hasOwnProperty.call(access, activeKey) && access[activeKey] === false) { showAccessDenied(activeKey); return false; } return true; }
   async function loadAccess(activeKey = '') { try { const data = await request('/api/access/me', { timeoutMs: 5000 }); applyAccessMap(data.access || {}, activeKey); return data; } catch { return { success: true, degraded: true, access: {} }; } }
-  async function bootLayout(activeKey = '') { ensureCleanupStyles(); ensureExtraNavLinks(); ensureLegalFooter(); const user = await loadMe(); setupUserPill(user); loadBrand().then(applyBrand).catch(() => applyBrand({})); document.querySelectorAll('[data-user-name]').forEach((el) => { el.textContent = profileUsername(user); }); document.querySelectorAll('[data-nav-key]').forEach((el) => { el.classList.toggle('active', el.getAttribute('data-nav-key') === activeKey); }); loadAccess(activeKey); return { user, brand: null }; }
+  async function bootLayout(activeKey = '') { ensureCleanupStyles(); ensureExtraNavLinks(); ensureLegalFooter(); ensureFavicon(); const user = await loadMe(); setupUserPill(user); loadBrand().then(applyBrand).catch(() => applyBrand({})); document.querySelectorAll('[data-user-name]').forEach((el) => { el.textContent = profileUsername(user); }); document.querySelectorAll('[data-nav-key]').forEach((el) => { el.classList.toggle('active', el.getAttribute('data-nav-key') === activeKey); }); loadAccess(activeKey); return { user, brand: null }; }
 
   ensureCleanupStyles();
   ensureLegalFooter();
+  ensureFavicon();
   Object.assign(VA, { request, escapeHtml, formatDate, loadMe, loadBrand, applyBrand, bootLayout, profileUsername, userAvatar, openNotifications, loadAccess, ensureLegalFooter });
 }());
