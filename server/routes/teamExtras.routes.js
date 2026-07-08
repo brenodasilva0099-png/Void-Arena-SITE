@@ -1,7 +1,9 @@
+const crypto = require('node:crypto');
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
 const { normalizeBracketForResponse, sanitizeTeam } = require('../services/bracket.service');
+const { normalizeTeamLogo } = require('../services/teamLogo.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 const PERMISSION_KEYS = ['events','teams','bracket','results','rankings','scoring','chat','teamChats','scrims','stats','matches','forms','backup','config','jogadores','recrutamento','placar'];
@@ -42,6 +44,83 @@ async function permissionsForUser(user = {}) {
 
 function canManageTeam(user = null, team = {}) { if (!user) return false; if (isOwnerRecord(user)) return true; if (String(team.ownerUserId || '') === String(user.id || '')) return true; if (String(team.captainDiscordId || '') && String(team.captainDiscordId) === String(user.discordId || '')) return true; return false; }
 
+function normalizePlayerEntries(body = {}, detailKey = 'playerDetails', nameKey = 'players') {
+  const detailed = Array.isArray(body[detailKey]) ? body[detailKey] : [];
+  if (detailed.length) {
+    return detailed.map((item) => ({
+      id: clean(item?.id || ''),
+      name: clean(item?.name || item?.username || item?.displayName || ''),
+      discordId: splitDiscordId(item?.discordId || item?.account || '') || clean(item?.discordId || item?.account || '')
+    })).filter((item) => item.name);
+  }
+  const accounts = body.playerAccounts || {};
+  return (Array.isArray(body[nameKey]) ? body[nameKey] : []).map((name, index) => ({
+    name: clean(name),
+    discordId: splitDiscordId(accounts[nameKey]?.[index] || '') || clean(accounts[nameKey]?.[index] || '')
+  })).filter((item) => item.name);
+}
+
+function normalizeSocials(body = {}) {
+  return {
+    site: clean(body.socials?.site || body.socialSite || ''),
+    email: clean(body.socials?.email || body.socialEmail || ''),
+    discord: clean(body.socials?.discord || body.socialDiscord || ''),
+    twitter: clean(body.socials?.twitter || body.socialTwitter || ''),
+    youtube: clean(body.socials?.youtube || body.socialYoutube || ''),
+    tiktok: clean(body.socials?.tiktok || body.socialTiktok || body.socialTikTok || ''),
+    instagram: clean(body.socials?.instagram || body.socialInstagram || ''),
+    steam: clean(body.socials?.steam || body.socialSteam || ''),
+    xbox: clean(body.socials?.xbox || body.socialXbox || '')
+  };
+}
+
+function normalizeTeamPayload(body = {}, existing = {}) {
+  const name = clean(body.name || existing.name || '');
+  const tag = clean(body.tag || existing.tag || '').toUpperCase();
+  if (!name) throw new Error('Informe o nome do time.');
+  if (!tag) throw new Error('Informe a tag do time.');
+  if (tag.length > 8) throw new Error('A tag pode ter no máximo 8 caracteres.');
+
+  const playerDetails = normalizePlayerEntries(body, 'playerDetails', 'players');
+  const reserveDetails = normalizePlayerEntries(body, 'reserveDetails', 'reserves');
+  if (!playerDetails.length) throw new Error('Informe pelo menos um titular.');
+
+  const players = playerDetails.map((item) => item.name);
+  const reserves = reserveDetails.map((item) => item.name);
+  const playerAccounts = {
+    players: playerDetails.map((item) => item.discordId || ''),
+    reserves: reserveDetails.map((item) => item.discordId || '')
+  };
+
+  const incomingLogo = normalizeTeamLogo({
+    logo: body.logo,
+    logoUrl: body.logoUrl,
+    logoURL: body.logoURL,
+    escudo: body.escudo,
+    escudoUrl: body.escudoUrl,
+    shield: body.shield,
+    shieldUrl: body.shieldUrl,
+    image: body.image,
+    imageUrl: body.imageUrl,
+    attachment: body.attachment,
+    logoAttachment: body.logoAttachment
+  });
+  const logo = incomingLogo || normalizeTeamLogo(existing);
+
+  return {
+    name,
+    tag,
+    logo,
+    logoUrl: logo,
+    players,
+    reserves,
+    playerDetails,
+    reserveDetails,
+    playerAccounts,
+    socials: normalizeSocials(body)
+  };
+}
+
 function enrichTeam(team = {}, users = [], viewer = null) {
   const usersById = new Map(users.map((user) => [String(user.id || ''), user]));
   const usersByDiscord = new Map(users.map((user) => [String(user.discordId || ''), user]).filter(([id]) => id));
@@ -65,7 +144,7 @@ function findUser(users = [], { userId = '', discordId = '' } = {}) {
 }
 
 function registerTeamExtrasRoutes(app) {
-  removeRoutes(app, [['get', '/api/teams'], ['get', '/api/me/permissions']]);
+  removeRoutes(app, [['get', '/api/teams'], ['post', '/api/teams'], ['put', '/api/teams/:teamId'], ['get', '/api/me/permissions']]);
 
   app.get('/api/me/permissions', requireSession, async (req, res) => {
     try { const user = await getSessionUser(req); if (!user) return res.status(401).json({ success: false, message: 'Sessão inválida.' }); const data = await permissionsForUser(user); return res.json({ success: true, ...data }); }
@@ -75,6 +154,39 @@ function registerTeamExtrasRoutes(app) {
   app.get('/api/teams', requireSession, async (req, res) => {
     try { const [teams, users, bracket, viewer] = await Promise.all([storage.readTeams(), storage.readUsers(), storage.readBracket(), getSessionUser(req)]); const enriched = teams.map((team) => enrichTeam(team, users, viewer)); return res.json({ success: true, teams: enriched, bracket: normalizeBracketForResponse(bracket, teams, users) }); }
     catch (error) { return res.status(500).json({ success: false, message: error.message, teams: [] }); }
+  });
+
+  app.post('/api/teams', requireSession, async (req, res) => {
+    try {
+      const [users, viewer] = await Promise.all([storage.readUsers(), getSessionUser(req)]);
+      if (!viewer) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+      const payload = normalizeTeamPayload(req.body || {});
+      const now = new Date().toISOString();
+      const team = await storage.saveTeam({
+        id: crypto.randomUUID(),
+        ...payload,
+        ownerUserId: viewer.id,
+        ownerName: userDisplay(viewer),
+        ownerAvatar: viewer.avatar || '',
+        captainName: userDisplay(viewer),
+        captainDiscordId: viewer.discordId || '',
+        createdAt: now,
+        updatedAt: now
+      });
+      return res.status(201).json({ success: true, team: enrichTeam(team, users, viewer) });
+    } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+  });
+
+  app.put('/api/teams/:teamId', requireSession, async (req, res) => {
+    try {
+      const [teams, users, viewer] = await Promise.all([storage.readTeams(), storage.readUsers(), getSessionUser(req)]);
+      const team = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
+      if (!team) return res.status(404).json({ success: false, message: 'Time não encontrado.' });
+      if (!canManageTeam(viewer, team)) return res.status(403).json({ success: false, message: 'Você não pode editar esse time.' });
+      const payload = normalizeTeamPayload(req.body || {}, team);
+      const saved = await storage.saveTeam({ ...team, ...payload, updatedAt: new Date().toISOString() });
+      return res.json({ success: true, team: enrichTeam(saved, users, viewer) });
+    } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 
   app.post('/api/teams/:teamId/transfer-captain', requireSession, async (req, res) => {
