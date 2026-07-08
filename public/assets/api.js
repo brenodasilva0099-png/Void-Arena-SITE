@@ -4,7 +4,7 @@
   if (VA.__stableBootstrapReady) return;
   VA.__stableBootstrapReady = true;
 
-  const FAV = '/assets/void-arena-brand.svg?v=1';
+  const FAV = '/api/brand/icon?v=2';
   const NAV_LINKS = [
     ['dashboard', 'atualizacoes', '/pages/atualizacoes.html', '📰 Atualizações'],
     ['rankings', 'jogadores', '/pages/jogadores.html', '👤 Jogadores'],
@@ -28,7 +28,7 @@
     ['icon', 'shortcut icon'].forEach((rel) => {
       const link = document.createElement('link');
       link.rel = rel;
-      link.type = 'image/svg+xml';
+      link.type = 'image/png';
       link.sizes = 'any';
       link.href = FAV;
       document.head.appendChild(link);
@@ -62,7 +62,7 @@
   function formatDate(value) { if (!value) return 'sem data'; const date = new Date(value); return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); }
   async function loadMe() { const data = await request('/api/me', { timeoutMs: 9000 }); return data.user; }
   async function loadBrand() { try { const data = await request('/api/brand/server', { timeoutMs: 4500 }); return data.server || { name: 'Hollow Nexus', icon: FAV }; } catch { return { name: 'Hollow Nexus', icon: FAV }; } }
-  function applyBrand(brand = {}) { const icon = FAV; const name = brand.name || 'Hollow Nexus'; document.querySelectorAll('[data-server-name]').forEach((el) => { el.textContent = name; }); document.querySelectorAll('[data-server-icon]').forEach((img) => { img.src = icon; img.alt = `Ícone ${name}`; }); document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; }); ensureFavicon(); }
+  function applyBrand(brand = {}) { const icon = brand.icon || brand.fallbackIcon || FAV; const name = brand.name || 'Hollow Nexus'; document.querySelectorAll('[data-server-name]').forEach((el) => { el.textContent = name; }); document.querySelectorAll('[data-server-icon]').forEach((img) => { img.src = icon; img.alt = `Ícone ${name}`; }); document.querySelectorAll('[data-brand-title]').forEach((el) => { el.textContent = name; }); ensureFavicon(); }
   function addNavLink(nav, afterKey, key, href, text) { if (nav.querySelector(`[data-nav-key="${key}"]`)) return; const anchor = nav.querySelector(`[data-nav-key="${afterKey}"]`); const link = document.createElement('a'); link.setAttribute('data-nav-key', key); link.href = href; link.textContent = text; if (anchor?.parentNode) anchor.insertAdjacentElement('afterend', link); else nav.appendChild(link); }
   function ensureExtraNavLinks() { document.querySelectorAll('.va-nav').forEach((nav) => { NAV_LINKS.forEach(([afterKey, key, href, text]) => addNavLink(nav, afterKey, key, href, text)); }); }
   function ensureLegalFooter() { const main = document.querySelector('.va-main'); if (!main || main.querySelector(':scope > .va-site-footer')) return; const footer = document.createElement('footer'); footer.className = 'va-site-footer'; footer.innerHTML = '<span><strong>© 2026 Void Arena / Hollow Nexus.</strong> Todos os direitos reservados.</span><span><a href="/pages/termos.html">Termos de Uso</a> · <a href="/pages/privacidade.html">Política de Privacidade</a></span><span>Não afiliado ao Discord, Steam, EA, Xbox, TikTok, Spotify, Riot ou PlayStation.</span>'; main.appendChild(footer); }
