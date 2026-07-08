@@ -14,6 +14,7 @@ const { registerProfileV2Routes } = require('../server/routes/profileV2.routes')
 const { registerPlacarRoutes } = require('../server/routes/placar.routes');
 const { registerPlayersRoutes } = require('../server/routes/players.routes');
 const { registerTeamExtrasRoutes } = require('../server/routes/teamExtras.routes');
+const { registerTeamLogoRoutes } = require('../server/routes/teamLogo.routes');
 const { registerDiscordAdminRoutes } = require('../server/routes/discordAdmin.routes');
 const { registerNotificationRoutes } = require('../server/routes/notifications.routes');
 const { registerAccessControlRoutes } = require('../server/routes/accessControl.routes');
@@ -33,6 +34,7 @@ registerProfileV2Routes(app);
 registerPlacarRoutes(app);
 registerPlayersRoutes(app);
 registerTeamExtrasRoutes(app);
+registerTeamLogoRoutes(app);
 registerDiscordAdminRoutes(app);
 registerNotificationRoutes(app);
 registerAccessControlRoutes(app);
