@@ -64,9 +64,8 @@ body[data-page="chaveamento"] .va-integrated-bracket { padding-top: 10px !import
 .va-home-action-grid a { display: grid; gap: 6px; padding: 15px; border-radius: 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.045); }
 .va-home-action-grid strong, .va-home-action-grid span { display: block; line-height: 1.35; }
 .va-home-action-grid span { color: #c9c1ef; font-size: 13px; font-weight: 800; }
-.va-brand img[data-server-icon], .va-topbar .va-user-pill-avatar img, .va-topbar .va-user-pill-avatar { background-image: url('/api/bot/avatar?v=3') !important; background-size: cover !important; background-position: center !important; background-color: #05050a !important; }
-.va-brand img[data-server-icon], .va-topbar .va-user-pill-avatar img { content: url('/api/bot/avatar?v=3') !important; object-fit: cover !important; }
-.va-team-logo, .va-public-team-logo, .va-event-logo-box, .va-public-team-ghost, .va-user-team-watermark { background-image: url('/api/bot/avatar?v=3') !important; background-size: cover !important; background-position: center !important; background-color: #05050a !important; }
-.va-team-logo img, .va-public-team-logo img, .va-team-public-banner img, .va-public-team-ghost, .va-user-team-watermark, .va-event-logo-box img { content: url('/api/bot/avatar?v=3') !important; object-fit: cover !important; }
+.va-brand img[data-server-icon], .va-topbar .va-user-pill-avatar img, .va-topbar .va-user-pill-avatar { background-image: url('/api/bot/avatar?v=4') !important; background-size: cover !important; background-position: center !important; background-color: #05050a !important; }
+.va-brand img[data-server-icon], .va-topbar .va-user-pill-avatar img { content: url('/api/bot/avatar?v=4') !important; object-fit: cover !important; }
+.va-team-logo img, .va-public-team-logo img, .va-team-public-banner img, .va-public-team-ghost, .va-user-team-watermark, .va-event-logo-box img { object-fit: cover !important; }
 @media(max-width: 980px) { .va-home-marquee, .va-home-bottom-panel { grid-template-columns: 1fr; } .va-home-action-grid, .va-home-mini-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .va-topbar { align-items: flex-start !important; } .va-topbar-tools { margin-left: 0 !important; } }
 @media(max-width: 640px) { .va-home-action-grid, .va-home-mini-grid { grid-template-columns: 1fr; } .va-site-footer { display: grid; } }
