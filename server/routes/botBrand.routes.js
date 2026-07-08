@@ -1,7 +1,7 @@
 const { fetchBotBrand, fetchGuildBrand } = require('../services/botApi.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
-const FALLBACK_ICON = '/assets/hollow-nexus.png';
+const FALLBACK_ICON = '/assets/void-arena-current-logo.svg';
 
 async function resolveVoidBrand() {
   const [botBrand, guildBrand] = await Promise.all([
@@ -67,6 +67,7 @@ function registerBotBrandRoutes(app) {
 
   app.get('/api/bot/avatar', async (_req, res) => {
     const brand = await resolveVoidBrand();
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     if (/^https?:\/\//i.test(brand.icon)) return res.redirect(brand.icon);
     return res.redirect(FALLBACK_ICON);
   });
