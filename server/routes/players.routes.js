@@ -1,6 +1,7 @@
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
+const { resolveTeamLogo } = require('../services/bracket.service');
 const { createRecruitmentNotification } = require('./notifications.routes');
 
 const RECRUITMENT_CHANNEL_ID = 'recruitment-board';
@@ -60,7 +61,7 @@ function canManageTeam(user = null, team = {}) {
 }
 
 function publicTeam(team = {}) {
-  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: team.logo || '', ownerUserId: team.ownerUserId || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' };
+  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: resolveTeamLogo(team), logoOriginal: team.logo || '', ownerUserId: team.ownerUserId || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' };
 }
 
 function publicUser(user = {}) { return { id: user.id || '', name: userName(user), discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {} }; }
@@ -122,7 +123,7 @@ function buildDirectory(users = [], teams = []) {
     const seen = new Set();
     (player.teams || []).forEach((team) => { if (!team?.id || seen.has(team.id)) return; seen.add(team.id); uniqueTeams.push(team); });
     const profile = player.profile || {};
-    return { ...player, name: clean(player.name || 'Jogador', 80), teams: uniqueTeams, teamName: uniqueTeams[0]?.name || '', teamTag: uniqueTeams[0]?.tag || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: uniqueTeams.length ? 'club' : 'free', statusLabel: uniqueTeams.length ? 'Com clube' : 'Sem clube' };
+    return { ...player, name: clean(player.name || 'Jogador', 80), teams: uniqueTeams, teamName: uniqueTeams[0]?.name || '', teamTag: uniqueTeams[0]?.tag || '', teamLogo: uniqueTeams[0]?.logo || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: uniqueTeams.length ? 'club' : 'free', statusLabel: uniqueTeams.length ? 'Com clube' : 'Sem clube' };
   }).sort((a, b) => (a.status === b.status ? 0 : a.status === 'free' ? -1 : 1) || String(a.name || '').localeCompare(String(b.name || '')));
 }
 
