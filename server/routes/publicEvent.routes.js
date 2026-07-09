@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { getSessionUser, requireOwner } = require('../services/access.service');
+const { sanitizeTeam } = require('../services/bracket.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 function requireLogin(req, res, next) {
@@ -16,6 +17,10 @@ function cleanText(value = '', max = 160) {
 function feeLabel(event = {}) {
   const fee = cleanText(event.entryFee || event.registrationFee || '', 80);
   return fee || 'F2P';
+}
+
+function safeTeam(team = null) {
+  return team ? sanitizeTeam(team) : null;
 }
 
 function safeEvent(event = {}, teams = []) {
@@ -41,7 +46,7 @@ function safeEvent(event = {}, teams = []) {
     feeLabel: feeLabel(event),
     paymentInstructions: event.paymentInstructions || '',
     captainNoticeMessages: Array.isArray(event.captainNoticeMessages) ? event.captainNoticeMessages : [],
-    registrations: registrations.map((item) => ({ ...item, team: teamById.get(String(item.teamId || '')) || null })),
+    registrations: registrations.map((item) => ({ ...item, team: safeTeam(teamById.get(String(item.teamId || '')) || null) })),
     registeredCount: registrations.length,
     createdAt: event.createdAt || null,
     updatedAt: event.updatedAt || null
