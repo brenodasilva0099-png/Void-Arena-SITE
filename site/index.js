@@ -18,6 +18,7 @@ const { registerDiscordAdminRoutes } = require('../server/routes/discordAdmin.ro
 const { registerNotificationRoutes } = require('../server/routes/notifications.routes');
 const { registerAccessControlRoutes } = require('../server/routes/accessControl.routes');
 const { registerRuntimeRoutes } = require('../server/routes/runtime.routes');
+const { registerDiscordServerLinkRoutes } = require('../server/routes/discordServerLink.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -37,6 +38,7 @@ registerDiscordAdminRoutes(app);
 registerNotificationRoutes(app);
 registerAccessControlRoutes(app);
 registerRuntimeRoutes(app);
+registerDiscordServerLinkRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
