@@ -9,6 +9,37 @@ function bracketSlotSize(limit = 16) {
   return normalizeTeamLimit(limit);
 }
 
+function extractImageUrl(value = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^data:image\/[^;]+;base64,/i.test(raw)) return raw;
+  const srcMatch = raw.match(/(?:src|href)=["']([^"']+)["']/i);
+  if (srcMatch?.[1]) return srcMatch[1].trim();
+  const markdownMatch = raw.match(/!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/i);
+  if (markdownMatch?.[1]) return markdownMatch[1].trim();
+  const urlMatch = raw.match(/https?:\/\/[^\s"'<>]+/i);
+  if (urlMatch?.[0]) return urlMatch[0].trim();
+  return raw;
+}
+
+function safeTeamLogo(value = '') {
+  const raw = extractImageUrl(value);
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw.slice(0, 1800);
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(raw)) return raw.slice(0, 2500000);
+  if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw.slice(0, 1200);
+  return '';
+}
+
+function resolveTeamLogo(team = {}) {
+  const values = [team.logo, team.logoUrl, team.logoURL, team.teamLogo, team.teamLogoUrl, team.badge, team.badgeUrl, team.escudo, team.image, team.imageUrl, team.avatar, team.icon];
+  for (const value of values) {
+    const logo = safeTeamLogo(value);
+    if (logo) return logo;
+  }
+  return '';
+}
+
 function sanitizeGroupName(value = '', index = 0) {
   const fallback = `Grupo ${String.fromCharCode(65 + index)}`;
   return String(value || fallback).trim().slice(0, 40) || fallback;
@@ -68,7 +99,8 @@ function sanitizeTeam(team = {}, usersById = new Map()) {
     id: team.id,
     name: team.name || 'Time',
     tag: team.tag || '',
-    logo: team.logo || '',
+    logo: resolveTeamLogo(team),
+    logoOriginal: team.logo || '',
     players: Array.isArray(team.players) ? team.players : [],
     reserves: Array.isArray(team.reserves) ? team.reserves : [],
     playerAccounts: team.playerAccounts || {},
@@ -86,7 +118,7 @@ function normalizeBracketForResponse(bracket = {}, teams = [], users = []) {
   const usersById = new Map(users.map((user) => [String(user.id || ''), user]));
   const byId = new Map(teams.map((team) => { const safe = sanitizeTeam(team, usersById); return [safe.id, safe]; }));
   const normalized = normalizeBracketData(bracket);
-  const mapSlots = (items) => items.map((id) => id ? (byId.get(id) || { id, name: 'Time removido', tag: '---' }) : null);
+  const mapSlots = (items) => items.map((id) => id ? (byId.get(id) || { id, name: 'Time removido', tag: '---', logo: '' }) : null);
   const mapGroups = (groups = []) => groups.map((group) => ({
     name: group.name,
     teams: mapSlots(group.teams || [])
@@ -176,6 +208,8 @@ module.exports = {
   normalizeBracketData,
   normalizeBracketForResponse,
   sanitizeTeam,
+  safeTeamLogo,
+  resolveTeamLogo,
   generateBracketSlots,
   generateAdaptiveBracket,
   generateGroups,
