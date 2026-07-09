@@ -1,5 +1,5 @@
 const storage = require('../storage');
-const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { getSessionUser, isOwnerRecord, isAdminRecord } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
 const { resolveTeamLogo } = require('../services/bracket.service');
 const { createRecruitmentNotification } = require('./notifications.routes');
@@ -14,6 +14,7 @@ function requireSession(req, res, next) {
 function clean(value = '', max = 500) { return String(value || '').trim().slice(0, max); }
 function userName(user = {}) { return user?.profile?.username || user?.name || user?.discordId || 'Jogador'; }
 function playerKey(player = {}) { return String(player.userId || player.id || player.discordId || player.name || '').trim().toLowerCase(); }
+function normalizeIdentity(value = '') { return String(value || '').trim().toLowerCase(); }
 
 function extractDiscordId(value = '') {
   const raw = String(value || '').trim();
@@ -52,6 +53,12 @@ async function attachDiscordRoles(players = []) {
 
 async function safeSessionUser(req) { try { return await getSessionUser(req); } catch { return null; } }
 
+async function viewerIsAdmin(viewer = null) {
+  if (!viewer) return false;
+  try { return await isAdminRecord(viewer); }
+  catch { return isOwnerRecord(viewer); }
+}
+
 function canManageTeam(user = null, team = {}) {
   if (!user) return false;
   if (isOwnerRecord(user)) return true;
@@ -65,6 +72,10 @@ function publicTeam(team = {}) {
 }
 
 function publicUser(user = {}) { return { id: user.id || '', name: userName(user), discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {} }; }
+
+function playerDirectoryId(player = {}) {
+  return String(player.userId || player.discordId || player.id || player.name || '').trim();
+}
 
 function buildDirectory(users = [], teams = []) {
   const byDiscord = new Map(users.map((user) => [String(user.discordId || '').trim(), user]).filter(([id]) => id));
@@ -123,8 +134,84 @@ function buildDirectory(users = [], teams = []) {
     const seen = new Set();
     (player.teams || []).forEach((team) => { if (!team?.id || seen.has(team.id)) return; seen.add(team.id); uniqueTeams.push(team); });
     const profile = player.profile || {};
-    return { ...player, name: clean(player.name || 'Jogador', 80), teams: uniqueTeams, teamName: uniqueTeams[0]?.name || '', teamTag: uniqueTeams[0]?.tag || '', teamLogo: uniqueTeams[0]?.logo || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: uniqueTeams.length ? 'club' : 'free', statusLabel: uniqueTeams.length ? 'Com clube' : 'Sem clube' };
+    return { ...player, directoryId: playerDirectoryId(player), name: clean(player.name || 'Jogador', 80), teams: uniqueTeams, teamName: uniqueTeams[0]?.name || '', teamTag: uniqueTeams[0]?.tag || '', teamLogo: uniqueTeams[0]?.logo || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: uniqueTeams.length ? 'club' : 'free', statusLabel: uniqueTeams.length ? 'Com clube' : 'Sem clube' };
   }).sort((a, b) => (a.status === b.status ? 0 : a.status === 'free' ? -1 : 1) || String(a.name || '').localeCompare(String(b.name || '')));
+}
+
+function identitiesForPlayer(player = {}) {
+  return new Set([
+    player.id,
+    player.userId,
+    player.discordId,
+    player.name,
+    player.directoryId,
+    playerKey(player)
+  ].map(normalizeIdentity).filter(Boolean));
+}
+
+function entryMatchesTarget({ name = '', account = '', detail = {} } = {}, identities = new Set()) {
+  const values = [
+    name,
+    account,
+    detail?.id,
+    detail?.userId,
+    detail?.discordId,
+    detail?.account,
+    detail?.name,
+    extractDiscordId(account),
+    extractDiscordId(detail?.discordId || detail?.account || '')
+  ].map(normalizeIdentity).filter(Boolean);
+  return values.some((value) => identities.has(value));
+}
+
+function removeFromRoster(names = [], accounts = [], details = [], identities = new Set()) {
+  const safeNames = Array.isArray(names) ? names : [];
+  const safeAccounts = Array.isArray(accounts) ? accounts : [];
+  const safeDetails = Array.isArray(details) ? details : [];
+  const keepIndexes = [];
+  let removed = 0;
+
+  safeNames.forEach((name, index) => {
+    const detail = safeDetails[index] || {};
+    const account = safeAccounts[index] || detail?.discordId || detail?.account || '';
+    if (entryMatchesTarget({ name, account, detail }, identities)) removed += 1;
+    else keepIndexes.push(index);
+  });
+
+  const nextNames = keepIndexes.map((index) => safeNames[index]).filter(Boolean);
+  const nextAccounts = keepIndexes.map((index) => safeAccounts[index] || '').filter((value, index) => value || keepIndexes[index] < safeAccounts.length);
+  const nextDetails = safeDetails.filter((detail, index) => !entryMatchesTarget({ name: safeNames[index] || detail?.name || '', account: safeAccounts[index] || detail?.discordId || detail?.account || '', detail }, identities));
+  const extraRemoved = Math.max(0, safeDetails.length - nextDetails.length - removed);
+
+  return { names: nextNames, accounts: nextAccounts, details: nextDetails, removed: removed + extraRemoved };
+}
+
+function removePlayerFromTeam(team = {}, targetPlayer = {}) {
+  const identities = identitiesForPlayer(targetPlayer);
+  if (!identities.size) return { team, changed: false, removed: 0 };
+
+  const players = removeFromRoster(team.players, team.playerAccounts?.players, team.playerDetails, identities);
+  const reserves = removeFromRoster(team.reserves, team.playerAccounts?.reserves, team.reserveDetails, identities);
+  const removed = players.removed + reserves.removed;
+  if (!removed) return { team, changed: false, removed: 0 };
+
+  return {
+    changed: true,
+    removed,
+    team: {
+      ...team,
+      players: players.names,
+      reserves: reserves.names,
+      playerAccounts: {
+        ...(team.playerAccounts || {}),
+        players: players.accounts,
+        reserves: reserves.accounts
+      },
+      playerDetails: players.details,
+      reserveDetails: reserves.details,
+      updatedAt: new Date().toISOString()
+    }
+  };
 }
 
 function parseRecruitmentMessage(message = {}) {
@@ -158,9 +245,46 @@ function registerPlayersRoutes(app) {
       const activeUsers = users.filter((user) => !user.deletedAt);
       const viewerTeams = teams.filter((team) => canManageTeam(viewer, team)).map(publicTeam);
       const players = await attachDiscordRoles(buildDirectory(activeUsers, teams));
-      return res.json({ success: true, players, teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams });
+      const isAdmin = await viewerIsAdmin(viewer);
+      return res.json({ success: true, players, teams: teams.map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams, isAdmin });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, players: [], teams: [], viewerTeams: [] });
+    }
+  });
+
+  app.delete('/api/players/:playerId', requireSession, async (req, res) => {
+    try {
+      const viewer = await safeSessionUser(req);
+      if (!await viewerIsAdmin(viewer)) return res.status(403).json({ success: false, message: 'Apenas administrador pode excluir jogadores.' });
+
+      const rawPlayerId = decodeURIComponent(String(req.params.playerId || '')).trim();
+      if (!rawPlayerId) throw new Error('Jogador inválido.');
+
+      const [users, teams] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => [])]);
+      const activeUsers = users.filter((user) => !user.deletedAt);
+      const directory = buildDirectory(activeUsers, teams);
+      const target = directory.find((player) => [player.directoryId, player.userId, player.discordId, player.id, player.name].some((value) => normalizeIdentity(value) === normalizeIdentity(rawPlayerId)));
+      if (!target) return res.status(404).json({ success: false, message: 'Jogador não encontrado.' });
+
+      let deletedUser = null;
+      if (target.userId) {
+        const user = users.find((item) => String(item.id || '') === String(target.userId));
+        if (user && !user.deletedAt) {
+          deletedUser = await storage.saveUser({ ...user, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        }
+      }
+
+      let removedFromTeams = 0;
+      for (const team of teams) {
+        const result = removePlayerFromTeam(team, target);
+        if (!result.changed) continue;
+        removedFromTeams += result.removed;
+        await storage.saveTeam(result.team);
+      }
+
+      return res.json({ success: true, playerId: rawPlayerId, deletedUser: Boolean(deletedUser), removedFromTeams, message: deletedUser ? 'Jogador excluído do banco e removido dos elencos vinculados.' : 'Jogador removido dos elencos vinculados.' });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
     }
   });
 
