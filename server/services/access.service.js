@@ -1,7 +1,9 @@
 const storage = require('../storage');
+const { callBot } = require('./botApi.service');
 
 const DEFAULT_OWNER_DISCORD_IDS = ['1235713276277559326'];
 const DEFAULT_OWNER_EMAILS = ['abyss.projectdev@gmail.com', 'brenodasilva0099@gmail.com'];
+const DEFAULT_ADMIN_ROLE_IDS = ['1297731552620576828'];
 
 function splitList(...values) {
   return Array.from(new Set(values
@@ -19,12 +21,43 @@ function ownerEmails() {
     .map((item) => item.toLowerCase());
 }
 
+function adminRoleIds() {
+  return splitList(
+    process.env.ADMIN_ROLE_IDS,
+    process.env.OWNER_ROLE_IDS,
+    process.env.NEXUS_CORE_ROLE_ID,
+    DEFAULT_ADMIN_ROLE_IDS
+  );
+}
+
 function isOwnerRecord(user = {}) {
   if (!user) return false;
   const email = String(user.email || '').trim().toLowerCase();
   const discordId = String(user.discordId || '').trim();
   const userId = String(user.id || '').trim();
   return ownerEmails().includes(email) || ownerDiscordIds().includes(discordId) || ownerDiscordIds().includes(userId);
+}
+
+async function readMemberRoleIds(discordId = '') {
+  const id = String(discordId || '').trim();
+  if (!id) return [];
+  const data = await callBot(`/internal/discord/member-roles/${encodeURIComponent(id)}`, { method: 'GET' }).catch(() => ({ roles: [] }));
+  return (Array.isArray(data.roles) ? data.roles : [])
+    .map((role) => String(role.id || role.roleId || '').trim())
+    .filter(Boolean);
+}
+
+async function hasAdminRole(user = {}) {
+  const discordId = String(user?.discordId || user?.id || '').trim();
+  if (!discordId) return false;
+  const allowed = new Set(adminRoleIds());
+  const memberRoleIds = await readMemberRoleIds(discordId);
+  return memberRoleIds.some((roleId) => allowed.has(String(roleId || '').trim()));
+}
+
+async function isAdminRecord(user = {}) {
+  if (isOwnerRecord(user)) return true;
+  return hasAdminRole(user);
 }
 
 async function getSessionUser(req) {
@@ -37,16 +70,32 @@ async function isOwnerSession(req) {
   return isOwnerRecord(user);
 }
 
+async function isAdminSession(req) {
+  const user = await getSessionUser(req);
+  return isAdminRecord(user);
+}
+
 function requireOwner(req, res, next) {
-  isOwnerSession(req)
+  isAdminSession(req)
     .then((ok) => ok ? next() : res.status(403).json({ success: false, message: 'Apenas o administrador pode usar essa função.' }))
     .catch((error) => res.status(500).json({ success: false, message: error.message }));
 }
 
+function requireAdmin(req, res, next) {
+  requireOwner(req, res, next);
+}
+
 module.exports = {
   DEFAULT_OWNER_DISCORD_IDS,
+  DEFAULT_ADMIN_ROLE_IDS,
   isOwnerRecord,
+  isAdminRecord,
+  hasAdminRole,
   isOwnerSession,
+  isAdminSession,
   requireOwner,
-  getSessionUser
+  requireAdmin,
+  getSessionUser,
+  readMemberRoleIds,
+  adminRoleIds
 };
