@@ -12,12 +12,56 @@ function clean(value = '', max = 160) {
   return String(value || '').trim().slice(0, max);
 }
 
-function safeLogo(value = '') {
+function extractImageUrl(value = '') {
   const raw = String(value || '').trim();
   if (!raw) return '';
-  if (/^https?:\/\//i.test(raw)) return raw.slice(0, 1200);
-  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(raw)) return raw.slice(0, 650000);
+
+  if (/^data:image\/[^;]+;base64,/i.test(raw)) return raw;
+
+  const srcMatch = raw.match(/(?:src|href)=["']([^"']+)["']/i);
+  if (srcMatch?.[1]) return srcMatch[1].trim();
+
+  const markdownMatch = raw.match(/!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/i);
+  if (markdownMatch?.[1]) return markdownMatch[1].trim();
+
+  const urlMatch = raw.match(/https?:\/\/[^\s"'<>]+/i);
+  if (urlMatch?.[0]) return urlMatch[0].trim();
+
+  return raw;
+}
+
+function safeLogo(value = '') {
+  const raw = extractImageUrl(value);
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw.slice(0, 1800);
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(raw)) return raw.slice(0, 2500000);
+  if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw.slice(0, 1200);
   return '';
+}
+
+function firstLogoValue(...values) {
+  for (const value of values) {
+    const logo = safeLogo(value);
+    if (logo) return logo;
+  }
+  return '';
+}
+
+function resolveTeamLogo(team = {}) {
+  return firstLogoValue(
+    team.logo,
+    team.logoUrl,
+    team.logoURL,
+    team.teamLogo,
+    team.teamLogoUrl,
+    team.badge,
+    team.badgeUrl,
+    team.escudo,
+    team.image,
+    team.imageUrl,
+    team.avatar,
+    team.icon
+  );
 }
 
 function splitDiscordId(value = '') {
@@ -50,6 +94,7 @@ function enrichTeam(team = {}, users = [], viewer = null) {
   const owner = usersById.get(String(team.ownerUserId || '')) || null;
   const accounts = team.playerAccounts || {};
   const viewerCanManage = canManageTeam(viewer, team);
+  const normalizedLogo = resolveTeamLogo(team);
 
   const mapPlayer = (name, account, type, index) => {
     const discordId = splitDiscordId(account || name);
@@ -60,7 +105,7 @@ function enrichTeam(team = {}, users = [], viewer = null) {
   const players = (Array.isArray(team.players) ? team.players : []).map((item, index) => mapPlayer(item, accounts.players?.[index] || '', 'player', index));
   const reserves = (Array.isArray(team.reserves) ? team.reserves : []).map((item, index) => mapPlayer(item, accounts.reserves?.[index] || '', 'reserve', index));
 
-  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: team.logo || '', ownerUserId: team.ownerUserId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || team.captainName || players[0]?.name || 'nao definido'), ownerAvatar: owner?.avatar || team.ownerAvatar || '', captainName: owner ? userDisplay(owner) : (team.captainName || players[0]?.name || 'nao definido'), captainDiscordId: owner?.discordId || team.captainDiscordId || players[0]?.discordId || '', players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: viewerCanManage, createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
+  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: normalizedLogo, logoOriginal: team.logo || '', ownerUserId: team.ownerUserId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || team.captainName || players[0]?.name || 'nao definido'), ownerAvatar: owner?.avatar || team.ownerAvatar || '', captainName: owner ? userDisplay(owner) : (team.captainName || players[0]?.name || 'nao definido'), captainDiscordId: owner?.discordId || team.captainDiscordId || players[0]?.discordId || '', players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: viewerCanManage, createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
 }
 
 function canManageTeam(user = null, team = {}) {
@@ -88,7 +133,10 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
   const now = new Date().toISOString();
   const ownerUserId = existing?.ownerUserId || user.id || '';
   const ownerName = existing?.ownerName || userDisplay(user);
-  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo: safeLogo(body.logo), ownerUserId, ownerName, captainName: existing?.captainName || ownerName, captainDiscordId: existing?.captainDiscordId || user.discordId || playerIds.find(Boolean) || '', players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, socials: { discord: clean(body.socials?.discord || body.socialDiscord || '', 180), instagram: clean(body.socials?.instagram || body.socialInstagram || '', 160), youtube: clean(body.socials?.youtube || body.socialYoutube || '', 180), tiktok: clean(body.socials?.tiktok || body.socialTikTok || '', 160), steam: clean(body.socials?.steam || body.socialSteam || '', 180), xbox: clean(body.socials?.xbox || body.socialXbox || '', 160), website: clean(body.socials?.website || body.socialWebsite || '', 180) }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
+  const incomingLogo = firstLogoValue(body.logo, body.logoUrl, body.logoURL, body.teamLogo, body.teamLogoUrl, body.badge, body.badgeUrl, body.escudo, body.image, body.imageUrl, body.avatar, body.icon);
+  const logo = incomingLogo || resolveTeamLogo(existing || {}) || '';
+
+  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo, ownerUserId, ownerName, captainName: existing?.captainName || ownerName, captainDiscordId: existing?.captainDiscordId || user.discordId || playerIds.find(Boolean) || '', players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, socials: { discord: clean(body.socials?.discord || body.socialDiscord || '', 180), instagram: clean(body.socials?.instagram || body.socialInstagram || '', 160), youtube: clean(body.socials?.youtube || body.socialYoutube || '', 180), tiktok: clean(body.socials?.tiktok || body.socialTikTok || '', 160), steam: clean(body.socials?.steam || body.socialSteam || '', 180), xbox: clean(body.socials?.xbox || body.socialXbox || '', 160), website: clean(body.socials?.website || body.socialWebsite || '', 180) }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
 }
 
 function registerPublicTeamRoutes(app) {
