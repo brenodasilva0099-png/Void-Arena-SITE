@@ -1,5 +1,5 @@
 const { callBot } = require('../services/botApi.service');
-const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { getSessionUser, isOwnerRecord, adminRoleIds } = require('../services/access.service');
 
 const PUBLIC_KEYS = new Set(['dashboard', 'inicio', 'perfil', 'terms', 'termos']);
 const STRICT_PERMISSION_KEYS = new Set(['forms', 'matches']);
@@ -79,6 +79,11 @@ function roleIdsFromBot(payload = {}) {
   return (Array.isArray(payload.roles) ? payload.roles : []).map((role) => String(role.id || '').trim()).filter(Boolean);
 }
 
+function hasAdminRoleId(roleIds = []) {
+  const allowed = new Set(adminRoleIds());
+  return roleIds.some((id) => allowed.has(String(id || '').trim()));
+}
+
 async function readRolePermissions() {
   const data = await callBot('/internal/storage/readRolePermissions', {
     method: 'POST',
@@ -94,7 +99,7 @@ async function readMemberRoles(discordId = '') {
 }
 
 function isPageAllowed({ pageKey, user, roleIds, permissions }) {
-  if (isOwnerRecord(user)) return { allowed: true, reason: 'owner' };
+  if (isOwnerRecord(user) || hasAdminRoleId(roleIds)) return { allowed: true, reason: 'admin' };
   const key = cleanKey(pageKey);
   if (PUBLIC_KEYS.has(key)) return { allowed: true, reason: 'public' };
 
@@ -134,11 +139,14 @@ function registerAccessControlRoutes(app) {
         readRolePermissions(),
         readMemberRoles(user.discordId || user.id)
       ]);
+      const isAdmin = isOwnerRecord(user) || hasAdminRoleId(roleIds);
       return res.json({
         success: true,
         userId: user.id || '',
         discordId: user.discordId || '',
         isOwner: isOwnerRecord(user),
+        isAdmin,
+        adminRoleIds: adminRoleIds(),
         roleIds,
         permissions,
         access: buildAccessMap(user, roleIds, permissions)
@@ -157,7 +165,7 @@ function registerAccessControlRoutes(app) {
         readMemberRoles(user.discordId || user.id)
       ]);
       const decision = isPageAllowed({ pageKey: req.params.pageKey, user, roleIds, permissions });
-      return res.status(decision.allowed ? 200 : 403).json({ success: decision.allowed, ...decision, roleIds });
+      return res.status(decision.allowed ? 200 : 403).json({ success: decision.allowed, ...decision, roleIds, isAdmin: isOwnerRecord(user) || hasAdminRoleId(roleIds) });
     } catch (error) {
       return res.json({ success: true, allowed: true, degraded: true, message: error.message });
     }
