@@ -60,9 +60,23 @@ async function isAdminRecord(user = {}) {
   return hasAdminRole(user);
 }
 
+async function reactivateUserIfNeeded(user = null) {
+  if (!user) return null;
+  if (!user.deletedAt && !user.hiddenFromPlayersDirectory) return user;
+  const next = {
+    ...user,
+    deletedAt: null,
+    hiddenFromPlayersDirectory: false,
+    reactivatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  return storage.saveUser(next).catch(() => user);
+}
+
 async function getSessionUser(req) {
   if (!req?.session?.userId) return null;
-  return storage.findUserById(req.session.userId).catch(() => null);
+  const user = await storage.findUserById(req.session.userId).catch(() => null);
+  return reactivateUserIfNeeded(user);
 }
 
 async function isOwnerSession(req) {
@@ -97,5 +111,6 @@ module.exports = {
   requireAdmin,
   getSessionUser,
   readMemberRoleIds,
-  adminRoleIds
+  adminRoleIds,
+  reactivateUserIfNeeded
 };
