@@ -7,11 +7,13 @@
   const typeSelect = document.getElementById('recruitmentTypeSelect');
   const noteInput = document.getElementById('recruitmentNoteInput');
   const pageKey = document.body?.dataset?.page || 'jogadores';
-  let directory = { players: [], teams: [], viewerTeams: [], selectedPlayer: null, isAdmin: false };
+  let directory = { players: [], teams: [], viewerTeams: [], selectedPlayer: null, isAdmin: false, viewer: null };
   const esc = (value) => VoidArena.escapeHtml(value ?? '');
 
   function setStatus(el, message, type = '') { if (el) { el.textContent = message; el.className = `va-status ${type}`.trim(); el.hidden = !message; } }
   function idOf(player = {}) { return String(player.directoryId || player.userId || player.discordId || player.id || player.name || '').trim(); }
+  function norm(value = '') { return String(value || '').trim().toLowerCase(); }
+  function sameAsViewer(player = {}) { const viewer = directory.viewer || {}; const ids = [viewer.id, viewer.discordId, viewer.name].map(norm).filter(Boolean); return [player.userId, player.discordId, player.id, player.directoryId, player.name].map(norm).filter(Boolean).some((value) => ids.includes(value)); }
   function avatar(player = {}) { return player.avatar ? `<img src="${esc(player.avatar)}" alt="${esc(player.name)}" />` : esc((player.name || '?').slice(0, 1).toUpperCase()); }
   function statusBadge(player = {}) { return player.status === 'free' ? '<span class="va-badge ok">Livre</span>' : '<span class="va-badge">Com clube</span>'; }
   function requestStatusBadge(status = '') { const s = String(status || 'pending').toLowerCase(); const label = s === 'cancelled' ? 'Cancelado' : s === 'accepted' ? 'Aceito' : s === 'declined' ? 'Recusado' : 'Pendente'; const cls = s === 'cancelled' || s === 'declined' ? 'danger' : s === 'accepted' ? 'ok' : ''; return `<span class="va-badge ${cls}">${label}</span>`; }
@@ -38,12 +40,7 @@
     overlay.hidden = false;
   }
 
-  function fillTeamSelect() {
-    if (!teamSelect) return;
-    const teams = typeSelect?.value === 'trial' ? directory.teams : directory.viewerTeams;
-    teamSelect.innerHTML = '<option value="">Selecionar time</option>' + teams.map((team) => `<option value="${esc(team.id)}">${esc(team.name)}${team.tag ? ` (${esc(team.tag)})` : ''}</option>`).join('');
-  }
-
+  function fillTeamSelect() { if (!teamSelect) return; const teams = typeSelect?.value === 'trial' ? directory.teams : directory.viewerTeams; teamSelect.innerHTML = '<option value="">Selecionar time</option>' + teams.map((team) => `<option value="${esc(team.id)}">${esc(team.name)}${team.tag ? ` (${esc(team.tag)})` : ''}</option>`).join(''); }
   function savePendingRecruitment(player) { sessionStorage.setItem('voidarena:pendingRecruitment', JSON.stringify(player)); }
   function consumePendingRecruitment() { try { const raw = sessionStorage.getItem('voidarena:pendingRecruitment'); if (!raw) return null; sessionStorage.removeItem('voidarena:pendingRecruitment'); return JSON.parse(raw); } catch { return null; } }
   function ensureSelectedPlayerCard() { const form = document.querySelector('.va-recruitment-form'); if (!form) return null; let card = document.getElementById('selectedRecruitmentPlayerCard'); if (!card) { card = document.createElement('div'); card.id = 'selectedRecruitmentPlayerCard'; card.className = 'va-selected-player-card'; form.insertBefore(card, form.firstChild); } return card; }
@@ -51,38 +48,24 @@
 
   function actionButtons(player = {}) {
     const id = idOf(player);
-    return `<div class="va-directory-actions"><button class="va-btn mini secondary" data-open-player="${esc(id)}" type="button">Perfil</button><button class="va-btn mini" data-recruit-player="${esc(id)}" data-player-name="${esc(player.name)}" type="button">Recrutar</button>${directory.isAdmin ? `<button class="va-btn mini danger" data-delete-player="${esc(id)}" data-player-name="${esc(player.name)}" type="button">Excluir</button>` : ''}</div>`;
+    const canDelete = Boolean(directory.isAdmin && !sameAsViewer(player));
+    return `<div class="va-directory-actions"><button class="va-btn mini secondary" data-open-player="${esc(id)}" type="button">Perfil</button><button class="va-btn mini" data-recruit-player="${esc(id)}" data-player-name="${esc(player.name)}" type="button">Recrutar</button>${canDelete ? `<button class="va-btn mini danger" data-delete-player="${esc(id)}" data-player-name="${esc(player.name)}" type="button">Excluir</button>` : ''}</div>`;
   }
 
   function renderDirectory() {
     if (!directoryTable) return;
     const rows = directory.players || [];
     directoryTable.innerHTML = '<thead><tr><th>Jogador</th><th>Status</th><th>Time atual</th><th>Posição/região</th><th>Ação</th></tr></thead><tbody>' + (rows.length ? rows.map((p) => `<tr><td><button class="va-directory-player va-player-profile-trigger" data-open-player="${esc(idOf(p))}" type="button"><span class="va-directory-avatar">${avatar(p)}</span><span><strong>${esc(p.name)}</strong><small>${esc(publicPlayerSubline(p))}</small></span></button></td><td>${statusBadge(p)}</td><td>${p.teamName ? `<strong>${esc(p.teamName)}</strong><small>${esc(p.teamTag || '')}</small>` : '<span class="va-muted">Sem clube</span>'}</td><td>${esc(playerMeta(p))}</td><td>${actionButtons(p)}</td></tr>`).join('') : '<tr><td colspan="5">Nenhum jogador encontrado ainda.</td></tr>') + '</tbody>';
-    directoryTable.querySelectorAll('[data-recruit-player]').forEach((btn) => btn.addEventListener('click', () => {
-      const selected = { id: btn.dataset.recruitPlayer, name: btn.dataset.playerName };
-      if (!document.getElementById('recruitmentPanel')) { savePendingRecruitment(selected); window.location.href = '/pages/recrutamento.html'; return; }
-      directory.selectedPlayer = selected; if (typeSelect) typeSelect.value = 'recruitment'; fillTeamSelect(); renderSelectedPlayer(); setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${directory.selectedPlayer.name}`, 'ok'); document.getElementById('recruitmentPanel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }));
+    directoryTable.querySelectorAll('[data-recruit-player]').forEach((btn) => btn.addEventListener('click', () => { const selected = { id: btn.dataset.recruitPlayer, name: btn.dataset.playerName }; if (!document.getElementById('recruitmentPanel')) { savePendingRecruitment(selected); window.location.href = '/pages/recrutamento.html'; return; } directory.selectedPlayer = selected; if (typeSelect) typeSelect.value = 'recruitment'; fillTeamSelect(); renderSelectedPlayer(); setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${directory.selectedPlayer.name}`, 'ok'); document.getElementById('recruitmentPanel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }));
     directoryTable.querySelectorAll('[data-open-player]').forEach((btn) => btn.addEventListener('click', () => { const row = directory.players.find((p) => idOf(p) === String(btn.dataset.openPlayer)); if (!row) return setStatus(directoryStatus, 'Jogador não encontrado.', 'err'); openPublicPlayer(row); }));
     directoryTable.querySelectorAll('[data-delete-player]').forEach((btn) => btn.addEventListener('click', () => deletePlayer(btn.dataset.deletePlayer, btn.dataset.playerName).catch((error) => setStatus(directoryStatus, `❌ ${error.message}`, 'err'))));
     setStatus(directoryStatus, '', 'ok');
   }
 
-  function renderRequests(requests = []) {
-    if (!recruitmentTable) return;
-    recruitmentTable.innerHTML = '<thead><tr><th>Tipo</th><th>Time</th><th>Jogador/solicitante</th><th>Status</th><th>Mensagem</th><th>Ação</th></tr></thead><tbody>' + (requests.length ? requests.map((r) => `<tr class="${r.status === 'cancelled' ? 'is-muted-row' : ''}"><td><span class="va-badge">${r.type === 'trial' ? 'Peneira' : 'Recrutamento'}</span></td><td><strong>${esc(r.team?.name || '')}</strong><small>${esc(r.team?.tag || '')}</small></td><td><strong>${esc(r.type === 'trial' ? r.requester?.name : (r.playerName || 'Jogador'))}</strong></td><td>${requestStatusBadge(r.status)}</td><td>${esc(r.note || (r.status === 'cancelled' ? 'Solicitação removida/cancelada.' : 'Sem observação.'))}</td><td>${r.canCancel ? `<button class="va-btn mini danger" data-cancel-request="${esc(r.id)}" type="button">Remover</button>` : '<span class="va-muted">—</span>'}</td></tr>`).join('') : '<tr><td colspan="6">Nenhuma solicitação registrada ainda.</td></tr>') + '</tbody>';
-    recruitmentTable.querySelectorAll('[data-cancel-request]').forEach((btn) => btn.addEventListener('click', () => cancelRequest(btn.dataset.cancelRequest)));
-  }
-
-  async function loadDirectory() {
-    setStatus(directoryStatus, 'Carregando banco de jogadores...');
-    directory = await VoidArena.request('/api/players/directory');
-    const pending = consumePendingRecruitment();
-    if (pending && typeSelect) { directory.selectedPlayer = pending; typeSelect.value = 'recruitment'; setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${pending.name}`, 'ok'); }
-    fillTeamSelect(); renderSelectedPlayer(); renderDirectory();
-  }
+  function renderRequests(requests = []) { if (!recruitmentTable) return; recruitmentTable.innerHTML = '<thead><tr><th>Tipo</th><th>Time</th><th>Jogador/solicitante</th><th>Status</th><th>Mensagem</th><th>Ação</th></tr></thead><tbody>' + (requests.length ? requests.map((r) => `<tr class="${r.status === 'cancelled' ? 'is-muted-row' : ''}"><td><span class="va-badge">${r.type === 'trial' ? 'Peneira' : 'Recrutamento'}</span></td><td><strong>${esc(r.team?.name || '')}</strong><small>${esc(r.team?.tag || '')}</small></td><td><strong>${esc(r.type === 'trial' ? r.requester?.name : (r.playerName || 'Jogador'))}</strong></td><td>${requestStatusBadge(r.status)}</td><td>${esc(r.note || (r.status === 'cancelled' ? 'Solicitação removida/cancelada.' : 'Sem observação.'))}</td><td>${r.canCancel ? `<button class="va-btn mini danger" data-cancel-request="${esc(r.id)}" type="button">Remover</button>` : '<span class="va-muted">—</span>'}</td></tr>`).join('') : '<tr><td colspan="6">Nenhuma solicitação registrada ainda.</td></tr>') + '</tbody>'; recruitmentTable.querySelectorAll('[data-cancel-request]').forEach((btn) => btn.addEventListener('click', () => cancelRequest(btn.dataset.cancelRequest))); }
+  async function loadDirectory() { setStatus(directoryStatus, 'Carregando banco de jogadores...'); directory = await VoidArena.request('/api/players/directory'); const pending = consumePendingRecruitment(); if (pending && typeSelect) { directory.selectedPlayer = pending; typeSelect.value = 'recruitment'; setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${pending.name}`, 'ok'); } fillTeamSelect(); renderSelectedPlayer(); renderDirectory(); }
   async function loadRequests() { if (!recruitmentTable) return; const data = await VoidArena.request('/api/recruitment/requests'); renderRequests(data.requests || []); }
-  async function deletePlayer(playerId, playerName = 'jogador') { if (!directory.isAdmin) throw new Error('Apenas administrador pode excluir jogadores.'); if (!playerId) throw new Error('Jogador inválido.'); if (!confirm(`Excluir ${playerName || 'este jogador'} do banco e dos elencos vinculados?`)) return; setStatus(directoryStatus, `Excluindo ${playerName || 'jogador'}...`); const data = await VoidArena.request(`/api/players/${encodeURIComponent(playerId)}`, { method: 'DELETE', timeoutMs: 15000 }); setStatus(directoryStatus, data.message || 'Jogador excluído.', 'ok'); await loadDirectory(); }
+  async function deletePlayer(playerId, playerName = 'jogador') { if (!directory.isAdmin) throw new Error('Apenas administrador pode excluir jogadores.'); if (!playerId) throw new Error('Jogador inválido.'); if (!confirm(`Ocultar ${playerName || 'este jogador'} do banco e remover dos elencos vinculados?`)) return; setStatus(directoryStatus, `Excluindo ${playerName || 'jogador'}...`); const data = await VoidArena.request(`/api/players/${encodeURIComponent(playerId)}`, { method: 'DELETE', timeoutMs: 15000 }); setStatus(directoryStatus, data.message || 'Jogador removido.', 'ok'); await loadDirectory(); }
   async function submitRequest() { const type = typeSelect?.value || 'recruitment'; const teamId = teamSelect?.value || ''; if (!teamId) throw new Error('Selecione o time.'); if (type === 'recruitment' && !directory.selectedPlayer?.id) throw new Error('Selecione um jogador na tela Jogadores para recrutar.'); const saved = await VoidArena.request('/api/recruitment/requests', { method: 'POST', body: JSON.stringify({ type, teamId, playerId: type === 'recruitment' ? directory.selectedPlayer.id : '', playerName: type === 'recruitment' ? directory.selectedPlayer.name : '', note: noteInput?.value || '' }) }); if (noteInput) noteInput.value = ''; directory.selectedPlayer = null; renderSelectedPlayer(); setStatus(recruitmentStatus, saved.request?.type === 'trial' ? 'Peneira solicitada com sucesso.' : 'Convite de recrutamento enviado. O jogador recebe nas notificações/correios.', 'ok'); await loadRequests(); }
   async function cancelRequest(id) { if (!id) return; if (!confirm('Remover/cancelar essa solicitação de recrutamento?')) return; setStatus(recruitmentStatus, 'Cancelando solicitação...'); await VoidArena.request(`/api/recruitment/requests/${encodeURIComponent(id)}`, { method: 'DELETE' }); setStatus(recruitmentStatus, 'Solicitação removida/cancelada.', 'ok'); await loadRequests(); }
 
