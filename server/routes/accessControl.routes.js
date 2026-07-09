@@ -2,7 +2,26 @@ const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isOwnerRecord, adminRoleIds } = require('../services/access.service');
 
 const PUBLIC_KEYS = new Set(['dashboard', 'inicio', 'perfil', 'terms', 'termos']);
-const STRICT_PERMISSION_KEYS = new Set(['forms', 'matches']);
+const ADMIN_ONLY_KEYS = new Set([
+  'chat',
+  'scrims',
+  'estatisticas',
+  'stats',
+  'analise',
+  'analise-partidas',
+  'analysis',
+  'partidas',
+  'matches',
+  'formularios',
+  'formulario',
+  'forms',
+  'permissoes',
+  'config',
+  'configuracoes',
+  'backup',
+  'backups'
+]);
+const STRICT_PERMISSION_KEYS = new Set(['forms', 'matches', 'stats', 'chat', 'scrims', 'config', 'backup']);
 const PAGE_TO_PERMISSION = {
   dashboard: null,
   inicio: null,
@@ -98,10 +117,16 @@ async function readMemberRoles(discordId = '') {
   return roleIdsFromBot(data);
 }
 
+function isAdminLike(user = {}, roleIds = []) {
+  return isOwnerRecord(user) || hasAdminRoleId(roleIds);
+}
+
 function isPageAllowed({ pageKey, user, roleIds, permissions }) {
-  if (isOwnerRecord(user) || hasAdminRoleId(roleIds)) return { allowed: true, reason: 'admin' };
   const key = cleanKey(pageKey);
+  const admin = isAdminLike(user, roleIds);
+  if (admin) return { allowed: true, reason: 'admin' };
   if (PUBLIC_KEYS.has(key)) return { allowed: true, reason: 'public' };
+  if (ADMIN_ONLY_KEYS.has(key)) return { allowed: false, reason: 'admin_only' };
 
   const permissionKey = PAGE_TO_PERMISSION[key];
   if (!permissionKey) return { allowed: true, reason: 'unmapped' };
@@ -111,7 +136,7 @@ function isPageAllowed({ pageKey, user, roleIds, permissions }) {
   const hasAnyConfigForPage = keysToTry.some((item) => allConfigured.has(item));
   if (!hasAnyConfigForPage) {
     if (STRICT_PERMISSION_KEYS.has(permissionKey)) return { allowed: false, reason: 'strict_not_configured', permissionKey, keysToTry };
-    return { allowed: true, reason: 'not_configured' };
+    return { allowed: true, reason: 'public_view', permissionKey, keysToTry };
   }
 
   const ids = new Set(roleIds.map((id) => String(id || '').trim()).filter(Boolean));
@@ -139,7 +164,7 @@ function registerAccessControlRoutes(app) {
         readRolePermissions(),
         readMemberRoles(user.discordId || user.id)
       ]);
-      const isAdmin = isOwnerRecord(user) || hasAdminRoleId(roleIds);
+      const isAdmin = isAdminLike(user, roleIds);
       return res.json({
         success: true,
         userId: user.id || '',
@@ -165,7 +190,7 @@ function registerAccessControlRoutes(app) {
         readMemberRoles(user.discordId || user.id)
       ]);
       const decision = isPageAllowed({ pageKey: req.params.pageKey, user, roleIds, permissions });
-      return res.status(decision.allowed ? 200 : 403).json({ success: decision.allowed, ...decision, roleIds, isAdmin: isOwnerRecord(user) || hasAdminRoleId(roleIds) });
+      return res.status(decision.allowed ? 200 : 403).json({ success: decision.allowed, ...decision, roleIds, isAdmin: isAdminLike(user, roleIds) });
     } catch (error) {
       return res.json({ success: true, allowed: true, degraded: true, message: error.message });
     }
