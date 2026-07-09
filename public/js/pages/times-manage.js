@@ -14,6 +14,15 @@
   }
 
   function cleanDiscord(value = '') { return String(value || '').replace(/^<@!?/, '').replace(/>$/, '').trim(); }
+  function safeLogoUrl(value = '') {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^data:image\//i.test(raw)) return raw;
+    if (/^blob:/i.test(raw)) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw;
+    return '';
+  }
   function teamPlayers(team, key, fallbackKey) {
     const detailed = Array.isArray(team[key]) ? team[key] : [];
     if (detailed.length) return detailed;
@@ -44,7 +53,7 @@
     shell.id = 'teamManageModal';
     shell.className = 'va-modal-shell';
     shell.hidden = true;
-    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Editar time</p><h2 id="teamManageTitle">Editar time</h2><p class="va-muted">Capitão criador edita o próprio time. Dono/admin pode editar qualquer time.</p></div><button class="va-modal-close" data-close-team-manage type="button">×</button></div><form id="teamManageForm" class="va-form-grid two"><label>Nome<input name="name" required maxlength="80" /></label><label>Tag<input name="tag" required maxlength="8" /></label><label class="wide">Logo / escudo<input name="logo" maxlength="650000" /></label><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Titulares</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddPlayer" class="va-btn" type="button">+ Titular</button></div><div id="teamManagePlayers" class="va-player-editor-list"></div></div><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Reservas</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddReserve" class="va-btn" type="button">+ Reserva</button></div><div id="teamManageReserves" class="va-player-editor-list"></div></div><label>Discord<input name="socialDiscord" /></label><label>Instagram<input name="socialInstagram" /></label><label>YouTube<input name="socialYoutube" /></label><label>TikTok<input name="socialTikTok" /></label><label>Steam<input name="socialSteam" /></label><label>Xbox<input name="socialXbox" /></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar alterações</button><button class="va-btn" data-close-team-manage type="button">Cancelar</button></div></form><div id="teamManageStatus" class="va-status"></div></div>`;
+    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Editar time</p><h2 id="teamManageTitle">Editar time</h2><p class="va-muted">Capitão criador edita o próprio time. Dono/admin pode editar qualquer time.</p></div><button class="va-modal-close" data-close-team-manage type="button">×</button></div><form id="teamManageForm" class="va-form-grid two"><label>Nome<input name="name" required maxlength="80" /></label><label>Tag<input name="tag" required maxlength="8" /></label><label class="wide">Logo / escudo<input name="logo" maxlength="650000" placeholder="https://... ou data:image/..." /></label><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Titulares</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddPlayer" class="va-btn" type="button">+ Titular</button></div><div id="teamManagePlayers" class="va-player-editor-list"></div></div><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Reservas</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddReserve" class="va-btn" type="button">+ Reserva</button></div><div id="teamManageReserves" class="va-player-editor-list"></div></div><label>Discord<input name="socialDiscord" /></label><label>Instagram<input name="socialInstagram" /></label><label>YouTube<input name="socialYoutube" /></label><label>TikTok<input name="socialTikTok" /></label><label>Steam<input name="socialSteam" /></label><label>Xbox<input name="socialXbox" /></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar alterações</button><button class="va-btn" data-close-team-manage type="button">Cancelar</button></div></form><div id="teamManageStatus" class="va-status"></div></div>`;
     document.body.appendChild(shell);
     shell.addEventListener('click', (event) => { if (event.target === shell || event.target.closest('[data-close-team-manage]')) shell.hidden = true; });
     shell.querySelector('#teamManageAddPlayer').addEventListener('click', () => addRow(shell.querySelector('#teamManagePlayers')));
@@ -74,7 +83,7 @@
     form.dataset.teamId = team.id;
     form.elements.name.value = team.name || '';
     form.elements.tag.value = team.tag || '';
-    form.elements.logo.value = team.logo || '';
+    form.elements.logo.value = safeLogoUrl(team.logo) || '';
     form.elements.socialDiscord.value = team.socials?.discord || '';
     form.elements.socialInstagram.value = team.socials?.instagram || '';
     form.elements.socialYoutube.value = team.socials?.youtube || '';
@@ -109,6 +118,12 @@
     const shell = modal();
     const form = event.currentTarget;
     const status = shell.querySelector('#teamManageStatus');
+    const rawLogo = String(form.elements.logo.value || '').trim();
+    if (rawLogo && !safeLogoUrl(rawLogo)) {
+      status.textContent = 'Logo inválida. Use URL completa começando com https:// ou uma imagem colada como data:image.';
+      status.className = 'va-status err';
+      return;
+    }
     status.textContent = 'Salvando alterações...';
     try {
       await request(`/api/teams/${encodeURIComponent(form.dataset.teamId)}`, {
@@ -116,7 +131,7 @@
         body: JSON.stringify({
           name: form.elements.name.value,
           tag: form.elements.tag.value,
-          logo: form.elements.logo.value,
+          logo: safeLogoUrl(rawLogo),
           playerDetails: rows(shell.querySelector('#teamManagePlayers')),
           reserveDetails: rows(shell.querySelector('#teamManageReserves')),
           socials: { discord: form.elements.socialDiscord.value, instagram: form.elements.socialInstagram.value, youtube: form.elements.socialYoutube.value, tiktok: form.elements.socialTikTok.value, steam: form.elements.socialSteam.value, xbox: form.elements.socialXbox.value }
