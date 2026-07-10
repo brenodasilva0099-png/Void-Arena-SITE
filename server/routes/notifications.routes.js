@@ -1,5 +1,6 @@
 const storage = require('../storage');
 const { getSessionUser, requireOwner } = require('../services/access.service');
+const { callBot } = require('../services/botApi.service');
 
 const NOTIFICATION_CHANNEL = 'user-notifications';
 const ANNOUNCEMENT_CHANNEL = 'site-announcements';
@@ -41,30 +42,49 @@ function isForUser(notification = {}, user = {}) {
   return targets.some((target) => ids.includes(target));
 }
 
+function playerIdentityValues(user = {}) {
+  return [user.id, user.discordId, userName(user)].map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
+}
+
 function findPlayerAlreadyOnTeam(team = {}, user = {}) {
-  const ids = [user.id, user.discordId, userName(user)].map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
+  const ids = playerIdentityValues(user);
   const details = [...(Array.isArray(team.playerDetails) ? team.playerDetails : []), ...(Array.isArray(team.reserveDetails) ? team.reserveDetails : [])];
   if (details.some((player) => ids.includes(String(player.id || player.userId || player.discordId || player.name || '').trim().toLowerCase()))) return true;
   const simple = [...(Array.isArray(team.players) ? team.players : []), ...(Array.isArray(team.reserves) ? team.reserves : [])];
   return simple.some((name) => ids.includes(String(name || '').trim().toLowerCase()));
 }
 
-function addUserToTeam(team = {}, user = {}) {
+function addUserToTeam(team = {}, user = {}, notification = {}) {
   if (findPlayerAlreadyOnTeam(team, user)) return team;
+  const slot = String(notification.rosterSlot || notification.slot || notification.teamRole || 'player').toLowerCase() === 'reserve' ? 'reserve' : 'player';
   const next = { ...team };
-  next.playerDetails = Array.isArray(next.playerDetails) ? [...next.playerDetails] : [];
-  next.playerDetails.push({
+  const detail = {
     id: user.id || '',
     userId: user.id || '',
     name: userName(user),
     discordId: user.discordId || '',
     avatar: user.avatar || '',
     profile: user.profile || {},
-    type: 'player',
+    type: slot,
     acceptedAt: new Date().toISOString()
-  });
-  next.players = Array.isArray(next.players) ? [...next.players] : [];
-  if (!next.players.includes(userName(user))) next.players.push(userName(user));
+  };
+
+  if (slot === 'reserve') {
+    next.reserveDetails = Array.isArray(next.reserveDetails) ? [...next.reserveDetails] : [];
+    next.reserveDetails.push(detail);
+    next.reserves = Array.isArray(next.reserves) ? [...next.reserves] : [];
+    if (!next.reserves.includes(userName(user))) next.reserves.push(userName(user));
+    next.playerAccounts = { ...(next.playerAccounts || {}), reserves: Array.isArray(next.playerAccounts?.reserves) ? [...next.playerAccounts.reserves] : [] };
+    if (user.discordId && !next.playerAccounts.reserves.includes(user.discordId)) next.playerAccounts.reserves.push(user.discordId);
+  } else {
+    next.playerDetails = Array.isArray(next.playerDetails) ? [...next.playerDetails] : [];
+    next.playerDetails.push(detail);
+    next.players = Array.isArray(next.players) ? [...next.players] : [];
+    if (!next.players.includes(userName(user))) next.players.push(userName(user));
+    next.playerAccounts = { ...(next.playerAccounts || {}), players: Array.isArray(next.playerAccounts?.players) ? [...next.playerAccounts.players] : [] };
+    if (user.discordId && !next.playerAccounts.players.includes(user.discordId)) next.playerAccounts.players.push(user.discordId);
+  }
+
   next.updatedAt = new Date().toISOString();
   return next;
 }
@@ -72,6 +92,34 @@ function addUserToTeam(team = {}, user = {}) {
 async function readAnnouncements(limit = 80) {
   const messages = await storage.readChatMessages({ channelId: ANNOUNCEMENT_CHANNEL, limit }).catch(() => []);
   return messages.map(parseMessage).filter(isVisible).map((item) => ({ ...item, type: item.type || 'announcement', status: item.status || 'info' }));
+}
+
+async function sendRecruitmentDm({ target, viewer, team, rosterSlot, note }) {
+  const discordId = String(target?.discordId || '').trim();
+  if (!discordId) return { success: false, skipped: true, message: 'Jogador sem Discord ID.' };
+  const slotLabel = String(rosterSlot || 'player').toLowerCase() === 'reserve' ? 'reserva' : 'titular';
+  const siteUrl = String(process.env.SITE_PUBLIC_URL || process.env.PUBLIC_SITE_URL || 'https://void-arena-site.onrender.com').replace(/\/$/, '');
+  const content = [
+    '🤝 **Convite de recrutamento — Void Arena**',
+    '',
+    `O time **${team.name || 'um time'}${team.tag ? ` (${team.tag})` : ''}** quer te adicionar como **${slotLabel}**.`,
+    viewer ? `Enviado por: **${userName(viewer)}**` : '',
+    note ? `Mensagem: ${clean(note, 400)}` : '',
+    '',
+    `Entre no site para aceitar ou recusar: ${siteUrl}/pages/dashboard.html`,
+    'O jogador só entra no elenco depois que aceitar pelo site.'
+  ].filter(Boolean).join('\n');
+
+  return callBot('/internal/discord/message-player', {
+    method: 'POST',
+    body: JSON.stringify({
+      discordId,
+      content,
+      authorId: viewer?.id || '',
+      authorName: userName(viewer || {}),
+      meta: { type: 'recruitment_invite', teamId: team.id || '', rosterSlot }
+    })
+  }).catch((error) => ({ success: false, deliveredToDiscord: false, message: error.message, dmError: error.message }));
 }
 
 function registerNotificationRoutes(app) {
@@ -159,7 +207,7 @@ function registerNotificationRoutes(app) {
         const teams = await storage.readTeams().catch(() => []);
         team = teams.find((item) => String(item.id || '') === String(notification.team?.id || notification.teamId || '')) || null;
         if (!team) throw new Error('Time do convite não encontrado.');
-        const savedTeam = await storage.saveTeam(addUserToTeam(team, user));
+        const savedTeam = await storage.saveTeam(addUserToTeam(team, user, notification));
         team = savedTeam;
       }
 
@@ -178,35 +226,46 @@ function registerNotificationRoutes(app) {
   });
 }
 
-async function createRecruitmentNotification({ viewer, team, playerId, playerName, request, note }) {
+async function createRecruitmentNotification({ viewer, team, playerId, playerName, request, note, rosterSlot = 'player', teamRole = '' }) {
   const users = await storage.readUsers().catch(() => []);
   const target = users.find((user) => String(user.id || '') === String(playerId || '') || String(user.discordId || '') === String(playerId || '')) || null;
   if (!target) return null;
+  const slot = String(rosterSlot || teamRole || 'player').toLowerCase() === 'reserve' ? 'reserve' : 'player';
+  const slotLabel = slot === 'reserve' ? 'reserva' : 'titular';
+  const createdAt = new Date().toISOString();
 
-  return storage.saveChatMessage({
+  const content = {
+    type: 'recruitment_invite',
+    title: `${team.name || 'Um time'} quer te recrutar`,
+    message: `Convite para entrar como ${slotLabel}.`,
+    status: 'pending',
+    requestId: request?.id || '',
+    teamId: team.id || '',
+    team: { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: team.logo || '' },
+    userId: target.id || '',
+    targetUserId: target.id || '',
+    targetDiscordId: target.discordId || '',
+    playerId,
+    playerName: playerName || userName(target),
+    rosterSlot: slot,
+    teamRole: slotLabel,
+    sender: publicUser(viewer || {}),
+    note: note || '',
+    createdAt
+  };
+
+  const saved = await storage.saveChatMessage({
     channelId: NOTIFICATION_CHANNEL,
     source: 'system',
     authorId: viewer?.id || '',
     authorName: userName(viewer),
-    content: JSON.stringify({
-      type: 'recruitment_invite',
-      title: `${team.name || 'Um time'} quer te recrutar`,
-      status: 'pending',
-      requestId: request?.id || '',
-      teamId: team.id || '',
-      team: { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: team.logo || '' },
-      userId: target.id || '',
-      targetUserId: target.id || '',
-      targetDiscordId: target.discordId || '',
-      playerId,
-      playerName: playerName || userName(target),
-      sender: publicUser(viewer || {}),
-      note: note || '',
-      createdAt: new Date().toISOString()
-    }),
+    content: JSON.stringify(content),
     attachments: [],
-    createdAt: new Date().toISOString()
+    createdAt
   });
+
+  const discordDm = await sendRecruitmentDm({ target, viewer, team, rosterSlot: slot, note }).catch((error) => ({ success: false, message: error.message }));
+  return { ...saved, discordDm };
 }
 
 module.exports = { registerNotificationRoutes, createRecruitmentNotification };
