@@ -40,6 +40,8 @@ body[data-page="chaveamento"] .va-integrated-bracket { padding-top: 10px !import
 .va-notification-item { margin-top: 12px; padding: 14px; border-radius: 16px; border: 1px solid rgba(139,92,246,.24); background: rgba(255,255,255,.045); }
 .va-notification-item strong, .va-notification-item p { display: block; margin: 0 0 8px; }
 .va-notification-item p { color: #d8d0ff; }
+.va-social-card-icon .va-social-logo-img, .va-social-logo-youtube-img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 10px !important; display: block !important; }
+.va-social-card-icon:has(.va-social-logo-youtube-img) { overflow: hidden; background: #000; }
 .va-access-denied { margin-top: 16px; }
 .va-legal-grid { gap: 16px; }
 .va-legal-grid .va-card { border-color: rgba(139,92,246,.24); background: linear-gradient(180deg, rgba(15, 18, 38, .94), rgba(11, 9, 26, .96)); }
