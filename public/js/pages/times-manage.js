@@ -3,31 +3,15 @@
   let teams = [];
 
   async function request(path, options = {}) {
-    const response = await fetch(path, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-      ...options
-    });
+    const response = await fetch(path, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }, ...options });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.success === false) throw new Error(data.message || `Falha (${response.status}).`);
     return data;
   }
 
   function cleanDiscord(value = '') { return String(value || '').replace(/^<@!?/, '').replace(/>$/, '').trim(); }
-  function safeLogoUrl(value = '') {
-    const raw = String(value || '').trim();
-    if (!raw) return '';
-    if (/^data:image\//i.test(raw)) return raw;
-    if (/^blob:/i.test(raw)) return raw;
-    if (/^https?:\/\//i.test(raw)) return raw;
-    if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw;
-    return '';
-  }
-  function teamPlayers(team, key, fallbackKey) {
-    const detailed = Array.isArray(team[key]) ? team[key] : [];
-    if (detailed.length) return detailed;
-    return Array.isArray(team[fallbackKey]) ? team[fallbackKey].map((name, index) => ({ name, discordId: team.playerAccounts?.[fallbackKey === 'players' ? 'players' : 'reserves']?.[index] || '' })) : [];
-  }
+  function safeLogoUrl(value = '') { const raw = String(value || '').trim(); if (!raw) return ''; if (/^data:image\//i.test(raw)) return raw; if (/^blob:/i.test(raw)) return raw; if (/^https?:\/\//i.test(raw)) return raw; if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw; return ''; }
+  function teamPlayers(team, key, fallbackKey) { const detailed = Array.isArray(team[key]) ? team[key] : []; if (detailed.length) return detailed; return Array.isArray(team[fallbackKey]) ? team[fallbackKey].map((name, index) => ({ name, discordId: team.playerAccounts?.[fallbackKey === 'players' ? 'players' : 'reserves']?.[index] || '' })) : []; }
   function allRoster(team) { return [...teamPlayers(team, 'playerDetails', 'players'), ...teamPlayers(team, 'reserveDetails', 'reserves')]; }
   function registeredRoster(team) { return allRoster(team).filter((p) => String(p.id || p.discordId || '').trim()); }
 
@@ -40,10 +24,7 @@
   }
 
   function rows(container) {
-    return Array.from(container.querySelectorAll('.va-roster-row')).map((row) => ({
-      name: row.querySelector('[data-name]')?.value || '',
-      discordId: cleanDiscord(row.querySelector('[data-discord]')?.value || '')
-    })).filter((item) => item.name.trim());
+    return Array.from(container.querySelectorAll('.va-roster-row')).map((row) => ({ name: row.querySelector('[data-name]')?.value || '', discordId: cleanDiscord(row.querySelector('[data-discord]')?.value || '') })).filter((item) => item.name.trim());
   }
 
   function modal() {
@@ -53,7 +34,7 @@
     shell.id = 'teamManageModal';
     shell.className = 'va-modal-shell';
     shell.hidden = true;
-    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Editar time</p><h2 id="teamManageTitle">Editar time</h2><p class="va-muted">Capitão criador edita o próprio time. Dono/admin pode editar qualquer time.</p></div><button class="va-modal-close" data-close-team-manage type="button">×</button></div><form id="teamManageForm" class="va-form-grid two"><label>Nome<input name="name" required maxlength="80" /></label><label>Tag<input name="tag" required maxlength="8" /></label><label class="wide">Logo / escudo<input name="logo" maxlength="650000" placeholder="https://... ou data:image/..." /></label><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Titulares</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddPlayer" class="va-btn" type="button">+ Titular</button></div><div id="teamManagePlayers" class="va-player-editor-list"></div></div><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Reservas</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddReserve" class="va-btn" type="button">+ Reserva</button></div><div id="teamManageReserves" class="va-player-editor-list"></div></div><label>Discord<input name="socialDiscord" /></label><label>Instagram<input name="socialInstagram" /></label><label>YouTube<input name="socialYoutube" /></label><label>TikTok<input name="socialTikTok" /></label><label>Steam<input name="socialSteam" /></label><label>Xbox<input name="socialXbox" /></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar alterações</button><button class="va-btn" data-close-team-manage type="button">Cancelar</button></div></form><div id="teamManageStatus" class="va-status"></div></div>`;
+    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Editar time</p><h2 id="teamManageTitle">Editar time</h2><p class="va-muted">Diretor/dono, capitão criador ou admin pode editar o time.</p></div><button class="va-modal-close" data-close-team-manage type="button">×</button></div><form id="teamManageForm" class="va-form-grid two"><label>Nome<input name="name" required maxlength="80" /></label><label>Tag<input name="tag" required maxlength="8" /></label><div class="wide va-roster-editor va-leadership-editor"><div class="va-section-head mini"><div><h3>Diretoria</h3><p>Diretor é o dono/responsável principal. Capitão aparece logo abaixo no perfil público.</p></div></div><div class="va-form-grid two flat"><label>Diretor / dono<input name="directorName" maxlength="80" /></label><label>ID Discord do diretor<input name="directorDiscordId" maxlength="40" /></label><label>Capitão<input name="captainName" maxlength="80" /></label><label>ID Discord do capitão<input name="captainDiscordId" maxlength="40" /></label></div></div><label class="wide">Logo / escudo<input name="logo" maxlength="650000" placeholder="https://... ou data:image/..." /></label><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Titulares</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddPlayer" class="va-btn" type="button">+ Titular</button></div><div id="teamManagePlayers" class="va-player-editor-list"></div></div><div class="wide va-roster-editor"><div class="va-section-head mini"><div><h3>Reservas</h3><p>Nome + ID Discord.</p></div><button id="teamManageAddReserve" class="va-btn" type="button">+ Reserva</button></div><div id="teamManageReserves" class="va-player-editor-list"></div></div><label>Discord<input name="socialDiscord" /></label><label>Instagram<input name="socialInstagram" /></label><label>YouTube<input name="socialYoutube" /></label><label>TikTok<input name="socialTikTok" /></label><label>Steam<input name="socialSteam" /></label><label>Xbox<input name="socialXbox" /></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar alterações</button><button class="va-btn" data-close-team-manage type="button">Cancelar</button></div></form><div id="teamManageStatus" class="va-status"></div></div>`;
     document.body.appendChild(shell);
     shell.addEventListener('click', (event) => { if (event.target === shell || event.target.closest('[data-close-team-manage]')) shell.hidden = true; });
     shell.querySelector('#teamManageAddPlayer').addEventListener('click', () => addRow(shell.querySelector('#teamManagePlayers')));
@@ -68,7 +49,7 @@
     shell.id = 'teamTransferCaptainModal';
     shell.className = 'va-modal-shell';
     shell.hidden = true;
-    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Transferir capitão</p><h2 id="teamTransferTitle">Transferir capitão</h2><p class="va-muted">Transfere a posse do time para um jogador cadastrado/vinculado no site, sem perder elenco, inscrições ou histórico.</p></div><button class="va-modal-close" data-close-transfer type="button">×</button></div><form id="teamTransferForm" class="va-form-grid"><label>Novo capitão<select name="captain" required></select></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Confirmar transferência</button><button class="va-btn" data-close-transfer type="button">Cancelar</button></div></form><div id="teamTransferStatus" class="va-status"></div></div>`;
+    shell.innerHTML = `<div class="va-modal-card va-team-create-modal"><div class="va-modal-head"><div><p class="va-eyebrow">Transferir capitão</p><h2 id="teamTransferTitle">Transferir capitão</h2><p class="va-muted">Transfere o capitão para um jogador cadastrado/vinculado no site, sem perder elenco, inscrições ou histórico.</p></div><button class="va-modal-close" data-close-transfer type="button">×</button></div><form id="teamTransferForm" class="va-form-grid"><label>Novo capitão<select name="captain" required></select></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Confirmar transferência</button><button class="va-btn" data-close-transfer type="button">Cancelar</button></div></form><div id="teamTransferStatus" class="va-status"></div></div>`;
     document.body.appendChild(shell);
     shell.addEventListener('click', (event) => { if (event.target === shell || event.target.closest('[data-close-transfer]')) shell.hidden = true; });
     return shell;
@@ -83,6 +64,10 @@
     form.dataset.teamId = team.id;
     form.elements.name.value = team.name || '';
     form.elements.tag.value = team.tag || '';
+    form.elements.directorName.value = team.directorName || team.ownerName || '';
+    form.elements.directorDiscordId.value = team.directorDiscordId || '';
+    form.elements.captainName.value = team.captainName || '';
+    form.elements.captainDiscordId.value = team.captainDiscordId || '';
     form.elements.logo.value = safeLogoUrl(team.logo) || '';
     form.elements.socialDiscord.value = team.socials?.discord || '';
     form.elements.socialInstagram.value = team.socials?.instagram || '';
@@ -119,31 +104,17 @@
     const form = event.currentTarget;
     const status = shell.querySelector('#teamManageStatus');
     const rawLogo = String(form.elements.logo.value || '').trim();
-    if (rawLogo && !safeLogoUrl(rawLogo)) {
-      status.textContent = 'Logo inválida. Use URL completa começando com https:// ou uma imagem colada como data:image.';
-      status.className = 'va-status err';
-      return;
-    }
+    if (rawLogo && !safeLogoUrl(rawLogo)) { status.textContent = 'Logo inválida. Use URL completa começando com https:// ou uma imagem colada como data:image.'; status.className = 'va-status err'; return; }
     status.textContent = 'Salvando alterações...';
     try {
       await request(`/api/teams/${encodeURIComponent(form.dataset.teamId)}`, {
         method: 'PUT',
-        body: JSON.stringify({
-          name: form.elements.name.value,
-          tag: form.elements.tag.value,
-          logo: safeLogoUrl(rawLogo),
-          playerDetails: rows(shell.querySelector('#teamManagePlayers')),
-          reserveDetails: rows(shell.querySelector('#teamManageReserves')),
-          socials: { discord: form.elements.socialDiscord.value, instagram: form.elements.socialInstagram.value, youtube: form.elements.socialYoutube.value, tiktok: form.elements.socialTikTok.value, steam: form.elements.socialSteam.value, xbox: form.elements.socialXbox.value }
-        })
+        body: JSON.stringify({ name: form.elements.name.value, tag: form.elements.tag.value, logo: safeLogoUrl(rawLogo), directorName: form.elements.directorName.value, directorDiscordId: cleanDiscord(form.elements.directorDiscordId.value), captainName: form.elements.captainName.value, captainDiscordId: cleanDiscord(form.elements.captainDiscordId.value), playerDetails: rows(shell.querySelector('#teamManagePlayers')), reserveDetails: rows(shell.querySelector('#teamManageReserves')), socials: { discord: form.elements.socialDiscord.value, instagram: form.elements.socialInstagram.value, youtube: form.elements.socialYoutube.value, tiktok: form.elements.socialTikTok.value, steam: form.elements.socialSteam.value, xbox: form.elements.socialXbox.value } })
       });
       status.textContent = 'Time atualizado.';
       status.className = 'va-status ok';
       setTimeout(() => window.location.reload(), 700);
-    } catch (error) {
-      status.textContent = `Erro: ${error.message}`;
-      status.className = 'va-status err';
-    }
+    } catch (error) { status.textContent = `Erro: ${error.message}`; status.className = 'va-status err'; }
   }
 
   async function saveTransfer(event) {
@@ -155,24 +126,14 @@
     status.textContent = 'Transferindo capitão...';
     status.className = 'va-status';
     try {
-      await request(`/api/teams/${encodeURIComponent(form.dataset.teamId)}/transfer-captain`, {
-        method: 'POST',
-        body: JSON.stringify({ userId: selected?.dataset?.userId || '', discordId: selected?.dataset?.discordId || selected?.value || '' })
-      });
+      await request(`/api/teams/${encodeURIComponent(form.dataset.teamId)}/transfer-captain`, { method: 'POST', body: JSON.stringify({ userId: selected?.dataset?.userId || '', discordId: selected?.dataset?.discordId || selected?.value || '' }) });
       status.textContent = 'Capitão transferido com sucesso.';
       status.className = 'va-status ok';
       setTimeout(() => window.location.reload(), 700);
-    } catch (error) {
-      status.textContent = `Erro: ${error.message}`;
-      status.className = 'va-status err';
-    }
+    } catch (error) { status.textContent = `Erro: ${error.message}`; status.className = 'va-status err'; }
   }
 
-  async function removeTeam(team) {
-    if (!confirm(`Excluir o time ${team.name}?`)) return;
-    try { await request(`/api/teams/${encodeURIComponent(team.id)}`, { method: 'DELETE' }); window.location.reload(); }
-    catch (error) { alert(`Erro ao excluir: ${error.message}`); }
-  }
+  async function removeTeam(team) { if (!confirm(`Excluir o time ${team.name}?`)) return; try { await request(`/api/teams/${encodeURIComponent(team.id)}`, { method: 'DELETE' }); window.location.reload(); } catch (error) { alert(`Erro ao excluir: ${error.message}`); } }
 
   async function enhance() {
     const data = await request('/api/teams').catch(() => ({ teams: [] }));
@@ -189,8 +150,10 @@
       actions.children[2].addEventListener('click', (event) => { event.stopPropagation(); removeTeam(team); });
       card.appendChild(actions);
     });
-    modal().querySelector('#teamManageForm').addEventListener('submit', saveEdit, { once: false });
-    transferModal().querySelector('#teamTransferForm').addEventListener('submit', saveTransfer, { once: false });
+    const manageForm = modal().querySelector('#teamManageForm');
+    if (!manageForm.dataset.bound) { manageForm.dataset.bound = '1'; manageForm.addEventListener('submit', saveEdit); }
+    const transferForm = transferModal().querySelector('#teamTransferForm');
+    if (!transferForm.dataset.bound) { transferForm.dataset.bound = '1'; transferForm.addEventListener('submit', saveTransfer); }
   }
 
   setTimeout(enhance, 1200);
