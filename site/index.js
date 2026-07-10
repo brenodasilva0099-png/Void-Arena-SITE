@@ -3,6 +3,7 @@ require('dotenv').config();
 const http = require('node:http');
 const { createServer } = require('../server/app');
 const { createRealtimeServer } = require('../server/realtime');
+const { registerStaticAssetGuard } = require('../server/routes/staticAssetGuard.routes');
 const { registerOrganizedRoutes } = require('../server/bootstrap/organizedRoutes');
 const { registerDebugRoutes } = require('../server/routes/debug.routes');
 const { registerPublicEventRoutes } = require('../server/routes/publicEvent.routes');
@@ -23,6 +24,7 @@ const { registerDiscordServerLinkRoutes } = require('../server/routes/discordSer
 const PORT = Number(process.env.PORT || 3000);
 
 const app = createServer({ client: null });
+registerStaticAssetGuard(app);
 registerOrganizedRoutes(app);
 registerDebugRoutes(app);
 registerPublicTeamRoutes(app);
