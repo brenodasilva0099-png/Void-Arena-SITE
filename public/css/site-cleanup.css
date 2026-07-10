@@ -7,7 +7,7 @@
 .pitch-center-circle { border: 0 !important; width: 74px !important; height: 74px !important; display: grid !important; place-items: center !important; opacity: .72; filter: drop-shadow(0 0 18px rgba(255,255,255,.18)); }
 .pitch-center-circle::before { content: '⚽' !important; position: static !important; width: auto !important; height: auto !important; transform: none !important; background: transparent !important; border-radius: 0 !important; font-size: 34px; line-height: 1; }
 .ball { width: auto !important; height: auto !important; min-width: 28px; min-height: 28px; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; display: grid !important; place-items: center !important; opacity: .78 !important; filter: drop-shadow(0 0 18px rgba(255,255,255,.18)); }
-.ball::before { content: '⚽' !important; position: static !important; width: auto !important; height: auto !important; background: transparent !important; border-radius: 0 !important; font-size: 24px; line-height: 1; }
+.ball::before { content: '⚽' !important; position: static !important; width: auto !important; height: auto !important; background: transparent !important; font-size: 24px; line-height: 1; }
 .ball::after { display: none !important; content: none !important; }
 .hero-message-card h3 { line-height: 1.08; }
 .discord-recommendation { margin-top: 14px; padding: 12px 14px; border: 1px solid rgba(34,211,238,.26); border-radius: 16px; background: rgba(34,211,238,.08); color: #d8f7ff; font-weight: 850; line-height: 1.45; }
@@ -40,8 +40,13 @@ body[data-page="chaveamento"] .va-integrated-bracket { padding-top: 10px !import
 .va-notification-item { margin-top: 12px; padding: 14px; border-radius: 16px; border: 1px solid rgba(139,92,246,.24); background: rgba(255,255,255,.045); }
 .va-notification-item strong, .va-notification-item p { display: block; margin: 0 0 8px; }
 .va-notification-item p { color: #d8d0ff; }
-.va-social-card-icon .va-social-logo-img, .va-social-logo-youtube-img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 10px !important; display: block !important; }
+.va-social-card-icon .va-social-logo-img, .va-social-logo-youtube-img { width: 100% !important; height: 100% !important; object-fit: contain !important; border-radius: 10px !important; display: block !important; }
+.va-social-card-icon .va-social-logo-youtube-img { transform: scale(2.55); transform-origin: center; }
 .va-social-card-icon:has(.va-social-logo-youtube-img) { overflow: hidden; background: #000; }
+.va-roster-select-label { grid-column: 1 / -1; display: grid; gap: 6px; }
+.va-roster-select-label select, [data-leadership-select] { width: 100%; border: 1px solid rgba(34,211,238,.30); background: #020617; color: #f8f7ff; border-radius: 12px; padding: 10px 12px; font: inherit; font-weight: 850; }
+.va-roster-row.is-pending-invite { border-color: rgba(34,211,238,.42) !important; background: linear-gradient(135deg,rgba(34,211,238,.08),rgba(139,92,246,.06)) !important; }
+.va-roster-row.is-pending-invite::after { content: 'Convite'; align-self: center; justify-self: start; padding: 6px 10px; border-radius: 999px; background: rgba(34,211,238,.12); border: 1px solid rgba(34,211,238,.24); color: #67e8f9; font-size: 11px; font-weight: 1000; text-transform: uppercase; letter-spacing: .08em; }
 .va-team-leadership { display: grid; gap: 2px; margin: 4px 0 8px; }
 .va-team-leadership p { margin: 0; }
 .va-leader-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
