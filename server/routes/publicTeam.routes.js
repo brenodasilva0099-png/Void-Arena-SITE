@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { createRecruitmentNotification } = require('./notifications.routes');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 function requireLogin(req, res, next) {
@@ -49,9 +50,25 @@ function publicUser(user = {}) { return { id: user.id || '', name: user.name || 
 function normalizePlayers(value = []) {
   const source = Array.isArray(value) ? value : [];
   return source.map((item) => {
-    if (typeof item === 'string') return { name: clean(item, 80), discordId: '' };
-    return { name: clean(item?.name || item?.playerName || '', 80), discordId: clean(item?.discordId || item?.discord || item?.account || '', 40), role: clean(item?.role || '', 40) };
+    if (typeof item === 'string') return { name: clean(item, 80), discordId: '', id: '', userId: '', inviteOnly: false };
+    return {
+      id: clean(item?.id || item?.userId || '', 80),
+      userId: clean(item?.userId || item?.id || '', 80),
+      name: clean(item?.name || item?.playerName || '', 80),
+      discordId: clean(splitDiscordId(item?.discordId || item?.discord || item?.account || '') || item?.discordId || item?.discord || item?.account || '', 40),
+      role: clean(item?.role || '', 40),
+      inviteOnly: item?.inviteOnly === true || item?.pendingInvite === true
+    };
   }).filter((item) => item.name).slice(0, 12);
+}
+
+function normalizeInvites(value = []) {
+  return (Array.isArray(value) ? value : []).map((item) => ({
+    playerId: clean(item?.playerId || item?.userId || item?.id || item?.discordId || '', 100),
+    playerName: clean(item?.playerName || item?.name || 'Jogador', 120),
+    rosterSlot: String(item?.rosterSlot || item?.slot || 'player').toLowerCase() === 'reserve' ? 'reserve' : 'player',
+    note: clean(item?.note || '', 500)
+  })).filter((item) => item.playerId).slice(0, 24);
 }
 
 function findUserByDiscord(usersByDiscord, discordId = '') { return usersByDiscord.get(String(splitDiscordId(discordId) || discordId || '').trim()) || null; }
@@ -97,8 +114,15 @@ function canManageTeam(user = null, team = {}) {
 }
 
 function buildTeamPayload(body = {}, user = {}, existing = null) {
-  const playerDetails = normalizePlayers(body.playerDetails || body.playersDetailed || []);
-  const reserveDetails = normalizePlayers(body.reserveDetails || body.reservesDetailed || []);
+  const allPlayerDetails = normalizePlayers(body.playerDetails || body.playersDetailed || []);
+  const allReserveDetails = normalizePlayers(body.reserveDetails || body.reservesDetailed || []);
+  const inviteRequests = [
+    ...normalizeInvites(body.inviteRequests || body.pendingInvites || []),
+    ...allPlayerDetails.filter((item) => item.inviteOnly).map((item) => ({ playerId: item.userId || item.id || item.discordId, playerName: item.name, rosterSlot: 'player' })),
+    ...allReserveDetails.filter((item) => item.inviteOnly).map((item) => ({ playerId: item.userId || item.id || item.discordId, playerName: item.name, rosterSlot: 'reserve' }))
+  ];
+  const playerDetails = allPlayerDetails.filter((item) => !item.inviteOnly).map(({ inviteOnly, ...item }) => item);
+  const reserveDetails = allReserveDetails.filter((item) => !item.inviteOnly).map(({ inviteOnly, ...item }) => item);
   const players = playerDetails.length ? playerDetails.map((item) => item.name) : normalizePlayers((body.players || []).map((name) => ({ name }))).map((item) => item.name);
   const reserves = reserveDetails.length ? reserveDetails.map((item) => item.name) : normalizePlayers((body.reserves || []).map((name) => ({ name }))).map((item) => item.name);
   const playerIds = playerDetails.map((item) => clean(item.discordId, 40));
@@ -108,7 +132,7 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
   const tag = clean(body.tag, 8).toUpperCase();
   if (!name) throw new Error('Informe o nome do time.');
   if (!tag) throw new Error('Informe a tag do time.');
-  if (players.length < 1) throw new Error('Adicione pelo menos um titular.');
+  if (players.length < 1 && inviteRequests.length < 1) throw new Error('Adicione pelo menos um titular ou selecione um jogador livre para convidar.');
 
   const now = new Date().toISOString();
   const ownerUserId = existing?.ownerUserId || user.id || '';
@@ -122,11 +146,28 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
   const captainDiscordId = clean(splitDiscordId(body.captainDiscordId || body.captain?.discordId || '') || body.captainDiscordId || body.captain?.discordId || existing?.captainDiscordId || playerIds.find(Boolean) || '', 40);
   const captainUserId = clean(body.captainUserId || existing?.captainUserId || '', 80);
 
-  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo, ownerUserId, ownerName, directorUserId, directorName, directorDiscordId, captainUserId, captainName, captainDiscordId, players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, socials: { discord: clean(body.socials?.discord || body.socialDiscord || '', 180), instagram: clean(body.socials?.instagram || body.socialInstagram || '', 160), youtube: clean(body.socials?.youtube || body.socialYoutube || '', 180), tiktok: clean(body.socials?.tiktok || body.socialTikTok || '', 160), steam: clean(body.socials?.steam || body.socialSteam || '', 180), xbox: clean(body.socials?.xbox || body.socialXbox || '', 160), website: clean(body.socials?.website || body.socialWebsite || '', 180) }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
+  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo, ownerUserId, ownerName, directorUserId, directorName, directorDiscordId, captainUserId, captainName, captainDiscordId, players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, inviteRequests, socials: { discord: clean(body.socials?.discord || body.socialDiscord || '', 180), instagram: clean(body.socials?.instagram || body.socialInstagram || '', 160), youtube: clean(body.socials?.youtube || body.socialYoutube || '', 180), tiktok: clean(body.socials?.tiktok || body.socialTikTok || '', 160), steam: clean(body.socials?.steam || body.socialSteam || '', 180), xbox: clean(body.socials?.xbox || body.socialXbox || '', 160), website: clean(body.socials?.website || body.socialWebsite || '', 180) }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
+}
+
+async function sendTeamInvites({ viewer, team, inviteRequests = [] }) {
+  const sent = [];
+  for (const invite of inviteRequests) {
+    const notification = await createRecruitmentNotification({
+      viewer,
+      team,
+      playerId: invite.playerId,
+      playerName: invite.playerName,
+      request: null,
+      rosterSlot: invite.rosterSlot,
+      note: invite.note || `Convite para entrar como ${invite.rosterSlot === 'reserve' ? 'reserva' : 'titular'} em ${team.name || 'time'}.`
+    }).catch((error) => ({ success: false, message: error.message, playerId: invite.playerId }));
+    sent.push({ playerId: invite.playerId, playerName: invite.playerName, rosterSlot: invite.rosterSlot, notification });
+  }
+  return sent;
 }
 
 function registerPublicTeamRoutes(app) {
-  removeRoutes(app, [['get', '/api/teams'], ['post', '/api/teams'], ['put', '/api/teams/:teamId'], ['delete', '/api/teams/:teamId'], ['get', '/api/teams/:teamId/public'], ['get', '/api/users/:userId/public']]);
+  removeRoutes(app, [['get', '/api/teams'], ['post', '/api/teams'], ['put', '/api/teams/:teamId'], ['delete', '/api/teams/:teamId'], ['post', '/api/teams/:teamId/invite-player'], ['get', '/api/teams/:teamId/public'], ['get', '/api/users/:userId/public']]);
 
   app.get('/api/teams', async (req, res) => {
     const [teams, users, bracket, viewer] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => []), storage.readBracket().catch(() => ({})), getSessionUser(req)]);
@@ -134,8 +175,16 @@ function registerPublicTeamRoutes(app) {
   });
 
   app.post('/api/teams', requireLogin, async (req, res) => {
-    try { const user = await getSessionUser(req); const team = buildTeamPayload(req.body || {}, user || {}); const saved = await storage.saveTeam(team); const users = await storage.readUsers().catch(() => []); return res.status(201).json({ success: true, team: enrichTeam(saved, users, user) }); }
-    catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+    try {
+      const user = await getSessionUser(req);
+      const payload = buildTeamPayload(req.body || {}, user || {});
+      const inviteRequests = payload.inviteRequests || [];
+      delete payload.inviteRequests;
+      const saved = await storage.saveTeam(payload);
+      const inviteResults = await sendTeamInvites({ viewer: user, team: saved, inviteRequests });
+      const users = await storage.readUsers().catch(() => []);
+      return res.status(201).json({ success: true, team: enrichTeam(saved, users, user), inviteResults });
+    } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 
   app.put('/api/teams/:teamId', requireLogin, async (req, res) => {
@@ -144,9 +193,26 @@ function registerPublicTeamRoutes(app) {
       const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
       if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
       if (!canManageTeam(user, existing)) return res.status(403).json({ success: false, message: 'Apenas diretor, capitao ou dono/admin pode editar esse time.' });
-      const saved = await storage.saveTeam(buildTeamPayload({ ...(req.body || {}), id: existing.id }, user || {}, existing));
+      const payload = buildTeamPayload({ ...(req.body || {}), id: existing.id }, user || {}, existing);
+      const inviteRequests = payload.inviteRequests || [];
+      delete payload.inviteRequests;
+      const saved = await storage.saveTeam(payload);
+      const inviteResults = await sendTeamInvites({ viewer: user, team: saved, inviteRequests });
       const users = await storage.readUsers().catch(() => []);
-      return res.json({ success: true, team: enrichTeam(saved, users, user) });
+      return res.json({ success: true, team: enrichTeam(saved, users, user), inviteResults });
+    } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+  });
+
+  app.post('/api/teams/:teamId/invite-player', requireLogin, async (req, res) => {
+    try {
+      const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
+      const team = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
+      if (!team) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
+      if (!canManageTeam(user, team)) return res.status(403).json({ success: false, message: 'Apenas diretor, capitao ou dono/admin pode convidar jogador.' });
+      const invite = normalizeInvites([{ ...req.body, playerId: req.body?.playerId || req.body?.userId || req.body?.discordId }])[0];
+      if (!invite) return res.status(400).json({ success: false, message: 'Selecione um jogador cadastrado.' });
+      const [result] = await sendTeamInvites({ viewer: user, team, inviteRequests: [invite] });
+      return res.json({ success: true, invite: result });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 
