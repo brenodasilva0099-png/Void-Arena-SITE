@@ -6,7 +6,20 @@ if (!fs.existsSync(file)) process.exit(0);
 let src = fs.readFileSync(file, 'utf8');
 let changed = false;
 
-src = src.replace('maxAge: 1000 * 60 * 60 * 24 * 7,', 'maxAge: Number(process.env.SESSION_MAX_AGE_MS || 1000 * 60 * 60 * 24 * 30) || 1000 * 60 * 60 * 24 * 30,');
+function replaceOnce(from, to) {
+  if (src.includes(from)) {
+    src = src.replace(from, to);
+    changed = true;
+  }
+}
+
+replaceOnce('maxAge: 1000 * 60 * 60 * 24 * 7,', 'maxAge: Number(process.env.SESSION_MAX_AGE_MS || 1000 * 60 * 60 * 24 * 30) || 1000 * 60 * 60 * 24 * 30,');
+
+// Durante deploy/recuperacao do banco, o BOT pode ficar alguns segundos sem devolver
+// o usuario restaurado. Nao destruimos a sessao nesse intervalo para evitar obrigar
+// login novo a cada atualizacao.
+replaceOnce("      req.session.destroy(() => {});\n      return res.status(401).json({ success: false, message: 'Sessão inválida.' });", "      return res.status(503).json({ success: false, message: 'Banco carregando sua sessão. Tente novamente em alguns segundos.' });");
+replaceOnce("      req.session.destroy(() => {});\n      return res.status(401).json({ success: false, message: 'Sessão inválida.' });", "      return res.status(503).json({ success: false, message: 'Banco carregando sua sessão. Tente novamente em alguns segundos.' });");
 
 if (!src.includes('function signStatelessSessionPayload')) {
   const helpers = `
@@ -38,7 +51,7 @@ function verifyStatelessSessionPayload(token = '') {
   return payload;
 }
 `;
-  src = src.replace("function createServer({ client }) {", helpers + "\nfunction createServer({ client }) {");
+  src = src.replace('function createServer({ client }) {', helpers + '\nfunction createServer({ client }) {');
   changed = true;
 }
 
@@ -82,4 +95,4 @@ if (!src.includes("const STATELESS_LOGIN_COOKIE = 'void.arena.login';")) {
 }
 
 if (changed) fs.writeFileSync(file, src, 'utf8');
-console.log(changed ? 'Patch aplicado: sessão stateless fallback ativa para Render Free.' : 'Patch ignorado: sessão stateless já ativa.');
+console.log(changed ? 'Patch aplicado: sessao stateless/anti-logout ativa para Render.' : 'Patch ignorado: sessao stateless ja ativa.');
