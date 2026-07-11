@@ -51,7 +51,6 @@
     const canDelete = Boolean(directory.isAdmin && !sameAsViewer(player));
     return `<div class="va-directory-actions"><button class="va-btn mini secondary" data-open-player="${esc(id)}" type="button">Perfil</button><button class="va-btn mini" data-recruit-player="${esc(id)}" data-player-name="${esc(player.name)}" type="button">Recrutar</button>${canDelete ? `<button class="va-btn mini danger" data-delete-player="${esc(id)}" data-player-name="${esc(player.name)}" type="button">Excluir</button>` : ''}</div>`;
   }
-
   function renderDirectory() {
     if (!directoryTable) return;
     const rows = directory.players || [];
@@ -61,11 +60,29 @@
     directoryTable.querySelectorAll('[data-delete-player]').forEach((btn) => btn.addEventListener('click', () => deletePlayer(btn.dataset.deletePlayer, btn.dataset.playerName).catch((error) => setStatus(directoryStatus, `❌ ${error.message}`, 'err'))));
     setStatus(directoryStatus, '', 'ok');
   }
-
   function renderRequests(requests = []) { if (!recruitmentTable) return; recruitmentTable.innerHTML = '<thead><tr><th>Tipo</th><th>Time</th><th>Jogador/solicitante</th><th>Status</th><th>Mensagem</th><th>Ação</th></tr></thead><tbody>' + (requests.length ? requests.map((r) => `<tr class="${r.status === 'cancelled' ? 'is-muted-row' : ''}"><td><span class="va-badge">${r.type === 'trial' ? 'Peneira' : 'Recrutamento'}</span></td><td><strong>${esc(r.team?.name || '')}</strong><small>${esc(r.team?.tag || '')}</small></td><td><strong>${esc(r.type === 'trial' ? r.requester?.name : (r.playerName || 'Jogador'))}</strong></td><td>${requestStatusBadge(r.status)}</td><td>${esc(r.note || (r.status === 'cancelled' ? 'Solicitação removida/cancelada.' : 'Sem observação.'))}</td><td>${r.canCancel ? `<button class="va-btn mini danger" data-cancel-request="${esc(r.id)}" type="button">Remover</button>` : '<span class="va-muted">—</span>'}</td></tr>`).join('') : '<tr><td colspan="6">Nenhuma solicitação registrada ainda.</td></tr>') + '</tbody>'; recruitmentTable.querySelectorAll('[data-cancel-request]').forEach((btn) => btn.addEventListener('click', () => cancelRequest(btn.dataset.cancelRequest))); }
-  async function loadDirectory() { setStatus(directoryStatus, 'Carregando banco de jogadores...'); directory = await VoidArena.request('/api/players/directory'); const pending = consumePendingRecruitment(); if (pending && typeSelect) { directory.selectedPlayer = pending; typeSelect.value = 'recruitment'; setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${pending.name}`, 'ok'); } fillTeamSelect(); renderSelectedPlayer(); renderDirectory(); }
-  async function loadRequests() { if (!recruitmentTable) return; const data = await VoidArena.request('/api/recruitment/requests'); renderRequests(data.requests || []); }
-  async function deletePlayer(playerId, playerName = 'jogador') { if (!directory.isAdmin) throw new Error('Apenas administrador pode excluir jogadores.'); if (!playerId) throw new Error('Jogador inválido.'); if (!confirm(`Ocultar ${playerName || 'este jogador'} do banco e remover dos elencos vinculados?`)) return; setStatus(directoryStatus, `Excluindo ${playerName || 'jogador'}...`); const data = await VoidArena.request(`/api/players/${encodeURIComponent(playerId)}`, { method: 'DELETE', timeoutMs: 15000 }); setStatus(directoryStatus, data.message || 'Jogador removido.', 'ok'); await loadDirectory(); }
+  async function loadDirectory() { setStatus(directoryStatus, 'Carregando banco de jogadores...'); directory = await VoidArena.request('/api/players/directory', { timeoutMs: 20000 }); const pending = consumePendingRecruitment(); if (pending && typeSelect) { directory.selectedPlayer = pending; typeSelect.value = 'recruitment'; setStatus(recruitmentStatus, `Jogador selecionado para recrutamento: ${pending.name}`, 'ok'); } fillTeamSelect(); renderSelectedPlayer(); renderDirectory(); }
+  async function loadRequests() { if (!recruitmentTable) return; const data = await VoidArena.request('/api/recruitment/requests', { timeoutMs: 12000 }); renderRequests(data.requests || []); }
+  async function deletePlayer(playerId, playerName = 'jogador') {
+    if (!directory.isAdmin) throw new Error('Apenas administrador pode excluir jogadores.');
+    if (!playerId) throw new Error('Jogador inválido.');
+    if (!confirm(`Ocultar ${playerName || 'este jogador'} do banco e remover dos elencos vinculados?`)) return;
+    const before = directory.players || [];
+    directory.players = before.filter((p) => idOf(p) !== String(playerId));
+    renderDirectory();
+    setStatus(directoryStatus, `Excluindo ${playerName || 'jogador'}...`);
+    try {
+      const data = await VoidArena.request(`/api/players/${encodeURIComponent(playerId)}`, { method: 'DELETE', timeoutMs: 20000 });
+      if (Array.isArray(data.players)) directory.players = data.players;
+      setStatus(directoryStatus, data.message || 'Jogador removido.', 'ok');
+      renderDirectory();
+      loadDirectory().catch(() => {});
+    } catch (error) {
+      directory.players = before;
+      renderDirectory();
+      throw error;
+    }
+  }
   async function submitRequest() { const type = typeSelect?.value || 'recruitment'; const teamId = teamSelect?.value || ''; if (!teamId) throw new Error('Selecione o time.'); if (type === 'recruitment' && !directory.selectedPlayer?.id) throw new Error('Selecione um jogador na tela Jogadores para recrutar.'); const saved = await VoidArena.request('/api/recruitment/requests', { method: 'POST', body: JSON.stringify({ type, teamId, playerId: type === 'recruitment' ? directory.selectedPlayer.id : '', playerName: type === 'recruitment' ? directory.selectedPlayer.name : '', note: noteInput?.value || '' }) }); if (noteInput) noteInput.value = ''; directory.selectedPlayer = null; renderSelectedPlayer(); setStatus(recruitmentStatus, saved.request?.type === 'trial' ? 'Peneira solicitada com sucesso.' : 'Convite de recrutamento enviado. O jogador recebe nas notificações/correios.', 'ok'); await loadRequests(); }
   async function cancelRequest(id) { if (!id) return; if (!confirm('Remover/cancelar essa solicitação de recrutamento?')) return; setStatus(recruitmentStatus, 'Cancelando solicitação...'); await VoidArena.request(`/api/recruitment/requests/${encodeURIComponent(id)}`, { method: 'DELETE' }); setStatus(recruitmentStatus, 'Solicitação removida/cancelada.', 'ok'); await loadRequests(); }
 
