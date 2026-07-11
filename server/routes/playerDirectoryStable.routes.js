@@ -1,0 +1,115 @@
+const storage = require('../storage');
+const { getSessionUser, isOwnerRecord, isAdminRecord } = require('../services/access.service');
+const { callBot } = require('../services/botApi.service');
+const { resolveTeamLogo } = require('../services/bracket.service');
+const { removeRoutes } = require('../utils/expressRoutes');
+
+function requireSession(req, res, next) {
+  if (!req.session?.userId) return res.status(401).json({ success: false, message: 'Faça login para continuar.' });
+  return next();
+}
+
+function clean(value = '', max = 160) { return String(value || '').trim().slice(0, max); }
+function userName(user = {}) { return user?.profile?.username || user?.name || user?.discordId || 'Jogador'; }
+function extractDiscordId(value = '') {
+  const raw = String(value || '').trim();
+  const mention = raw.match(/^<@!?(\d{16,22})>$/);
+  if (mention) return mention[1];
+  if (/^\d{16,22}$/.test(raw)) return raw;
+  return '';
+}
+function keyOf(value = '') { return String(value || '').trim().toLowerCase(); }
+function playerKey(player = {}) { return keyOf(player.userId || player.id || player.discordId || player.name); }
+function publicUser(user = {}) { return { id: user.id || '', name: userName(user), discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {} }; }
+function publicTeam(team = {}) { return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: resolveTeamLogo(team), ownerUserId: team.ownerUserId || '', directorName: team.directorName || team.ownerName || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' }; }
+function canManageTeam(user = null, team = {}) {
+  if (!user) return false;
+  if (isOwnerRecord(user)) return true;
+  if (String(team.ownerUserId || '') === String(user.id || '')) return true;
+  if (String(team.directorUserId || '') && String(team.directorUserId) === String(user.id || '')) return true;
+  if (String(team.directorDiscordId || '') && String(team.directorDiscordId) === String(user.discordId || '')) return true;
+  if (String(team.captainUserId || '') && String(team.captainUserId) === String(user.id || '')) return true;
+  if (String(team.captainDiscordId || '') && String(team.captainDiscordId) === String(user.discordId || '')) return true;
+  return false;
+}
+async function safeSessionUser(req) { try { return await getSessionUser(req); } catch { return null; } }
+async function viewerIsAdmin(viewer = null) { if (!viewer) return false; try { return await isAdminRecord(viewer); } catch { return isOwnerRecord(viewer); } }
+function publicRole(role = {}) { return { id: role.id || '', name: clean(role.name || '', 80), guildId: role.guildId || '', guildName: role.guildName || '' }; }
+async function readRolesForDiscordId(discordId = '') {
+  const id = String(discordId || '').trim();
+  if (!id) return [];
+  try {
+    const data = await callBot(`/internal/discord/member-roles/${encodeURIComponent(id)}`, { method: 'GET' });
+    return (Array.isArray(data.roles) ? data.roles : []).map(publicRole).filter((role) => role.id && role.name && !['everyone', '@everyone'].includes(String(role.name).toLowerCase())).slice(0, 12);
+  } catch { return []; }
+}
+async function attachRoles(players = []) {
+  const ids = Array.from(new Set(players.map((player) => String(player.discordId || '').trim()).filter(Boolean)));
+  const roleMap = new Map();
+  for (let i = 0; i < ids.length; i += 5) {
+    const chunk = ids.slice(i, i + 5);
+    const result = await Promise.all(chunk.map(async (id) => [id, await readRolesForDiscordId(id)]));
+    result.forEach(([id, roles]) => roleMap.set(id, roles));
+  }
+  return players.map((player) => ({ ...player, roles: roleMap.get(String(player.discordId || '').trim()) || [] }));
+}
+function addPlayer(map, raw = {}) {
+  const key = playerKey(raw);
+  if (!key) return;
+  const current = map.get(key) || {};
+  const teams = [...(current.teams || []), ...(raw.teams || [])].filter(Boolean);
+  map.set(key, { ...current, ...raw, teams });
+}
+function buildDirectory(users = [], teams = []) {
+  const visibleUsers = (Array.isArray(users) ? users : []).filter((user) => !user.deletedAt);
+  const byId = new Map(visibleUsers.map((user) => [String(user.id || ''), user]).filter(([id]) => id));
+  const byDiscord = new Map(visibleUsers.map((user) => [String(user.discordId || ''), user]).filter(([id]) => id));
+  const map = new Map();
+
+  (Array.isArray(teams) ? teams : []).forEach((team) => {
+    const teamCard = publicTeam(team);
+    const roster = [];
+    (Array.isArray(team.playerDetails) ? team.playerDetails : []).forEach((item) => roster.push({ ...item, rosterRole: 'Titular' }));
+    (Array.isArray(team.reserveDetails) ? team.reserveDetails : []).forEach((item) => roster.push({ ...item, rosterRole: 'Reserva' }));
+    if (!roster.length) {
+      (Array.isArray(team.players) ? team.players : []).forEach((name, index) => roster.push({ name, discordId: team.playerAccounts?.players?.[index] || '', rosterRole: 'Titular' }));
+      (Array.isArray(team.reserves) ? team.reserves : []).forEach((name, index) => roster.push({ name, discordId: team.playerAccounts?.reserves?.[index] || '', rosterRole: 'Reserva' }));
+    }
+
+    roster.forEach((entry) => {
+      const discordId = extractDiscordId(entry.discordId || entry.account || '');
+      const user = byId.get(String(entry.id || entry.userId || '')) || byDiscord.get(discordId) || null;
+      addPlayer(map, { id: user?.id || entry.id || discordId || `roster_${team.id}_${entry.name}`, userId: user?.id || '', discordId: user?.discordId || discordId || '', name: user ? userName(user) : clean(entry.name || 'Jogador', 80), avatar: user?.avatar || entry.avatar || '', profile: user?.profile || entry.profile || {}, socials: user?.socials || entry.socials || {}, rosterRole: entry.rosterRole || 'Titular', status: 'club', statusLabel: 'Com clube', teams: [teamCard] });
+    });
+
+    [team.ownerUserId, team.directorUserId, team.captainUserId].filter(Boolean).forEach((id) => {
+      const user = byId.get(String(id));
+      if (user) addPlayer(map, { id: user.id, userId: user.id, discordId: user.discordId || '', name: userName(user), avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {}, rosterRole: String(id) === String(team.captainUserId) ? 'Capitão' : 'Diretoria', status: 'club', statusLabel: 'Com clube', teams: [teamCard] });
+    });
+  });
+
+  visibleUsers.forEach((user) => addPlayer(map, { id: user.id || user.discordId || userName(user), userId: user.id || '', discordId: user.discordId || '', name: userName(user), avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {}, rosterRole: 'Livre', status: 'free', statusLabel: 'Sem clube', teams: [] }));
+
+  return Array.from(map.values()).map((player) => {
+    const seen = new Set();
+    const teamsUnique = (player.teams || []).filter((team) => team?.id && !seen.has(team.id) && seen.add(team.id));
+    const profile = player.profile || {};
+    return { ...player, directoryId: String(player.userId || player.discordId || player.id || player.name || '').trim(), teams: teamsUnique, teamName: teamsUnique[0]?.name || '', teamTag: teamsUnique[0]?.tag || '', teamLogo: teamsUnique[0]?.logo || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: teamsUnique.length ? 'club' : 'free', statusLabel: teamsUnique.length ? 'Com clube' : 'Sem clube' };
+  }).sort((a, b) => (a.status === b.status ? 0 : a.status === 'free' ? -1 : 1) || String(a.name || '').localeCompare(String(b.name || '')));
+}
+
+function registerPlayerDirectoryStableRoutes(app) {
+  removeRoutes(app, [['get', '/api/players/directory']]);
+  app.get('/api/players/directory', requireSession, async (req, res) => {
+    try {
+      const [users, teams, viewer] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => []), safeSessionUser(req)]);
+      const players = await attachRoles(buildDirectory(users, teams));
+      const isAdmin = await viewerIsAdmin(viewer);
+      return res.json({ success: true, players, teams: (teams || []).map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams: (teams || []).filter((team) => canManageTeam(viewer, team)).map(publicTeam), isAdmin, diagnostics: { rawUsers: Array.isArray(users) ? users.length : 0, rawTeams: Array.isArray(teams) ? teams.length : 0, visiblePlayers: players.length } });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: error.message, players: [], teams: [], viewerTeams: [] });
+    }
+  });
+}
+
+module.exports = { registerPlayerDirectoryStableRoutes };
