@@ -1,6 +1,5 @@
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord, isAdminRecord } = require('../services/access.service');
-const { callBot } = require('../services/botApi.service');
 const { resolveTeamLogo } = require('../services/bracket.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
@@ -20,6 +19,7 @@ function extractDiscordId(value = '') {
 }
 function keyOf(value = '') { return String(value || '').trim().toLowerCase(); }
 function playerKey(player = {}) { return keyOf(player.userId || player.id || player.discordId || player.name); }
+function isVisibleUser(user = {}) { return !user.deletedAt && !user.hiddenFromPlayersDirectory; }
 function publicUser(user = {}) { return { id: user.id || '', name: userName(user), discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {} }; }
 function publicTeam(team = {}) { return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: resolveTeamLogo(team), ownerUserId: team.ownerUserId || '', directorName: team.directorName || team.ownerName || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' }; }
 function canManageTeam(user = null, team = {}) {
@@ -34,25 +34,7 @@ function canManageTeam(user = null, team = {}) {
 }
 async function safeSessionUser(req) { try { return await getSessionUser(req); } catch { return null; } }
 async function viewerIsAdmin(viewer = null) { if (!viewer) return false; try { return await isAdminRecord(viewer); } catch { return isOwnerRecord(viewer); } }
-function publicRole(role = {}) { return { id: role.id || '', name: clean(role.name || '', 80), guildId: role.guildId || '', guildName: role.guildName || '' }; }
-async function readRolesForDiscordId(discordId = '') {
-  const id = String(discordId || '').trim();
-  if (!id) return [];
-  try {
-    const data = await callBot(`/internal/discord/member-roles/${encodeURIComponent(id)}`, { method: 'GET' });
-    return (Array.isArray(data.roles) ? data.roles : []).map(publicRole).filter((role) => role.id && role.name && !['everyone', '@everyone'].includes(String(role.name).toLowerCase())).slice(0, 12);
-  } catch { return []; }
-}
-async function attachRoles(players = []) {
-  const ids = Array.from(new Set(players.map((player) => String(player.discordId || '').trim()).filter(Boolean)));
-  const roleMap = new Map();
-  for (let i = 0; i < ids.length; i += 5) {
-    const chunk = ids.slice(i, i + 5);
-    const result = await Promise.all(chunk.map(async (id) => [id, await readRolesForDiscordId(id)]));
-    result.forEach(([id, roles]) => roleMap.set(id, roles));
-  }
-  return players.map((player) => ({ ...player, roles: roleMap.get(String(player.discordId || '').trim()) || [] }));
-}
+
 function addPlayer(map, raw = {}) {
   const key = playerKey(raw);
   if (!key) return;
@@ -60,8 +42,9 @@ function addPlayer(map, raw = {}) {
   const teams = [...(current.teams || []), ...(raw.teams || [])].filter(Boolean);
   map.set(key, { ...current, ...raw, teams });
 }
+
 function buildDirectory(users = [], teams = []) {
-  const visibleUsers = (Array.isArray(users) ? users : []).filter((user) => !user.deletedAt);
+  const visibleUsers = (Array.isArray(users) ? users : []).filter(isVisibleUser);
   const byId = new Map(visibleUsers.map((user) => [String(user.id || ''), user]).filter(([id]) => id));
   const byDiscord = new Map(visibleUsers.map((user) => [String(user.discordId || ''), user]).filter(([id]) => id));
   const map = new Map();
@@ -79,7 +62,19 @@ function buildDirectory(users = [], teams = []) {
     roster.forEach((entry) => {
       const discordId = extractDiscordId(entry.discordId || entry.account || '');
       const user = byId.get(String(entry.id || entry.userId || '')) || byDiscord.get(discordId) || null;
-      addPlayer(map, { id: user?.id || entry.id || discordId || `roster_${team.id}_${entry.name}`, userId: user?.id || '', discordId: user?.discordId || discordId || '', name: user ? userName(user) : clean(entry.name || 'Jogador', 80), avatar: user?.avatar || entry.avatar || '', profile: user?.profile || entry.profile || {}, socials: user?.socials || entry.socials || {}, rosterRole: entry.rosterRole || 'Titular', status: 'club', statusLabel: 'Com clube', teams: [teamCard] });
+      addPlayer(map, {
+        id: user?.id || entry.id || discordId || `roster_${team.id}_${entry.name}`,
+        userId: user?.id || '',
+        discordId: user?.discordId || discordId || '',
+        name: user ? userName(user) : clean(entry.name || 'Jogador', 80),
+        avatar: user?.avatar || entry.avatar || '',
+        profile: user?.profile || entry.profile || {},
+        socials: user?.socials || entry.socials || {},
+        rosterRole: entry.rosterRole || 'Titular',
+        status: 'club',
+        statusLabel: 'Com clube',
+        teams: [teamCard]
+      });
     });
 
     [team.ownerUserId, team.directorUserId, team.captainUserId].filter(Boolean).forEach((id) => {
@@ -94,20 +89,114 @@ function buildDirectory(users = [], teams = []) {
     const seen = new Set();
     const teamsUnique = (player.teams || []).filter((team) => team?.id && !seen.has(team.id) && seen.add(team.id));
     const profile = player.profile || {};
-    return { ...player, directoryId: String(player.userId || player.discordId || player.id || player.name || '').trim(), teams: teamsUnique, teamName: teamsUnique[0]?.name || '', teamTag: teamsUnique[0]?.tag || '', teamLogo: teamsUnique[0]?.logo || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: teamsUnique.length ? 'club' : 'free', statusLabel: teamsUnique.length ? 'Com clube' : 'Sem clube' };
+    return { ...player, directoryId: String(player.userId || player.discordId || player.id || player.name || '').trim(), teams: teamsUnique, teamName: teamsUnique[0]?.name || '', teamTag: teamsUnique[0]?.tag || '', teamLogo: teamsUnique[0]?.logo || '', primaryPosition: profile.primaryPosition || '', secondaryPosition: profile.secondaryPosition || '', country: profile.country || '', region: profile.region || profile.competitiveRegion || '', status: teamsUnique.length ? 'club' : 'free', statusLabel: teamsUnique.length ? 'Com clube' : 'Sem clube', roles: [] };
   }).sort((a, b) => (a.status === b.status ? 0 : a.status === 'free' ? -1 : 1) || String(a.name || '').localeCompare(String(b.name || '')));
 }
 
+function identitiesForPlayer(player = {}) {
+  return new Set([player.id, player.userId, player.discordId, player.directoryId, player.name].map(keyOf).filter(Boolean));
+}
+function samePerson(a = {}, b = {}) {
+  const ids = identitiesForPlayer(a);
+  return [b.id, b.discordId, b.name].map(keyOf).filter(Boolean).some((value) => ids.has(value));
+}
+function entryMatches(entry = {}, identities = new Set()) {
+  const values = [entry.name, entry.id, entry.userId, entry.discordId, entry.account, extractDiscordId(entry.discordId || entry.account || '')].map(keyOf).filter(Boolean);
+  return values.some((value) => identities.has(value));
+}
+function cleanRosterArrays(names = [], accounts = [], details = [], identities = new Set()) {
+  const safeNames = Array.isArray(names) ? names : [];
+  const safeAccounts = Array.isArray(accounts) ? accounts : [];
+  const safeDetails = Array.isArray(details) ? details : [];
+  const nextNames = [];
+  const nextAccounts = [];
+  const nextDetails = [];
+  let removed = 0;
+
+  const max = Math.max(safeNames.length, safeDetails.length);
+  for (let i = 0; i < max; i += 1) {
+    const detail = safeDetails[i] || {};
+    const name = safeNames[i] || detail.name || '';
+    const account = safeAccounts[i] || detail.discordId || detail.account || '';
+    if (entryMatches({ ...detail, name, account }, identities)) {
+      removed += 1;
+      continue;
+    }
+    if (name) nextNames.push(name);
+    if (account || i < safeAccounts.length) nextAccounts.push(account || '');
+    if (Object.keys(detail).length) nextDetails.push(detail);
+  }
+
+  return { names: nextNames, accounts: nextAccounts, details: nextDetails, removed };
+}
+function removePlayerFromTeam(team = {}, player = {}) {
+  const ids = identitiesForPlayer(player);
+  if (!ids.size) return { changed: false, removed: 0, team };
+  const players = cleanRosterArrays(team.players, team.playerAccounts?.players, team.playerDetails, ids);
+  const reserves = cleanRosterArrays(team.reserves, team.playerAccounts?.reserves, team.reserveDetails, ids);
+  const removed = players.removed + reserves.removed;
+  if (!removed) return { changed: false, removed: 0, team };
+  const next = {
+    ...team,
+    players: players.names,
+    reserves: reserves.names,
+    playerAccounts: { ...(team.playerAccounts || {}), players: players.accounts, reserves: reserves.accounts },
+    playerDetails: players.details,
+    reserveDetails: reserves.details,
+    updatedAt: new Date().toISOString()
+  };
+  return { changed: true, removed, team: next };
+}
+
 function registerPlayerDirectoryStableRoutes(app) {
-  removeRoutes(app, [['get', '/api/players/directory']]);
+  removeRoutes(app, [['get', '/api/players/directory'], ['delete', '/api/players/:playerId']]);
+
   app.get('/api/players/directory', requireSession, async (req, res) => {
     try {
       const [users, teams, viewer] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => []), safeSessionUser(req)]);
-      const players = await attachRoles(buildDirectory(users, teams));
+      const players = buildDirectory(users, teams);
       const isAdmin = await viewerIsAdmin(viewer);
+      res.set('Cache-Control', 'no-store');
       return res.json({ success: true, players, teams: (teams || []).map(publicTeam), viewer: publicUser(viewer || {}), viewerTeams: (teams || []).filter((team) => canManageTeam(viewer, team)).map(publicTeam), isAdmin, diagnostics: { rawUsers: Array.isArray(users) ? users.length : 0, rawTeams: Array.isArray(teams) ? teams.length : 0, visiblePlayers: players.length } });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, players: [], teams: [], viewerTeams: [] });
+    }
+  });
+
+  app.delete('/api/players/:playerId', requireSession, async (req, res) => {
+    try {
+      const viewer = await safeSessionUser(req);
+      if (!await viewerIsAdmin(viewer)) return res.status(403).json({ success: false, message: 'Apenas administrador pode excluir jogadores.' });
+
+      const rawPlayerId = decodeURIComponent(String(req.params.playerId || '')).trim();
+      if (!rawPlayerId) throw new Error('Jogador inválido.');
+
+      const [users, teams] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => [])]);
+      const directory = buildDirectory(users, teams);
+      const target = directory.find((player) => [player.directoryId, player.userId, player.discordId, player.id, player.name].some((value) => keyOf(value) === keyOf(rawPlayerId)));
+      if (!target) return res.status(404).json({ success: false, message: 'Jogador não encontrado.' });
+      if (samePerson(target, viewer)) return res.status(400).json({ success: false, message: 'Você não pode excluir o próprio perfil por aqui.' });
+
+      let hiddenUser = false;
+      const user = users.find((item) => [item.id, item.discordId, userName(item)].some((value) => keyOf(value) && identitiesForPlayer(target).has(keyOf(value))));
+      if (user && isVisibleUser(user)) {
+        await storage.saveUser({ ...user, hiddenFromPlayersDirectory: true, hiddenAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+        hiddenUser = true;
+      }
+
+      let removedFromTeams = 0;
+      for (const team of teams) {
+        const result = removePlayerFromTeam(team, target);
+        if (!result.changed) continue;
+        removedFromTeams += result.removed;
+        await storage.saveTeam(result.team);
+      }
+
+      const [nextUsers, nextTeams] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => [])]);
+      const players = buildDirectory(nextUsers, nextTeams);
+      return res.json({ success: true, playerId: rawPlayerId, hiddenUser, removedFromTeams, players, message: hiddenUser || removedFromTeams ? 'Jogador removido/ocultado do banco e dos elencos vinculados.' : 'Nenhum vínculo ativo encontrado para esse jogador.' });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
     }
   });
 }
