@@ -18,7 +18,7 @@ function extractDiscordId(value = '') {
   return '';
 }
 function keyOf(value = '') { return String(value || '').trim().toLowerCase(); }
-function playerKey(player = {}) { return keyOf(player.userId || player.id || player.discordId || player.name); }
+function canonicalPlayerKey(player = {}) { return keyOf(player.userId || player.discordId || player.id || player.name); }
 function isVisibleUser(user = {}) { return !user.deletedAt && !user.hiddenFromPlayersDirectory; }
 function publicUser(user = {}) { return { id: user.id || '', name: userName(user), discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {} }; }
 function publicTeam(team = {}) { return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: resolveTeamLogo(team), ownerUserId: team.ownerUserId || '', directorName: team.directorName || team.ownerName || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' }; }
@@ -36,18 +36,56 @@ async function safeSessionUser(req) { try { return await getSessionUser(req); } 
 async function viewerIsAdmin(viewer = null) { if (!viewer) return false; try { return await isAdminRecord(viewer); } catch { return isOwnerRecord(viewer); } }
 
 function addPlayer(map, raw = {}) {
-  const key = playerKey(raw);
+  const key = canonicalPlayerKey(raw);
   if (!key) return;
   const current = map.get(key) || {};
   const teams = [...(current.teams || []), ...(raw.teams || [])].filter(Boolean);
-  map.set(key, { ...current, ...raw, teams });
+  map.set(key, {
+    ...current,
+    ...raw,
+    teams,
+    // Se um perfil real já existe, nunca deixa uma entrada fantasma apagar identidade real.
+    id: current.userId ? current.id : (raw.id || current.id || ''),
+    userId: current.userId || raw.userId || '',
+    discordId: current.discordId || raw.discordId || ''
+  });
+}
+
+function buildUserIndexes(users = []) {
+  const visibleUsers = (Array.isArray(users) ? users : []).filter(isVisibleUser);
+  const byId = new Map();
+  const byDiscord = new Map();
+  const byName = new Map();
+
+  visibleUsers.forEach((user) => {
+    if (user.id) byId.set(String(user.id), user);
+    if (user.discordId) byDiscord.set(String(user.discordId), user);
+    [user.name, user.profile?.username].map(keyOf).filter(Boolean).forEach((name) => {
+      if (!byName.has(name)) byName.set(name, user);
+    });
+  });
+
+  return { visibleUsers, byId, byDiscord, byName };
 }
 
 function buildDirectory(users = [], teams = []) {
-  const visibleUsers = (Array.isArray(users) ? users : []).filter(isVisibleUser);
-  const byId = new Map(visibleUsers.map((user) => [String(user.id || ''), user]).filter(([id]) => id));
-  const byDiscord = new Map(visibleUsers.map((user) => [String(user.discordId || ''), user]).filter(([id]) => id));
+  const { visibleUsers, byId, byDiscord, byName } = buildUserIndexes(users);
   const map = new Map();
+
+  // Primeiro entram os perfis reais logados pelo site/Discord. Depois o elenco só adiciona vínculo.
+  visibleUsers.forEach((user) => addPlayer(map, {
+    id: user.id || user.discordId || userName(user),
+    userId: user.id || '',
+    discordId: user.discordId || '',
+    name: userName(user),
+    avatar: user.avatar || '',
+    profile: user.profile || {},
+    socials: user.socials || {},
+    rosterRole: 'Livre',
+    status: 'free',
+    statusLabel: 'Sem clube',
+    teams: []
+  }));
 
   (Array.isArray(teams) ? teams : []).forEach((team) => {
     const teamCard = publicTeam(team);
@@ -60,13 +98,14 @@ function buildDirectory(users = [], teams = []) {
     }
 
     roster.forEach((entry) => {
+      const rawName = clean(entry.name || entry.playerName || '', 80);
       const discordId = extractDiscordId(entry.discordId || entry.account || '');
-      const user = byId.get(String(entry.id || entry.userId || '')) || byDiscord.get(discordId) || null;
+      const user = byId.get(String(entry.id || entry.userId || '')) || byDiscord.get(discordId) || byName.get(keyOf(rawName)) || null;
       addPlayer(map, {
-        id: user?.id || entry.id || discordId || `roster_${team.id}_${entry.name}`,
+        id: user?.id || entry.id || discordId || `roster_${team.id}_${rawName || Math.random().toString(16).slice(2)}`,
         userId: user?.id || '',
         discordId: user?.discordId || discordId || '',
-        name: user ? userName(user) : clean(entry.name || 'Jogador', 80),
+        name: user ? userName(user) : (rawName || 'Jogador'),
         avatar: user?.avatar || entry.avatar || '',
         profile: user?.profile || entry.profile || {},
         socials: user?.socials || entry.socials || {},
@@ -83,8 +122,6 @@ function buildDirectory(users = [], teams = []) {
     });
   });
 
-  visibleUsers.forEach((user) => addPlayer(map, { id: user.id || user.discordId || userName(user), userId: user.id || '', discordId: user.discordId || '', name: userName(user), avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {}, rosterRole: 'Livre', status: 'free', statusLabel: 'Sem clube', teams: [] }));
-
   return Array.from(map.values()).map((player) => {
     const seen = new Set();
     const teamsUnique = (player.teams || []).filter((team) => team?.id && !seen.has(team.id) && seen.add(team.id));
@@ -95,6 +132,9 @@ function buildDirectory(users = [], teams = []) {
 
 function identitiesForPlayer(player = {}) {
   return new Set([player.id, player.userId, player.discordId, player.directoryId, player.name].map(keyOf).filter(Boolean));
+}
+function exactUserIdentityForPlayer(player = {}) {
+  return new Set([player.userId, player.discordId].map(keyOf).filter(Boolean));
 }
 function samePerson(a = {}, b = {}) {
   const ids = identitiesForPlayer(a);
@@ -178,7 +218,8 @@ function registerPlayerDirectoryStableRoutes(app) {
       if (samePerson(target, viewer)) return res.status(400).json({ success: false, message: 'Você não pode excluir o próprio perfil por aqui.' });
 
       let hiddenUser = false;
-      const user = users.find((item) => [item.id, item.discordId, userName(item)].some((value) => keyOf(value) && identitiesForPlayer(target).has(keyOf(value))));
+      const exactIds = exactUserIdentityForPlayer(target);
+      const user = users.find((item) => [item.id, item.discordId].map(keyOf).filter(Boolean).some((value) => exactIds.has(value)));
       if (user && isVisibleUser(user)) {
         await storage.saveUser({ ...user, hiddenFromPlayersDirectory: true, hiddenAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
         hiddenUser = true;
