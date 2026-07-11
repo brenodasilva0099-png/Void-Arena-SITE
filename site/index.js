@@ -14,6 +14,7 @@ const { registerBridgeRoutes } = require('../server/routes/bridge.routes');
 const { registerProfileV2Routes } = require('../server/routes/profileV2.routes');
 const { registerPlacarRoutes } = require('../server/routes/placar.routes');
 const { registerPlayersRoutes } = require('../server/routes/players.routes');
+const { registerPlayerDirectoryStableRoutes } = require('../server/routes/playerDirectoryStable.routes');
 const { registerTeamExtrasRoutes } = require('../server/routes/teamExtras.routes');
 const { registerDiscordAdminRoutes } = require('../server/routes/discordAdmin.routes');
 const { registerNotificationRoutes } = require('../server/routes/notifications.routes');
@@ -35,6 +36,7 @@ registerBridgeRoutes(app);
 registerProfileV2Routes(app);
 registerPlacarRoutes(app);
 registerPlayersRoutes(app);
+registerPlayerDirectoryStableRoutes(app);
 registerTeamExtrasRoutes(app);
 registerDiscordAdminRoutes(app);
 registerNotificationRoutes(app);
@@ -50,10 +52,5 @@ server.listen(PORT, () => {
   console.log('Realtime WebSocket ativo em: /realtime');
 });
 
-process.on('unhandledRejection', (error) => {
-  console.error('Erro nao tratado no site:', error);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('Excecao nao tratada no site:', error);
-});
+process.on('unhandledRejection', (error) => console.error('Erro nao tratado no site:', error));
+process.on('uncaughtException', (error) => console.error('Excecao nao tratada no site:', error));
