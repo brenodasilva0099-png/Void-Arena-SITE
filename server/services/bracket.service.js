@@ -10,6 +10,9 @@ function bracketSlotSize(limit = 16) {
 }
 
 function extractImageUrl(value = '') {
+  if (value && typeof value === 'object') {
+    return extractImageUrl(value.url || value.src || value.href || value.proxyUrl || value.data || value.base64 || '');
+  }
   const raw = String(value || '').trim();
   if (!raw) return '';
   if (/^data:image\/[^;]+;base64,/i.test(raw)) return raw;
@@ -25,14 +28,15 @@ function extractImageUrl(value = '') {
 function safeTeamLogo(value = '') {
   const raw = extractImageUrl(value);
   if (!raw) return '';
-  if (/^https?:\/\//i.test(raw)) return raw.slice(0, 1800);
-  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(raw)) return raw.slice(0, 2500000);
-  if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw.slice(0, 1200);
+  if (/^https?:\/\//i.test(raw)) return raw.slice(0, 2400);
+  // Logos coladas/enviadas em base64 podem passar de 2.5MB. Não truncar no meio do base64.
+  if (/^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/i.test(raw)) return raw.slice(0, 9000000);
+  if (/^\/(assets|uploads|images|img|public)\//i.test(raw)) return raw.slice(0, 1600);
   return '';
 }
 
 function resolveTeamLogo(team = {}) {
-  const values = [team.logo, team.logoUrl, team.logoURL, team.teamLogo, team.teamLogoUrl, team.badge, team.badgeUrl, team.escudo, team.image, team.imageUrl, team.avatar, team.icon];
+  const values = [team.logo, team.logoUrl, team.logoURL, team.teamLogo, team.teamLogoUrl, team.badge, team.badgeUrl, team.escudo, team.image, team.imageUrl, team.avatar, team.icon, team.logoOriginal];
   for (const value of values) {
     const logo = safeTeamLogo(value);
     if (logo) return logo;
@@ -95,12 +99,14 @@ function normalizeBracketData(data = {}) {
 
 function sanitizeTeam(team = {}, usersById = new Map()) {
   const owner = usersById.get(String(team.ownerUserId || '')) || null;
+  const logo = resolveTeamLogo(team);
   return {
     id: team.id,
     name: team.name || 'Time',
     tag: team.tag || '',
-    logo: resolveTeamLogo(team),
-    logoOriginal: team.logo || '',
+    logo,
+    logoOriginal: team.logo || logo || '',
+    logoUrl: logo,
     players: Array.isArray(team.players) ? team.players : [],
     reserves: Array.isArray(team.reserves) ? team.reserves : [],
     playerAccounts: team.playerAccounts || {},
@@ -160,60 +166,18 @@ function generateAdaptiveBracket(teams = [], limit = 16) {
     return { slotSize, teamLimit, slots: picked.map((team) => team?.id || null), round16: [] };
   }
 
-  const preliminaryMatchCount = Math.max(0, teamLimit - 16);
-  const preliminaryTeamCount = preliminaryMatchCount * 2;
-  const preliminaryTeams = picked.slice(0, preliminaryTeamCount);
-  const byeTeams = picked.slice(preliminaryTeamCount);
-  const slots = Array(teamLimit).fill(null);
-  const round16 = Array(16).fill(null);
-
-  preliminaryTeams.forEach((team, index) => { slots[index] = team?.id || null; });
-  byeTeams.forEach((team, index) => {
-    const target = preliminaryMatchCount + index;
-    if (target < round16.length) round16[target] = team?.id || null;
-    const slotTarget = preliminaryTeamCount + index;
-    if (slotTarget < slots.length) slots[slotTarget] = team?.id || null;
-  });
-
-  return { slotSize, teamLimit, slots, round16 };
-}
-
-function generateGroups(teams = [], settings = {}) {
-  const count = Math.max(1, Number(settings.groupCount || 2) || 2);
-  const groups = Array.from({ length: count }, (_, index) => ({ name: `Grupo ${String.fromCharCode(65 + index)}`, teams: [] }));
-  teams.forEach((team, index) => groups[index % count].teams.push(sanitizeTeam(team)));
-  return groups;
-}
-
-function matchPairsForSlots(slots = []) {
-  const pairs = [];
-  for (let i = 0; i < slots.length; i += 2) {
-    pairs.push([i, i + 1, slots[i], slots[i + 1]]);
-  }
-  return pairs;
-}
-
-function nextTargetForSlotMatch(matchIndex = 0, slotSize = 16) {
-  const size = normalizeTeamLimit(slotSize);
-  if (size === 4) return { round: 'finals', index: Math.min(matchIndex, 1) };
-  if (size === 8) return { round: 'semis', index: Math.min(matchIndex, 3) };
-  if (size <= 16) return { round: 'quarters', index: Math.min(matchIndex, 7) };
-  return { round: 'round16', index: Math.min(matchIndex, 15) };
+  return { slotSize, teamLimit, slots: picked.map((team) => team?.id || null), round16: [] };
 }
 
 module.exports = {
   SUPPORTED_TEAM_LIMITS,
-  bracketSlotSize,
   normalizeTeamLimit,
-  normalizeBracketData,
-  normalizeBracketForResponse,
-  sanitizeTeam,
+  bracketSlotSize,
   safeTeamLogo,
   resolveTeamLogo,
+  sanitizeTeam,
+  normalizeBracketData,
+  normalizeBracketForResponse,
   generateBracketSlots,
-  generateAdaptiveBracket,
-  generateGroups,
-  normalizeGroups,
-  matchPairsForSlots,
-  nextTargetForSlotMatch
+  generateAdaptiveBracket
 };
