@@ -39,6 +39,33 @@ async function updateStatus(id, status) {
   await loadForms();
 }
 
+async function deleteForm(id, label = '') {
+  if (!id) return;
+  const ok = confirm(`Excluir este formulário${label ? ` de ${label}` : ''}?\n\nEle será removido do banco atual e marcado para não voltar por backup antigo.`);
+  if (!ok) return;
+
+  const card = document.querySelector(`[data-card-id="${CSS.escape(id)}"]`);
+  const buttons = card ? Array.from(card.querySelectorAll('button')) : [];
+  buttons.forEach((button) => { button.disabled = true; });
+  if (card) card.style.opacity = '.55';
+
+  const response = await fetch(`/api/player-applications/${encodeURIComponent(id)}`, {
+    method: 'DELETE'
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) {
+    buttons.forEach((button) => { button.disabled = false; });
+    if (card) card.style.opacity = '';
+    alert(data.message || 'Erro ao excluir formulário.');
+    return;
+  }
+
+  if (card) card.remove();
+  if (!list.querySelector('.card')) empty.hidden = false;
+  await loadForms();
+}
+
 async function sendComment(id) {
   const content = prompt('Mensagem para enviar no privado do jogador:');
   if (!content || !content.trim()) return;
@@ -98,12 +125,13 @@ function avatarMarkup(item = {}) {
 function renderCard(item) {
   const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida';
   const comments = Array.isArray(item.comments) ? item.comments : [];
+  const label = item.userName || item.discordTag || 'Jogador';
 
   return `
-    <article class="card">
+    <article class="card" data-card-id="${escapeHtml(item.id)}">
       <div class="card-head">
         <div>
-          <h2>${escapeHtml(item.userName || item.discordTag || 'Jogador')}</h2>
+          <h2>${escapeHtml(label)}</h2>
           <p>${escapeHtml(date)} • Origem: ${escapeHtml(item.source || 'site')}</p>
           <span class="pill compact-status">${escapeHtml(statusLabel(item.status))}</span>
         </div>
@@ -141,6 +169,7 @@ function renderCard(item) {
         <button class="btn" data-status="approved" data-id="${escapeHtml(item.id)}">Aprovar</button>
         <button class="btn" data-status="rejected" data-id="${escapeHtml(item.id)}">Rejeitar</button>
         <button class="btn" data-status="archived" data-id="${escapeHtml(item.id)}">Arquivar</button>
+        <button class="btn danger" data-delete="${escapeHtml(item.id)}" data-label="${escapeHtml(label)}">Excluir formulário</button>
       </div>
     </article>
   `;
@@ -172,6 +201,10 @@ async function loadForms() {
 
   document.querySelectorAll('[data-status][data-id]').forEach((button) => {
     button.addEventListener('click', () => updateStatus(button.dataset.id, button.dataset.status));
+  });
+
+  document.querySelectorAll('[data-delete]').forEach((button) => {
+    button.addEventListener('click', () => deleteForm(button.dataset.delete, button.dataset.label || ''));
   });
 }
 
