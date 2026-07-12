@@ -1,13 +1,17 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const file = path.join(__dirname, 'app.js');
-if (!fs.existsSync(file)) process.exit(0);
-let src = fs.readFileSync(file, 'utf8');
+const ROOT = path.join(__dirname, '..');
+const appFile = path.join(__dirname, 'app.js');
+const configHtmlFile = path.join(ROOT, 'public/pages/configuracoes.html');
+const configJsFile = path.join(ROOT, 'public/js/pages/configuracoes.js');
 let changed = false;
 
-if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
-  const route = String.raw`
+if (fs.existsSync(appFile)) {
+  let src = fs.readFileSync(appFile, 'utf8');
+
+  if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
+    const route = String.raw`
   const ROLE_NOTIFY_HISTORY_CHANNEL = 'role-notification-history';
   const ROLE_NOTIFY_SITE_CHANNEL = 'user-notifications';
 
@@ -30,6 +34,48 @@ if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
   app.get('/api/admin/role-notifications/history', requireOwner, async (_req, res) => {
     try { return res.json({ success: true, campaigns: await rnReadHistory(100) }); }
     catch (error) { return res.status(500).json({ success: false, message: error.message, campaigns: [] }); }
+  });
+
+  app.get('/api/admin/role-notifications/players', requireOwner, async (_req, res) => {
+    try {
+      const [users, membersData] = await Promise.all([
+        readUsers().catch(() => []),
+        callBotInternalApi('/internal/discord/members/all?limit=700', { method: 'GET' }).catch(() => ({ members: [] }))
+      ]);
+      const byDiscordId = new Map();
+      (membersData.members || []).forEach((member) => {
+        const discordId = String(member.discordId || member.id || '').trim();
+        if (!/^\d{16,22}$/.test(discordId)) return;
+        byDiscordId.set(discordId, {
+          id: member.id || discordId,
+          discordId,
+          name: member.name || member.username || discordId,
+          username: member.username || '',
+          avatar: member.avatar || '',
+          guildName: member.guildName || '',
+          roles: Array.isArray(member.roles) ? member.roles : [],
+          registered: false
+        });
+      });
+      (users || []).forEach((user) => {
+        const discordId = String(user.discordId || '').trim();
+        if (!/^\d{16,22}$/.test(discordId)) return;
+        const current = byDiscordId.get(discordId) || {};
+        byDiscordId.set(discordId, {
+          ...current,
+          id: user.id || current.id || discordId,
+          siteUserId: user.id || '',
+          discordId,
+          name: rnName(user) || current.name || discordId,
+          username: user?.profile?.username || current.username || '',
+          avatar: user.avatar || current.avatar || '',
+          roles: current.roles || [],
+          registered: true
+        });
+      });
+      const players = Array.from(byDiscordId.values()).sort((a, b) => Number(b.registered) - Number(a.registered) || String(a.name || '').localeCompare(String(b.name || '')));
+      return res.json({ success: true, players, count: players.length });
+    } catch (error) { return res.status(500).json({ success: false, message: error.message, players: [] }); }
   });
 
   app.get('/api/admin/role-notifications/dm-history/:discordId', requireOwner, async (req, res) => {
@@ -95,9 +141,98 @@ if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
   });
 
 `;
-  src = src.replace("  app.get('/api/database/status', requireAuth, async (_req, res) => {", route + "  app.get('/api/database/status', requireAuth, async (_req, res) => {");
-  changed = true;
+    src = src.replace("  app.get('/api/database/status', requireAuth, async (_req, res) => {", route + "  app.get('/api/database/status', requireAuth, async (_req, res) => {");
+    changed = true;
+  }
+
+  if (changed) fs.writeFileSync(appFile, src, 'utf8');
 }
 
-if (changed) fs.writeFileSync(file, src, 'utf8');
-console.log(changed ? 'Patch aplicado: notificações por cargo nas configurações.' : 'Patch ignorado: notificações por cargo já ativas.');
+if (fs.existsSync(configHtmlFile)) {
+  let html = fs.readFileSync(configHtmlFile, 'utf8');
+  const oldBlock = '<div class="va-card" style="box-shadow:none"><h3>Conversa / respostas</h3><p class="va-muted">Clique em “Ver conversa” em um alvo do histórico ou informe um Discord ID.</p><div class="va-actions"><input id="dmHistoryDiscordId" placeholder="Discord ID do usuário" /><button id="loadDmHistoryBtn" class="va-btn" type="button">Ver conversa</button></div><div id="dmHistoryList" class="va-list"></div></div>';
+  const newBlock = '<div class="va-card" style="box-shadow:none"><h3>Conversa / respostas</h3><p class="va-muted">Selecione um jogador/membro do servidor para ver mensagens enviadas pelo bot e respostas recebidas por DM. O campo de ID fica como busca manual reserva.</p><label>Selecionar jogador do servidor<select id="dmHistoryPlayerSelect" size="8"><option value="">Carregando jogadores...</option></select></label><div class="va-actions"><input id="dmHistoryDiscordId" placeholder="Discord ID manual / reserva" /><button id="loadDmHistoryBtn" class="va-btn" type="button">Ver conversa</button></div><div id="dmHistoryList" class="va-list"></div></div>';
+  if (html.includes(oldBlock)) {
+    html = html.replace(oldBlock, newBlock);
+    fs.writeFileSync(configHtmlFile, html, 'utf8');
+    changed = true;
+  }
+}
+
+if (fs.existsSync(configJsFile)) {
+  let js = fs.readFileSync(configJsFile, 'utf8');
+  let jsChanged = false;
+
+  if (!js.includes('dmHistoryPlayerSelect')) {
+    js = js.replace("  const dmHistoryDiscordId = document.getElementById('dmHistoryDiscordId');", "  const dmHistoryDiscordId = document.getElementById('dmHistoryDiscordId');\n  const dmHistoryPlayerSelect = document.getElementById('dmHistoryPlayerSelect');");
+    jsChanged = true;
+  }
+
+  if (!js.includes('function renderDmPlayerOptions')) {
+    const helpers = String.raw`
+  function playerLabel(player = {}) {
+    const registered = player.registered ? ' • cadastrado no site' : '';
+    const guild = player.guildName ? ' • ' + player.guildName : '';
+    return `${player.name || player.username || player.discordId}${registered}${guild}`;
+  }
+
+  function renderDmPlayerOptions(players = []) {
+    if (!dmHistoryPlayerSelect) return;
+    const current = String(dmHistoryPlayerSelect.value || dmHistoryDiscordId?.value || '');
+    const sorted = [...players].sort((a, b) => Number(b.registered) - Number(a.registered) || String(a.name || '').localeCompare(String(b.name || '')));
+    dmHistoryPlayerSelect.innerHTML = '<option value="">Selecionar jogador/membro...</option>' + sorted.map((player) => `<option value="${esc(player.discordId || '')}" ${current && current === String(player.discordId || '') ? 'selected' : ''}>${esc(playerLabel(player))}</option>`).join('');
+  }
+`;
+    js = js.replace('  function targetLine(target = {}) {', helpers + '\n  function targetLine(target = {}) {');
+    jsChanged = true;
+  }
+
+  const oldLoad = String.raw`      const [rolesData, historyData] = await Promise.all([
+        VoidArena.request('/api/discord/roles', { timeoutMs: 12000 }).catch((error) => ({ success: false, roles: [], message: error.message })),
+        VoidArena.request('/api/admin/role-notifications/history', { timeoutMs: 12000 }).catch((error) => ({ success: false, campaigns: [], message: error.message }))
+      ]);
+      renderRoleOptions(rolesData.roles || []);
+      renderRoleHistory(historyData.campaigns || []);
+      status(roleNotificationStatus, `${rolesData.roles?.length || 0} cargo(s) carregado(s). Histórico: ${historyData.campaigns?.length || 0} envio(s).`, 'ok');`;
+  const newLoad = String.raw`      const [rolesData, historyData, playersData] = await Promise.all([
+        VoidArena.request('/api/discord/roles', { timeoutMs: 12000 }).catch((error) => ({ success: false, roles: [], message: error.message })),
+        VoidArena.request('/api/admin/role-notifications/history', { timeoutMs: 12000 }).catch((error) => ({ success: false, campaigns: [], message: error.message })),
+        VoidArena.request('/api/admin/role-notifications/players', { timeoutMs: 16000 }).catch((error) => ({ success: false, players: [], message: error.message }))
+      ]);
+      renderRoleOptions(rolesData.roles || []);
+      renderRoleHistory(historyData.campaigns || []);
+      renderDmPlayerOptions(playersData.players || []);
+      status(roleNotificationStatus, `${rolesData.roles?.length || 0} cargo(s) carregado(s). Histórico: ${historyData.campaigns?.length || 0} envio(s). Jogadores: ${playersData.players?.length || 0}.`, 'ok');`;
+  if (js.includes(oldLoad)) {
+    js = js.replace(oldLoad, newLoad);
+    jsChanged = true;
+  }
+
+  const oldIdLine = "    const id = String(discordId || dmHistoryDiscordId?.value || '').trim();";
+  const newIdLine = "    const id = String(discordId || dmHistoryPlayerSelect?.value || dmHistoryDiscordId?.value || '').trim();";
+  if (js.includes(oldIdLine)) {
+    js = js.replace(oldIdLine, newIdLine);
+    jsChanged = true;
+  }
+
+  const oldSetLine = "    if (dmHistoryDiscordId) dmHistoryDiscordId.value = id;";
+  const newSetLine = "    if (dmHistoryDiscordId) dmHistoryDiscordId.value = id;\n    if (dmHistoryPlayerSelect && id) dmHistoryPlayerSelect.value = id;";
+  if (js.includes(oldSetLine) && !js.includes('dmHistoryPlayerSelect && id')) {
+    js = js.replace(oldSetLine, newSetLine);
+    jsChanged = true;
+  }
+
+  const oldListener = "  document.getElementById('loadDmHistoryBtn')?.addEventListener('click', () => loadDmHistory());";
+  const newListener = "  document.getElementById('loadDmHistoryBtn')?.addEventListener('click', () => loadDmHistory());\n  dmHistoryPlayerSelect?.addEventListener('change', () => { if (dmHistoryPlayerSelect.value) loadDmHistory(dmHistoryPlayerSelect.value); });";
+  if (js.includes(oldListener) && !js.includes('dmHistoryPlayerSelect?.addEventListener')) {
+    js = js.replace(oldListener, newListener);
+    jsChanged = true;
+  }
+
+  if (jsChanged) {
+    fs.writeFileSync(configJsFile, js, 'utf8');
+    changed = true;
+  }
+}
+
+console.log(changed ? 'Patch aplicado: notificações por cargo e seletor de jogador nas conversas.' : 'Patch ignorado: notificações por cargo já ativas.');
