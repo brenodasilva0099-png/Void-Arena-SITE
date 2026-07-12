@@ -41,7 +41,7 @@
         <div>
           <p class="va-eyebrow">Void Arena 5.1.3</p>
           <h1 class="va-title">Configurações</h1>
-          <p class="va-subtitle">Configurações, saúde do sistema e backups prontos para uso.</p>
+          <p class="va-subtitle">Configurações, saúde do sistema, backups e comunicação por cargo.</p>
         </div>
         <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       </header>
@@ -71,6 +71,22 @@
     </form>
     <div id="announcementList" class="va-list"></div>
     <div id="announcementStatus" class="va-status">Aguardando mensagem.</div>
+  </article>
+  <article class="va-card full">
+    <h2>Notificações por cargo do Discord</h2>
+    <p>Selecione cargos do servidor e envie mensagem para usuários cadastrados no site que possuem esses cargos. Você escolhe se envia no site, por DM no Discord ou nos dois.</p>
+    <form id="roleNotificationForm" class="va-form-grid two">
+      <label>Cargos do Discord<select name="roleIds" id="roleNotifyRoles" multiple size="8"></select><small class="va-muted">Segure Ctrl para selecionar mais de um cargo.</small></label>
+      <label>Modo de envio<select name="deliveryMode"><option value="both">Site + DM Discord</option><option value="site">Somente site / Correios</option><option value="discord">Somente DM Discord</option></select></label>
+      <label>Título<input name="title" maxlength="120" value="Aviso da Void Arena" required /></label>
+      <label class="wide">Mensagem<textarea name="message" maxlength="1200" rows="5" placeholder="Digite a mensagem para os usuários do cargo selecionado..." required></textarea></label>
+      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar por cargo</button><button id="reloadRoleNotifyBtn" class="va-btn" type="button">Recarregar cargos/histórico</button></div>
+    </form>
+    <div id="roleNotificationStatus" class="va-status">Carregando cargos...</div>
+    <div class="va-grid" style="margin-top:14px">
+      <div class="va-card" style="box-shadow:none"><h3>Histórico de envios</h3><div id="roleNotificationHistory" class="va-list"></div></div>
+      <div class="va-card" style="box-shadow:none"><h3>Conversa / respostas</h3><p class="va-muted">Clique em “Ver conversa” em um alvo do histórico ou informe um Discord ID.</p><div class="va-actions"><input id="dmHistoryDiscordId" placeholder="Discord ID do usuário" /><button id="loadDmHistoryBtn" class="va-btn" type="button">Ver conversa</button></div><div id="dmHistoryList" class="va-list"></div></div>
+    </div>
   </article>
   <article class="va-card full">
     <h2>Calls privadas dos times</h2>
