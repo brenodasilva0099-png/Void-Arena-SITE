@@ -6,6 +6,12 @@
   const announcementForm = document.getElementById('siteAnnouncementForm');
   const announcementStatus = document.getElementById('announcementStatus');
   const announcementList = document.getElementById('announcementList');
+  const roleNotificationForm = document.getElementById('roleNotificationForm');
+  const roleNotifyRoles = document.getElementById('roleNotifyRoles');
+  const roleNotificationStatus = document.getElementById('roleNotificationStatus');
+  const roleNotificationHistory = document.getElementById('roleNotificationHistory');
+  const dmHistoryDiscordId = document.getElementById('dmHistoryDiscordId');
+  const dmHistoryList = document.getElementById('dmHistoryList');
   const matchVoicesForm = document.getElementById('matchVoicesForm');
   const matchVoiceList = document.getElementById('matchVoiceList');
   const matchVoiceStatus = document.getElementById('matchVoiceStatus');
@@ -16,6 +22,7 @@
   function esc(value = '') { return VoidArena.escapeHtml(value); }
   function categoryId() { return String(matchVoicesForm?.elements?.categoryId?.value || '1523133579570184194').trim(); }
   function listedVoiceIds() { return Array.from(document.querySelectorAll('[data-match-voice-id]')).map((input) => input.dataset.matchVoiceId).filter(Boolean); }
+  function roleLabel(role = {}) { return `${role.name || role.id}${role.guildName ? ` • ${role.guildName}` : ''}`; }
 
   async function load() {
     status(configStatus, 'Carregando status...');
@@ -43,6 +50,7 @@
     }
     status(configStatus, 'Status carregado.', 'ok');
     await loadAnnouncements();
+    await loadRoleNotifications();
   }
 
   async function createBackup() {
@@ -122,6 +130,97 @@
     } catch (error) { status(announcementStatus, `❌ ${error.message}`, 'err'); }
   }
 
+  function selectedRoleIds() {
+    return Array.from(roleNotifyRoles?.selectedOptions || []).map((option) => option.value).filter(Boolean);
+  }
+
+  function renderRoleOptions(roles = []) {
+    if (!roleNotifyRoles) return;
+    const current = new Set(selectedRoleIds());
+    const sorted = [...roles].sort((a, b) => String(a.guildName || '').localeCompare(String(b.guildName || '')) || String(a.name || '').localeCompare(String(b.name || '')));
+    roleNotifyRoles.innerHTML = sorted.map((role) => `<option value="${esc(role.id)}" ${current.has(String(role.id)) ? 'selected' : ''}>${esc(roleLabel(role))}</option>`).join('');
+  }
+
+  function targetLine(target = {}) {
+    const roles = (target.roles || []).slice(0, 4).map((role) => role.name).filter(Boolean).join(', ');
+    const replyHint = target.dmDelivered ? ' • DM enviada' : (target.dmError ? ` • DM falhou: ${target.dmError}` : '');
+    return `<div class="va-item" style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center"><span><strong>${esc(target.name || target.discordId)}</strong><div class="va-muted">${esc(target.discordId || '')}${roles ? ` • ${esc(roles)}` : ''}${replyHint}</div><small class="va-muted">Site: ${target.siteDelivered ? 'entregue' : 'não enviado'} • Discord: ${target.dmDelivered ? 'entregue' : 'não enviado'}</small></span><button class="va-btn mini" type="button" data-role-dm-history="${esc(target.discordId || '')}">Ver conversa</button></div>`;
+  }
+
+  function renderRoleHistory(campaigns = []) {
+    if (!roleNotificationHistory) return;
+    if (!campaigns.length) {
+      roleNotificationHistory.innerHTML = '<div class="va-item"><strong>Nenhum envio por cargo ainda</strong><div class="va-muted">Quando você enviar uma mensagem por cargo, o histórico aparece aqui.</div></div>';
+      return;
+    }
+    roleNotificationHistory.innerHTML = campaigns.map((campaign) => {
+      const counts = campaign.counts || {};
+      const roles = (campaign.roles || []).map((role) => role.name || role.id).join(', ');
+      const targets = (campaign.targets || []).slice(0, 30).map(targetLine).join('');
+      return `<section class="va-item"><strong>${esc(campaign.title || 'Aviso')}</strong><div class="va-muted">${esc(campaign.message || '')}</div><small class="va-muted">${esc(VoidArena.formatDate(campaign.createdAt))} • ${esc(campaign.deliveryMode || 'both')} • cargos: ${esc(roles || '-')}</small><div class="va-kpi-row" style="margin-top:8px"><span class="va-badge">Alvos ${counts.targets || 0}</span><span class="va-badge ok">Site ${counts.siteDelivered || 0}</span><span class="va-badge ok">DM ${counts.dmDelivered || 0}</span>${counts.dmFailed ? `<span class="va-badge danger">Falhas ${counts.dmFailed}</span>` : ''}</div><div class="va-list" style="margin-top:10px">${targets || '<div class="va-muted">Sem alvos registrados.</div>'}</div></section>`;
+    }).join('');
+    roleNotificationHistory.querySelectorAll('[data-role-dm-history]').forEach((btn) => btn.addEventListener('click', () => loadDmHistory(btn.dataset.roleDmHistory)));
+  }
+
+  async function loadRoleNotifications() {
+    if (!roleNotificationForm) return;
+    status(roleNotificationStatus, 'Carregando cargos e histórico...');
+    try {
+      const [rolesData, historyData] = await Promise.all([
+        VoidArena.request('/api/discord/roles', { timeoutMs: 12000 }).catch((error) => ({ success: false, roles: [], message: error.message })),
+        VoidArena.request('/api/admin/role-notifications/history', { timeoutMs: 12000 }).catch((error) => ({ success: false, campaigns: [], message: error.message }))
+      ]);
+      renderRoleOptions(rolesData.roles || []);
+      renderRoleHistory(historyData.campaigns || []);
+      status(roleNotificationStatus, `${rolesData.roles?.length || 0} cargo(s) carregado(s). Histórico: ${historyData.campaigns?.length || 0} envio(s).`, 'ok');
+    } catch (error) { status(roleNotificationStatus, `❌ ${error.message}`, 'err'); }
+  }
+
+  async function sendRoleNotification(event) {
+    event.preventDefault();
+    const roleIds = selectedRoleIds();
+    const title = String(roleNotificationForm?.elements?.title?.value || '').trim();
+    const message = String(roleNotificationForm?.elements?.message?.value || '').trim();
+    const deliveryMode = String(roleNotificationForm?.elements?.deliveryMode?.value || 'both');
+    if (!roleIds.length) return status(roleNotificationStatus, 'Selecione pelo menos um cargo.', 'err');
+    if (!message) return status(roleNotificationStatus, 'Digite a mensagem.', 'err');
+    const modeLabel = deliveryMode === 'site' ? 'somente no site' : deliveryMode === 'discord' ? 'somente por DM Discord' : 'no site e por DM Discord';
+    if (!confirm(`Enviar esta mensagem para usuários cadastrados com ${roleIds.length} cargo(s), ${modeLabel}?`)) return;
+    status(roleNotificationStatus, 'Enviando notificação por cargo...');
+    try {
+      const data = await VoidArena.request('/api/admin/role-notifications', { method: 'POST', body: JSON.stringify({ roleIds, title, message, deliveryMode }), timeoutMs: 60000 });
+      const counts = data.campaign?.counts || {};
+      status(roleNotificationStatus, `✅ Enviado. Alvos: ${counts.targets || 0}. Site: ${counts.siteDelivered || 0}. DM: ${counts.dmDelivered || 0}.`, 'ok');
+      roleNotificationForm.elements.message.value = '';
+      await loadRoleNotifications();
+    } catch (error) { status(roleNotificationStatus, `❌ ${error.message}`, 'err'); }
+  }
+
+  function renderDmHistory(data = {}) {
+    if (!dmHistoryList) return;
+    const messages = data.messages || [];
+    if (!messages.length) {
+      dmHistoryList.innerHTML = `<div class="va-item"><strong>Nenhuma conversa encontrada</strong><div class="va-muted">Não achei mensagens salvas para esse Discord ID.</div></div>`;
+      return;
+    }
+    const replies = messages.filter((msg) => String(msg.direction || '').toLowerCase() === 'inbound').length;
+    dmHistoryList.innerHTML = `<div class="va-item"><strong>${replies ? `✅ ${replies} resposta(s) do jogador` : 'Sem resposta do jogador ainda'}</strong><div class="va-muted">Discord ID: ${esc(data.discordId || '')}</div></div>` + messages.map((msg) => {
+      const inbound = String(msg.direction || '').toLowerCase() === 'inbound';
+      return `<div class="va-item"><strong>${inbound ? 'Resposta do jogador' : 'Mensagem enviada pelo bot'}</strong><div class="va-muted">${esc(msg.content || '')}</div><small class="va-muted">${esc(VoidArena.formatDate(msg.createdAt))}${msg.deliveredToDiscord === false ? ' • falhou no Discord' : ''}</small></div>`;
+    }).join('');
+  }
+
+  async function loadDmHistory(discordId = '') {
+    const id = String(discordId || dmHistoryDiscordId?.value || '').trim();
+    if (!id) return;
+    if (dmHistoryDiscordId) dmHistoryDiscordId.value = id;
+    dmHistoryList.innerHTML = '<div class="va-item"><strong>Carregando conversa...</strong></div>';
+    try {
+      const data = await VoidArena.request(`/api/admin/role-notifications/dm-history/${encodeURIComponent(id)}`, { timeoutMs: 12000 });
+      renderDmHistory(data);
+    } catch (error) { dmHistoryList.innerHTML = `<div class="va-item"><strong>Erro ao carregar conversa</strong><div class="va-muted">${esc(error.message)}</div></div>`; }
+  }
+
   function renderMatchVoices(channels = []) {
     if (!matchVoiceList) return;
     if (!channels.length) {
@@ -172,9 +271,12 @@
   document.getElementById('restoreBackupBtn')?.addEventListener('click', restoreBackup);
   document.getElementById('openInboxPreviewBtn')?.addEventListener('click', () => VoidArena.openNotifications?.());
   document.getElementById('enableBrowserNotificationsBtn')?.addEventListener('click', enableBrowserNotifications);
+  document.getElementById('reloadRoleNotifyBtn')?.addEventListener('click', loadRoleNotifications);
+  document.getElementById('loadDmHistoryBtn')?.addEventListener('click', () => loadDmHistory());
   document.getElementById('loadMatchVoicesBtn')?.addEventListener('click', loadMatchVoices);
   document.getElementById('deleteMatchVoicesBtn')?.addEventListener('click', deleteMatchVoices);
   document.getElementById('clearAllMatchVoicesBtn')?.addEventListener('click', clearAllMatchVoices);
   announcementForm?.addEventListener('submit', sendAnnouncement);
+  roleNotificationForm?.addEventListener('submit', sendRoleNotification);
   VoidArena.bootLayout('config').then(load).catch((error) => status(configStatus, `❌ ${error.message}`, 'err'));
 }());
