@@ -6,6 +6,7 @@ const updatesFile = path.join(ROOT, 'public', 'pages', 'atualizacoes.html');
 let changed = false;
 
 const RELEASE_ID = 'release-2026-07-12-fluxo-estavel';
+const ASSET_FIX_ID = 'release-2026-07-12-assets-css-js';
 const RELEASE_CARD = String.raw`
           <article class="va-card va-update-card" id="release-2026-07-12-fluxo-estavel">
             <span class="va-update-dot"></span>
@@ -24,10 +25,29 @@ const RELEASE_CARD = String.raw`
           </article>
 `;
 
+const ASSET_FIX_CARD = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-12-assets-css-js">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>12/07/2026 • 12:07 BRT</span><span>Site</span><span>Rotas/CSS/JS</span></div>
+            <h3>Correção dura para CSS e JavaScript não carregarem como HTML</h3>
+            <p class="va-muted">As rotas de assets foram reforçadas para evitar que CSS/JS caiam em fallback de página durante navegação entre setores.</p>
+            <ul class="va-update-list">
+              <li class="fix">Arquivos em /css, /js e /assets agora têm rota explícita antes de páginas, manutenção e fallback geral.</li>
+              <li class="fix">CSS sempre responde como text/css e JavaScript sempre responde como application/javascript.</li>
+              <li class="fix">Se um asset faltar, o servidor responde 404 limpo em texto, nunca HTML/Internal Server Error.</li>
+              <li class="site">Isso protege Chaveamento, Eventos, Configurações, Jogadores, Times e demais setores contra layout cru ou VoidArena indefinido.</li>
+            </ul>
+          </article>
+`;
+
 function patchUpdatesPage() {
   if (!fs.existsSync(updatesFile)) return;
   let html = fs.readFileSync(updatesFile, 'utf8');
   const before = html;
+
+  if (!html.includes(ASSET_FIX_ID)) {
+    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + ASSET_FIX_CARD);
+  }
 
   if (!html.includes(RELEASE_ID)) {
     html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + RELEASE_CARD);
@@ -35,12 +55,20 @@ function patchUpdatesPage() {
 
   html = html.replace(
     '<span class="va-version-pill">Void Arena 5.1.3 • Atual</span>',
-    '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 12/07/2026 às 11:55 BRT</span>'
+    '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 12/07/2026 às 12:07 BRT</span>'
+  );
+  html = html.replace(
+    '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 12/07/2026 às 11:55 BRT</span>',
+    '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 12/07/2026 às 12:07 BRT</span>'
   );
 
   html = html.replace(
     '<h2 class="va-update-title">Painel mais organizado, chat com menções e histórico público de mudanças.</h2>',
-    '<h2 class="va-update-title">Rotas estáveis, suporte global, notificações por cargo e preservação de dados vivos.</h2>'
+    '<h2 class="va-update-title">Rotas estáveis, assets protegidos, suporte global e preservação de dados vivos.</h2>'
+  );
+  html = html.replace(
+    '<h2 class="va-update-title">Rotas estáveis, suporte global, notificações por cargo e preservação de dados vivos.</h2>',
+    '<h2 class="va-update-title">Rotas estáveis, assets protegidos, suporte global e preservação de dados vivos.</h2>'
   );
 
   html = html.replace(
@@ -48,22 +76,11 @@ function patchUpdatesPage() {
     '<p class="va-muted">Esta página registra as mudanças do site e do bot com data e horário para jogadores, capitães e staff acompanharem o que entrou em cada atualização.</p>'
   );
 
-  html = html.replace(
-    '<span><strong>Site</strong><b>novas áreas</b></span>',
-    '<span><strong>Site</strong><b>rotas estáveis</b></span>'
-  );
-  html = html.replace(
-    '<span><strong>Bot</strong><b>filas/calls/placar</b></span>',
-    '<span><strong>Bot</strong><b>dados preservados</b></span>'
-  );
-  html = html.replace(
-    '<span><strong>Jogadores</strong><b>perfil e recrutamento</b></span>',
-    '<span><strong>Jogadores</strong><b>cargos e DMs</b></span>'
-  );
-  html = html.replace(
-    '<span><strong>Admin</strong><b>permissões e validação</b></span>',
-    '<span><strong>Admin</strong><b>suporte/notificações</b></span>'
-  );
+  html = html.replace('<span><strong>Site</strong><b>novas áreas</b></span>', '<span><strong>Site</strong><b>assets protegidos</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>rotas estáveis</b></span>', '<span><strong>Site</strong><b>assets protegidos</b></span>');
+  html = html.replace('<span><strong>Bot</strong><b>filas/calls/placar</b></span>', '<span><strong>Bot</strong><b>dados preservados</b></span>');
+  html = html.replace('<span><strong>Jogadores</strong><b>perfil e recrutamento</b></span>', '<span><strong>Jogadores</strong><b>cargos e DMs</b></span>');
+  html = html.replace('<span><strong>Admin</strong><b>permissões e validação</b></span>', '<span><strong>Admin</strong><b>suporte/notificações</b></span>');
 
   if (html !== before) {
     fs.writeFileSync(updatesFile, html, 'utf8');
@@ -72,4 +89,4 @@ function patchUpdatesPage() {
 }
 
 patchUpdatesPage();
-console.log(changed ? '[Atualizacoes] Changelog de 12/07/2026 registrado.' : '[Atualizacoes] Changelog de 12/07/2026 ja estava registrado.');
+console.log(changed ? '[Atualizacoes] Changelog de 12/07/2026 atualizado.' : '[Atualizacoes] Changelog de 12/07/2026 ja estava atualizado.');
