@@ -37,6 +37,8 @@
       gap: 8px;
     }
     .btn.primary { background: linear-gradient(135deg, #8b5cf6, #22d3ee); border: 0; }
+    .btn.danger { background: rgba(239,68,68,.16); border-color: rgba(248,113,113,.42); color: #fecaca; }
+    .btn[disabled] { opacity: .55; cursor: wait; }
     .list { display: grid; gap: 16px; }
     .card {
       border: 1px solid rgba(167,139,250,.22);
@@ -153,7 +155,7 @@
     <header>
       <div>
         <h1>📋 Formulários</h1>
-        <p>Analise inscrições da Hollow Nexus e envie mensagens privadas aos jogadores pelo bot.</p>
+        <p>Analise inscrições da Hollow Nexus, envie mensagens privadas aos jogadores e remova formulários inválidos sem eles voltarem do backup.</p>
       </div>
       <a class="btn" href="/pages/dashboard.html">Voltar</a>
     </header>
