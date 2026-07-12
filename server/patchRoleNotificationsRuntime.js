@@ -15,7 +15,7 @@ if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
   function rnJson(value, fallback = {}) { try { return JSON.parse(value || '{}'); } catch { return fallback; } }
   function rnName(user = {}) { return user?.profile?.username || user?.profile?.displayName || user?.name || user?.discordId || 'Void Arena'; }
   function rnPublicUser(user = {}) { return { id: user.id || '', name: rnName(user), discordId: user.discordId || '', avatar: user.avatar || '' }; }
-  function rnIds(values = []) { return Array.from(new Set((Array.isArray(values) ? values : [values]).map((v) => String(v || '').trim()).filter((v) => /^\\d{16,22}$/.test(v)))).slice(0, 20); }
+  function rnIds(values = []) { return Array.from(new Set((Array.isArray(values) ? values : [values]).map((v) => String(v || '').trim()).filter((v) => /^\d{16,22}$/.test(v)))).slice(0, 20); }
   function rnParse(message = {}) { const data = rnJson(message.content || '{}', {}); return { id: message.id || data.id || '', createdAt: data.createdAt || message.createdAt || null, ...data }; }
 
   async function rnReadHistory(limit = 80) {
@@ -24,7 +24,7 @@ if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
   }
 
   function rnBuildDm({ title, message, sender, siteUrl }) {
-    return ['🔔 **' + title + '**', '', message, '', sender ? 'Enviado por: **' + sender + '**' : '', siteUrl ? 'Void Arena: ' + siteUrl : '', 'Hollow Nexus • Void Arena'].filter(Boolean).join('\\n');
+    return ['🔔 **' + title + '**', '', message, '', sender ? 'Enviado por: **' + sender + '**' : '', siteUrl ? 'Void Arena: ' + siteUrl : '', 'Hollow Nexus • Void Arena'].filter(Boolean).join('\n');
   }
 
   app.get('/api/admin/role-notifications/history', requireOwner, async (_req, res) => {
@@ -35,7 +35,7 @@ if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
   app.get('/api/admin/role-notifications/dm-history/:discordId', requireOwner, async (req, res) => {
     try {
       const discordId = String(req.params.discordId || '').trim();
-      if (!/^\\d{16,22}$/.test(discordId)) return res.status(400).json({ success: false, message: 'Discord ID inválido.', messages: [] });
+      if (!/^\d{16,22}$/.test(discordId)) return res.status(400).json({ success: false, message: 'Discord ID inválido.', messages: [] });
       const data = await callBotInternalApi('/internal/discord/dm-history/' + encodeURIComponent(discordId) + '?limit=150', { method: 'GET' });
       const replies = (data.messages || []).filter((m) => String(m.direction || '').toLowerCase() === 'inbound');
       return res.json({ success: true, discordId, messages: data.messages || [], replies: replies.length, hasReply: replies.length > 0 });
@@ -52,7 +52,7 @@ if (!src.includes("ROLE_NOTIFY_HISTORY_CHANNEL")) {
       if (!roleIds.length) return res.status(400).json({ success: false, message: 'Selecione pelo menos um cargo.' });
       if (!message) return res.status(400).json({ success: false, message: 'Digite a mensagem.' });
 
-      const users = (await readUsers().catch(() => [])).filter((user) => /^\\d{16,22}$/.test(String(user.discordId || '')));
+      const users = (await readUsers().catch(() => [])).filter((user) => /^\d{16,22}$/.test(String(user.discordId || '')));
       const ids = users.map((user) => String(user.discordId));
       const rolesData = await callBotInternalApi('/internal/discord/member-roles/batch', { method: 'POST', body: JSON.stringify({ discordIds: ids }) });
       const allRoles = await callBotInternalApi('/internal/discord/roles', { method: 'GET' }).catch(() => ({ roles: [] }));
