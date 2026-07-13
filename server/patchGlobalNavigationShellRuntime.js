@@ -46,10 +46,10 @@ const NAV_SCRIPT = String.raw`(function () {
   ];
 
   function activeKey() {
-    const page = String(document.body?.dataset?.page || '').trim();
+    const page = String(document.body && document.body.dataset && document.body.dataset.page || '').trim();
     if (page) return page;
     const file = String(location.pathname.split('/').pop() || '').replace(/\.html$/i, '');
-    const aliases = { configuracoes: 'config', analise-partidas: 'analise' };
+    const aliases = { configuracoes: 'config', 'analise-partidas': 'analise' };
     return aliases[file] || file || 'dashboard';
   }
 
@@ -57,30 +57,35 @@ const NAV_SCRIPT = String.raw`(function () {
     if (document.getElementById('va-global-navigation-shell-style')) return;
     const style = document.createElement('style');
     style.id = 'va-global-navigation-shell-style';
-    style.textContent = `
-      .va-nav[data-global-shell="1"] { gap: 6px; }
-      .va-nav[data-global-shell="1"] .va-nav-title { margin-top: 14px; }
-      .va-nav[data-global-shell="1"] .va-nav-title:first-child { margin-top: 0; }
-      .va-nav[data-global-shell="1"] a[hidden] { display: flex !important; }
-      .va-nav[data-global-shell="1"] a.active { border-color: rgba(167,139,250,.55); background: rgba(124,58,237,.2); color: #fff; }
-      .va-topbar-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-      .va-server-pill { min-height: 42px; display: inline-flex; align-items: center; gap: 9px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(167,139,250,.32); background: rgba(15,14,35,.72); color: #f8f7ff; text-decoration: none; font-weight: 800; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
-      .va-server-pill img { width: 24px; height: 24px; border-radius: 999px; object-fit: cover; box-shadow: 0 0 18px rgba(139,92,246,.35); }
-      .va-server-pill small { display:block; color:#a7a0c7; font-size:10px; line-height:1; text-transform:uppercase; letter-spacing:.08em; }
-      .va-server-pill strong { display:block; font-size:12px; line-height:1.1; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-      .va-mail-pill, .va-user-pill { flex: 0 0 auto; }
-      @media (max-width: 720px) { .va-server-pill strong { max-width: 96px; } .va-topbar-tools { width: 100%; justify-content: flex-start; } }
-    `;
+    style.textContent = [
+      '.va-nav[data-global-shell="1"] { gap: 6px; }',
+      '.va-nav[data-global-shell="1"] .va-nav-title { margin-top: 14px; }',
+      '.va-nav[data-global-shell="1"] .va-nav-title:first-child { margin-top: 0; }',
+      '.va-nav[data-global-shell="1"] a[hidden] { display: flex !important; }',
+      '.va-nav[data-global-shell="1"] a.active { border-color: rgba(167,139,250,.55); background: rgba(124,58,237,.2); color: #fff; }',
+      '.va-topbar-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }',
+      '.va-server-pill { min-height: 42px; display: inline-flex; align-items: center; gap: 9px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(167,139,250,.32); background: rgba(15,14,35,.72); color: #f8f7ff; text-decoration: none; font-weight: 800; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }',
+      '.va-server-pill img { width: 24px; height: 24px; border-radius: 999px; object-fit: cover; box-shadow: 0 0 18px rgba(139,92,246,.35); }',
+      '.va-server-pill small { display:block; color:#a7a0c7; font-size:10px; line-height:1; text-transform:uppercase; letter-spacing:.08em; }',
+      '.va-server-pill strong { display:block; font-size:12px; line-height:1.1; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }',
+      '.va-mail-pill, .va-user-pill { flex: 0 0 auto; }',
+      '@media (max-width: 720px) { .va-server-pill strong { max-width: 96px; } .va-topbar-tools { width: 100%; justify-content: flex-start; } }'
+    ].join('\n');
     document.head.appendChild(style);
   }
 
   function buildNav(nav) {
     if (!nav) return;
     const current = activeKey();
-    const html = NAV_SECTIONS.map(([title, items]) => {
-      const links = items.map(([key, href, label]) => {
-        const active = key === current ? ' active' : '';
-        return '<a data-nav-key="' + key + '" href="' + href + '" class="' + active.trim() + '">' + label + '</a>';
+    const html = NAV_SECTIONS.map(function (section) {
+      const title = section[0];
+      const items = section[1];
+      const links = items.map(function (item) {
+        const key = item[0];
+        const href = item[1];
+        const label = item[2];
+        const active = key === current ? 'active' : '';
+        return '<a data-nav-key="' + key + '" href="' + href + '" class="' + active + '">' + label + '</a>';
       }).join('');
       return '<div class="va-nav-title">' + title + '</div>' + links;
     }).join('');
@@ -88,7 +93,7 @@ const NAV_SCRIPT = String.raw`(function () {
       nav.innerHTML = html;
       nav.dataset.globalShell = '1';
     }
-    nav.querySelectorAll('[data-nav-key]').forEach((link) => {
+    nav.querySelectorAll('[data-nav-key]').forEach(function (link) {
       link.hidden = false;
       link.removeAttribute('hidden');
       link.classList.toggle('active', link.dataset.navKey === current);
@@ -104,7 +109,7 @@ const NAV_SCRIPT = String.raw`(function () {
       tools.className = 'va-topbar-tools';
       const existingPills = Array.from(topbar.querySelectorAll(':scope > .va-user-pill, :scope > .va-mail-pill, :scope > .va-server-pill'));
       topbar.appendChild(tools);
-      existingPills.forEach((pill) => tools.appendChild(pill));
+      existingPills.forEach(function (pill) { tools.appendChild(pill); });
     }
     return tools;
   }
@@ -175,7 +180,7 @@ const NAV_SCRIPT = String.raw`(function () {
     setTimeout(applyShell, 350);
     setTimeout(applyShell, 1200);
     if (!VA.__globalNavigationShellObserver) {
-      VA.__globalNavigationShellObserver = new MutationObserver(() => applyShell());
+      VA.__globalNavigationShellObserver = new MutationObserver(function () { applyShell(); });
       VA.__globalNavigationShellObserver.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] });
     }
   }
