@@ -10,6 +10,7 @@ const ASSET_FIX_ID = 'release-2026-07-12-assets-css-js';
 const ADMIN_ACCESS_ID = 'release-2026-07-13-admin-discord-access';
 const NAV_SHELL_ID = 'release-2026-07-13-global-navigation-shell';
 const HARD_ASSET_GUARD_ID = 'release-2026-07-13-hard-static-guard-v3';
+const SUPPORT_TICKET_PANEL_ID = 'release-2026-07-13-support-ticket-panel-channel';
 
 const RELEASE_CARD = String.raw`
           <article class="va-card va-update-card" id="release-2026-07-12-fluxo-estavel">
@@ -88,10 +89,29 @@ const HARD_ASSET_GUARD_CARD = String.raw`
           </article>
 `;
 
+const SUPPORT_TICKET_PANEL_CARD = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-13-support-ticket-panel-channel">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>13/07/2026 • 20:20 BRT</span><span>Bot + Site</span><span>Suporte</span></div>
+            <h3>Painel fixo de tickets no canal de suporte</h3>
+            <p class="va-muted">O bot passa a manter uma mensagem fixa no canal 1493602223035515082 para jogadores abrirem tickets de suporte.</p>
+            <ul class="va-update-list">
+              <li class="bot">Ao iniciar, o bot publica ou atualiza o painel com botão Abrir ticket no canal definido.</li>
+              <li class="bot">Tickets abertos pelo botão continuam salvos no banco do site como supportTickets.</li>
+              <li class="site">Cada ticket aberto também gera uma mensagem de sistema no histórico/chat do site com protocolo, jogador, área e página.</li>
+              <li class="fix">O painel usa marcador interno para evitar duplicar mensagem a cada deploy.</li>
+            </ul>
+          </article>
+`;
+
 function patchUpdatesPage() {
   if (!fs.existsSync(updatesFile)) return;
   let html = fs.readFileSync(updatesFile, 'utf8');
   const before = html;
+
+  if (!html.includes(SUPPORT_TICKET_PANEL_ID)) {
+    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + SUPPORT_TICKET_PANEL_CARD);
+  }
 
   if (!html.includes(HARD_ASSET_GUARD_ID)) {
     html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + HARD_ASSET_GUARD_CARD);
@@ -118,12 +138,13 @@ function patchUpdatesPage() {
     'Void Arena 5.1.3 • Atualizado em 12/07/2026 às 11:55 BRT',
     'Void Arena 5.1.3 • Atualizado em 12/07/2026 às 12:07 BRT',
     'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 12:59 BRT',
-    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:00 BRT'
+    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:00 BRT',
+    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:11 BRT'
   ];
   versionTexts.forEach((text) => {
     html = html.replace(
       '<span class="va-version-pill">' + text + '</span>',
-      '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:11 BRT</span>'
+      '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:20 BRT</span>'
     );
   });
 
@@ -132,11 +153,12 @@ function patchUpdatesPage() {
     'Rotas estáveis, suporte global, notificações por cargo e preservação de dados vivos.',
     'Rotas estáveis, assets protegidos, suporte global e preservação de dados vivos.',
     'Rotas estáveis, assets protegidos, suporte global e permissões administrativas atualizadas.',
-    'Navegação global, assets protegidos, suporte fixo e dados preservados.'
+    'Navegação global, assets protegidos, suporte fixo e dados preservados.',
+    'Navegação global, assets blindados, suporte fixo e dados preservados.'
   ].forEach((text) => {
     html = html.replace(
       '<h2 class="va-update-title">' + text + '</h2>',
-      '<h2 class="va-update-title">Navegação global, assets blindados, suporte fixo e dados preservados.</h2>'
+      '<h2 class="va-update-title">Navegação global, assets blindados, tickets de suporte e dados preservados.</h2>'
     );
   });
 
@@ -145,12 +167,15 @@ function patchUpdatesPage() {
     '<p class="va-muted">Esta página registra as mudanças do site e do bot com data e horário para jogadores, capitães e staff acompanharem o que entrou em cada atualização.</p>'
   );
 
-  html = html.replace('<span><strong>Site</strong><b>novas áreas</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>rotas estáveis</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>assets protegidos</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>navegação global</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
-  html = html.replace('<span><strong>Bot</strong><b>filas/calls/placar</b></span>', '<span><strong>Bot</strong><b>dados preservados</b></span>');
-  html = html.replace('<span><strong>Jogadores</strong><b>perfil e recrutamento</b></span>', '<span><strong>Jogadores</strong><b>cargos e DMs</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>novas áreas</b></span>', '<span><strong>Site</strong><b>tickets/histórico</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>rotas estáveis</b></span>', '<span><strong>Site</strong><b>tickets/histórico</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>assets protegidos</b></span>', '<span><strong>Site</strong><b>tickets/histórico</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>navegação global</b></span>', '<span><strong>Site</strong><b>tickets/histórico</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>assets blindados</b></span>', '<span><strong>Site</strong><b>tickets/histórico</b></span>');
+  html = html.replace('<span><strong>Bot</strong><b>filas/calls/placar</b></span>', '<span><strong>Bot</strong><b>painel suporte</b></span>');
+  html = html.replace('<span><strong>Bot</strong><b>dados preservados</b></span>', '<span><strong>Bot</strong><b>painel suporte</b></span>');
+  html = html.replace('<span><strong>Jogadores</strong><b>perfil e recrutamento</b></span>', '<span><strong>Jogadores</strong><b>tickets</b></span>');
+  html = html.replace('<span><strong>Jogadores</strong><b>cargos e DMs</b></span>', '<span><strong>Jogadores</strong><b>tickets</b></span>');
   html = html.replace('<span><strong>Admin</strong><b>permissões e validação</b></span>', '<span><strong>Admin</strong><b>acesso atualizado</b></span>');
   html = html.replace('<span><strong>Admin</strong><b>suporte/notificações</b></span>', '<span><strong>Admin</strong><b>acesso atualizado</b></span>');
 
