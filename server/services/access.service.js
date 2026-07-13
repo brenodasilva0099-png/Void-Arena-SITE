@@ -2,6 +2,7 @@ const storage = require('../storage');
 const { callBot } = require('./botApi.service');
 
 const DEFAULT_OWNER_DISCORD_IDS = ['1235713276277559326'];
+const DEFAULT_ADMIN_DISCORD_IDS = ['623932415034916865'];
 const DEFAULT_OWNER_EMAILS = ['abyss.projectdev@gmail.com', 'brenodasilva0099@gmail.com'];
 const DEFAULT_ADMIN_ROLE_IDS = ['1297731552620576828'];
 
@@ -13,12 +14,21 @@ function splitList(...values) {
 }
 
 function ownerDiscordIds() {
-  return splitList(process.env.OWNER_DISCORD_IDS, process.env.ADMIN_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
+  return splitList(process.env.OWNER_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
 }
 
 function ownerEmails() {
   return splitList(process.env.OWNER_EMAILS, process.env.ADMIN_EMAILS, DEFAULT_OWNER_EMAILS)
     .map((item) => item.toLowerCase());
+}
+
+function adminDiscordIds() {
+  return splitList(
+    process.env.ADMIN_DISCORD_IDS,
+    process.env.OWNER_DISCORD_IDS,
+    DEFAULT_ADMIN_DISCORD_IDS,
+    DEFAULT_OWNER_DISCORD_IDS
+  );
 }
 
 function adminRoleIds() {
@@ -36,6 +46,14 @@ function isOwnerRecord(user = {}) {
   const discordId = String(user.discordId || '').trim();
   const userId = String(user.id || '').trim();
   return ownerEmails().includes(email) || ownerDiscordIds().includes(discordId) || ownerDiscordIds().includes(userId);
+}
+
+function isAdminIdRecord(user = {}) {
+  if (!user) return false;
+  const discordId = String(user.discordId || '').trim();
+  const userId = String(user.id || '').trim();
+  const allowed = adminDiscordIds();
+  return allowed.includes(discordId) || allowed.includes(userId);
 }
 
 async function readMemberRoleIds(discordId = '') {
@@ -57,6 +75,7 @@ async function hasAdminRole(user = {}) {
 
 async function isAdminRecord(user = {}) {
   if (isOwnerRecord(user)) return true;
+  if (isAdminIdRecord(user)) return true;
   return hasAdminRole(user);
 }
 
@@ -101,6 +120,7 @@ function requireAdmin(req, res, next) {
 
 module.exports = {
   DEFAULT_OWNER_DISCORD_IDS,
+  DEFAULT_ADMIN_DISCORD_IDS,
   DEFAULT_ADMIN_ROLE_IDS,
   isOwnerRecord,
   isAdminRecord,
@@ -111,6 +131,7 @@ module.exports = {
   requireAdmin,
   getSessionUser,
   readMemberRoleIds,
+  adminDiscordIds,
   adminRoleIds,
   reactivateUserIfNeeded
 };
