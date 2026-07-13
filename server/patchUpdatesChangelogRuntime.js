@@ -9,6 +9,8 @@ const RELEASE_ID = 'release-2026-07-12-fluxo-estavel';
 const ASSET_FIX_ID = 'release-2026-07-12-assets-css-js';
 const ADMIN_ACCESS_ID = 'release-2026-07-13-admin-discord-access';
 const NAV_SHELL_ID = 'release-2026-07-13-global-navigation-shell';
+const HARD_ASSET_GUARD_ID = 'release-2026-07-13-hard-static-guard-v3';
+
 const RELEASE_CARD = String.raw`
           <article class="va-card va-update-card" id="release-2026-07-12-fluxo-estavel">
             <span class="va-update-dot"></span>
@@ -71,10 +73,29 @@ const NAV_SHELL_CARD = String.raw`
           </article>
 `;
 
+const HARD_ASSET_GUARD_CARD = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-13-hard-static-guard-v3">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>13/07/2026 • 20:11 BRT</span><span>Site</span><span>CSS/JS</span></div>
+            <h3>Blindagem final para CSS/JS nunca caírem como página HTML</h3>
+            <p class="va-muted">O carregamento de assets foi endurecido no guard principal do servidor, que fica antes das páginas, API e fallback geral.</p>
+            <ul class="va-update-list">
+              <li class="fix">Pedidos para /css, /js, /assets, /uploads, /images e /img agora são resolvidos diretamente no arquivo físico.</li>
+              <li class="fix">Se organization.css ou qualquer JS existir, o servidor entrega com o MIME correto; se faltar, retorna 404 em texto limpo.</li>
+              <li class="fix">Isso impede que Times, Suporte, Chaveamento, Grupos ou qualquer setor carreguem layout cru por receber HTML no lugar de CSS.</li>
+              <li class="site">O arquivo de guard passou a entrar no npm check para validar sintaxe antes do deploy.</li>
+            </ul>
+          </article>
+`;
+
 function patchUpdatesPage() {
   if (!fs.existsSync(updatesFile)) return;
   let html = fs.readFileSync(updatesFile, 'utf8');
   const before = html;
+
+  if (!html.includes(HARD_ASSET_GUARD_ID)) {
+    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + HARD_ASSET_GUARD_CARD);
+  }
 
   if (!html.includes(NAV_SHELL_ID)) {
     html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + NAV_SHELL_CARD);
@@ -96,12 +117,13 @@ function patchUpdatesPage() {
     'Void Arena 5.1.3 • Atual',
     'Void Arena 5.1.3 • Atualizado em 12/07/2026 às 11:55 BRT',
     'Void Arena 5.1.3 • Atualizado em 12/07/2026 às 12:07 BRT',
-    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 12:59 BRT'
+    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 12:59 BRT',
+    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:00 BRT'
   ];
   versionTexts.forEach((text) => {
     html = html.replace(
       '<span class="va-version-pill">' + text + '</span>',
-      '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:00 BRT</span>'
+      '<span class="va-version-pill">Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:11 BRT</span>'
     );
   });
 
@@ -109,11 +131,12 @@ function patchUpdatesPage() {
     'Painel mais organizado, chat com menções e histórico público de mudanças.',
     'Rotas estáveis, suporte global, notificações por cargo e preservação de dados vivos.',
     'Rotas estáveis, assets protegidos, suporte global e preservação de dados vivos.',
-    'Rotas estáveis, assets protegidos, suporte global e permissões administrativas atualizadas.'
+    'Rotas estáveis, assets protegidos, suporte global e permissões administrativas atualizadas.',
+    'Navegação global, assets protegidos, suporte fixo e dados preservados.'
   ].forEach((text) => {
     html = html.replace(
       '<h2 class="va-update-title">' + text + '</h2>',
-      '<h2 class="va-update-title">Navegação global, assets protegidos, suporte fixo e dados preservados.</h2>'
+      '<h2 class="va-update-title">Navegação global, assets blindados, suporte fixo e dados preservados.</h2>'
     );
   });
 
@@ -122,9 +145,10 @@ function patchUpdatesPage() {
     '<p class="va-muted">Esta página registra as mudanças do site e do bot com data e horário para jogadores, capitães e staff acompanharem o que entrou em cada atualização.</p>'
   );
 
-  html = html.replace('<span><strong>Site</strong><b>novas áreas</b></span>', '<span><strong>Site</strong><b>navegação global</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>rotas estáveis</b></span>', '<span><strong>Site</strong><b>navegação global</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>assets protegidos</b></span>', '<span><strong>Site</strong><b>navegação global</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>novas áreas</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>rotas estáveis</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>assets protegidos</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>navegação global</b></span>', '<span><strong>Site</strong><b>assets blindados</b></span>');
   html = html.replace('<span><strong>Bot</strong><b>filas/calls/placar</b></span>', '<span><strong>Bot</strong><b>dados preservados</b></span>');
   html = html.replace('<span><strong>Jogadores</strong><b>perfil e recrutamento</b></span>', '<span><strong>Jogadores</strong><b>cargos e DMs</b></span>');
   html = html.replace('<span><strong>Admin</strong><b>permissões e validação</b></span>', '<span><strong>Admin</strong><b>acesso atualizado</b></span>');
