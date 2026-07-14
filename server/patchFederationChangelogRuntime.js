@@ -6,6 +6,7 @@ const updatesFile = path.join(ROOT, 'public', 'pages', 'atualizacoes.html');
 const FEDERATION_PORTAL_ID = 'release-2026-07-14-hollow-nexus-frm-global-v4';
 const FEDERATION_BUTTONS_ID = 'release-2026-07-14-frm-buttons-links-v1';
 const FEDERATION_COMPLETE_ID = 'release-2026-07-14-frm-complete-v1';
+const FEDERATION_POLISH_ID = 'release-2026-07-14-frm-polish-v2';
 let changed = false;
 
 const FEDERATION_PORTAL_CARD = String.raw`
@@ -54,10 +55,30 @@ const FEDERATION_COMPLETE_CARD = String.raw`
           </article>
 `;
 
+const FEDERATION_POLISH_CARD = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-14-frm-polish-v2">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>14/07/2026 • 12:58 BRT</span><span>Site</span><span>Polimento FRM</span></div>
+            <h3>Eventos, calendário, rankings e convites ajustados para a estrutura FRM</h3>
+            <p class="va-muted">Separação de competições/eventos, dados reais no início, calendário mensal e convite por Correio foram preparados para acabar com páginas remendadas.</p>
+            <ul class="va-update-list">
+              <li class="site">Calendário passa a ser mensal e independente da página de eventos.</li>
+              <li class="site">Competições ficam separadas de eventos comunitários como Café com Leite.</li>
+              <li class="site">Stats da home, ranking de clubes e ranking de atletas passam a usar dados reais ou zero quando não houver resultado.</li>
+              <li class="site">Capitães podem enviar convite de clube para jogador pelo Correio do site.</li>
+              <li class="fix">A sidebar e as páginas FRM receberam reforço visual para não vazar estrutura antiga.</li>
+            </ul>
+          </article>
+`;
+
 function patchUpdatesPage() {
   if (!fs.existsSync(updatesFile)) return;
   let html = fs.readFileSync(updatesFile, 'utf8');
   const before = html;
+
+  if (!html.includes(FEDERATION_POLISH_ID)) {
+    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_POLISH_CARD);
+  }
 
   if (!html.includes(FEDERATION_COMPLETE_ID)) {
     html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_COMPLETE_CARD);
@@ -78,12 +99,13 @@ function patchUpdatesPage() {
     'Hollow Nexus FRM • Atualizado em 13/07/2026 às 23:40 BRT',
     'Hollow Nexus FRM • Atualizado em 13/07/2026 às 23:58 BRT',
     'Hollow Nexus FRM • Atualizado em 14/07/2026 às 00:04 BRT',
-    'Hollow Nexus FRM • Atualizado em 14/07/2026 às 00:14 BRT'
+    'Hollow Nexus FRM • Atualizado em 14/07/2026 às 00:14 BRT',
+    'Hollow Nexus FRM • Atualizado em 14/07/2026 às 00:24 BRT'
   ];
   versionTexts.forEach((text) => {
     html = html.replace(
       '<span class="va-version-pill">' + text + '</span>',
-      '<span class="va-version-pill">Hollow Nexus FRM • Atualizado em 14/07/2026 às 00:24 BRT</span>'
+      '<span class="va-version-pill">Hollow Nexus FRM • Atualizado em 14/07/2026 às 12:58 BRT</span>'
     );
   });
 
@@ -93,19 +115,21 @@ function patchUpdatesPage() {
     'Portal Hollow Nexus FRM isolado, limpo e pronto para migração gradual.',
     'Dashboard Hollow Nexus FRM recriada pela referência visual.',
     'Site migrado para o shell global Hollow Nexus FRM.',
-    'Botões funcionais no shell Hollow Nexus FRM.'
+    'Botões funcionais no shell Hollow Nexus FRM.',
+    'Migração completa Hollow Nexus FRM com páginas funcionais.'
   ].forEach((text) => {
     html = html.replace(
       '<h2 class="va-update-title">' + text + '</h2>',
-      '<h2 class="va-update-title">Migração completa Hollow Nexus FRM com páginas funcionais.</h2>'
+      '<h2 class="va-update-title">Polimento FRM com eventos, calendário, rankings e convites.</h2>'
     );
   });
 
-  html = html.replace('<span><strong>Site</strong><b>tickets/histórico</b></span>', '<span><strong>Site</strong><b>FRM completo</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>portal FRM</b></span>', '<span><strong>Site</strong><b>FRM completo</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>dashboard FRM</b></span>', '<span><strong>Site</strong><b>FRM completo</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>shell FRM</b></span>', '<span><strong>Site</strong><b>FRM completo</b></span>');
-  html = html.replace('<span><strong>Site</strong><b>botões FRM</b></span>', '<span><strong>Site</strong><b>FRM completo</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>tickets/histórico</b></span>', '<span><strong>Site</strong><b>FRM polish</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>portal FRM</b></span>', '<span><strong>Site</strong><b>FRM polish</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>dashboard FRM</b></span>', '<span><strong>Site</strong><b>FRM polish</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>shell FRM</b></span>', '<span><strong>Site</strong><b>FRM polish</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>botões FRM</b></span>', '<span><strong>Site</strong><b>FRM polish</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>FRM completo</b></span>', '<span><strong>Site</strong><b>FRM polish</b></span>');
 
   if (html !== before) {
     fs.writeFileSync(updatesFile, html, 'utf8');
@@ -115,8 +139,13 @@ function patchUpdatesPage() {
 
 patchUpdatesPage();
 try {
+  require('./patchFederationRouteRegistrationRuntime');
+} catch (error) {
+  console.error('[Federacao] Falha ao registrar rotas FRM:', error.message);
+}
+try {
   require('./patchFederationButtonsRuntime');
 } catch (error) {
   console.error('[Federacao] Falha ao aplicar patch de botoes FRM:', error.message);
 }
-console.log(changed ? '[Atualizacoes] Migracao completa FRM registrada.' : '[Atualizacoes] Migracao completa FRM ja estava registrada.');
+console.log(changed ? '[Atualizacoes] FRM polish registrado.' : '[Atualizacoes] FRM polish ja estava registrado.');
