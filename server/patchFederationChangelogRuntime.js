@@ -76,21 +76,10 @@ function patchUpdatesPage() {
   let html = fs.readFileSync(updatesFile, 'utf8');
   const before = html;
 
-  if (!html.includes(FEDERATION_POLISH_ID)) {
-    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_POLISH_CARD);
-  }
-
-  if (!html.includes(FEDERATION_COMPLETE_ID)) {
-    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_COMPLETE_CARD);
-  }
-
-  if (!html.includes(FEDERATION_BUTTONS_ID)) {
-    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_BUTTONS_CARD);
-  }
-
-  if (!html.includes(FEDERATION_PORTAL_ID)) {
-    html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_PORTAL_CARD);
-  }
+  if (!html.includes(FEDERATION_POLISH_ID)) html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_POLISH_CARD);
+  if (!html.includes(FEDERATION_COMPLETE_ID)) html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_COMPLETE_CARD);
+  if (!html.includes(FEDERATION_BUTTONS_ID)) html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_BUTTONS_CARD);
+  if (!html.includes(FEDERATION_PORTAL_ID)) html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + FEDERATION_PORTAL_CARD);
 
   const versionTexts = [
     'Void Arena 5.1.3 • Atual',
@@ -138,14 +127,9 @@ function patchUpdatesPage() {
 }
 
 patchUpdatesPage();
-try {
-  require('./patchFederationRouteRegistrationRuntime');
-} catch (error) {
-  console.error('[Federacao] Falha ao registrar rotas FRM:', error.message);
-}
-try {
-  require('./patchFederationButtonsRuntime');
-} catch (error) {
-  console.error('[Federacao] Falha ao aplicar patch de botoes FRM:', error.message);
-}
+try { require('./patchFederationRouteRegistrationRuntime'); } catch (error) { console.error('[Federacao] Falha ao registrar rotas FRM:', error.message); }
+try { require('./patchFederationButtonsRuntime'); } catch (error) { console.error('[Federacao] Falha ao aplicar patch de botoes FRM:', error.message); }
+try { require('./patchFederationPolishCssRuntime'); } catch (error) { console.error('[Federacao] Falha no CSS polish:', error.message); }
+try { require('./patchFederationPolishJsRuntime'); } catch (error) { console.error('[Federacao] Falha no JS polish:', error.message); }
+try { require('./patchFederationPolishPagesRuntime'); } catch (error) { console.error('[Federacao] Falha nas paginas polish:', error.message); }
 console.log(changed ? '[Atualizacoes] FRM polish registrado.' : '[Atualizacoes] FRM polish ja estava registrado.');
