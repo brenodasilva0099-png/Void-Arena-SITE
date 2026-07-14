@@ -3,21 +3,21 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const updatesFile = path.join(ROOT, 'public', 'pages', 'atualizacoes.html');
-const FEDERATION_PORTAL_ID = 'release-2026-07-13-hollow-nexus-frm-portal';
+const FEDERATION_PORTAL_ID = 'release-2026-07-13-hollow-nexus-frm-portal-v2-clean';
 let changed = false;
 
 const FEDERATION_PORTAL_CARD = String.raw`
-          <article class="va-card va-update-card" id="release-2026-07-13-hollow-nexus-frm-portal">
+          <article class="va-card va-update-card" id="release-2026-07-13-hollow-nexus-frm-portal-v2-clean">
             <span class="va-update-dot"></span>
-            <div class="va-update-meta"><span>13/07/2026 • 23:28 BRT</span><span>Site</span><span>Federação</span></div>
-            <h3>Hollow Nexus FRM integrada como estrutura principal do site</h3>
-            <p class="va-muted">O site recebeu a primeira versão do portal visual da Federação Comunitária de Rematch, mantendo os dados vivos preservados.</p>
+            <div class="va-update-meta"><span>13/07/2026 • 23:40 BRT</span><span>Site</span><span>Federação</span></div>
+            <h3>Portal Hollow Nexus FRM recriado em estrutura limpa</h3>
+            <p class="va-muted">O portal da federação foi isolado em uma home limpa, seguindo a estrutura visual aprovada, sem misturar o layout novo por cima das páginas antigas.</p>
             <ul class="va-update-list">
-              <li class="site">A home/dashboard foi migrada para o visual Hollow Nexus FRM com hero, cards de temporada, competições, ranking e notícias.</li>
-              <li class="site">A logo oficial do servidor passou a ser usada como identidade principal no topo, sidebar, hero e rodapé.</li>
-              <li class="site">O menu foi reorganizado em Federação, Competitivo, Clubes, Atletas e Administração.</li>
-              <li class="site">Foram criadas páginas base para Sobre a Federação, Regulamento e Prancheta Tática 5v5.</li>
-              <li class="fix">A mudança altera a estrutura visual sem apagar jogadores, clubes, eventos, tickets, perfis ou histórico.</li>
+              <li class="site">A dashboard principal agora usa uma estrutura própria com sidebar, topo, hero, temporada, competições, ranking, notícias e rodapé.</li>
+              <li class="site">A logo oficial do servidor continua sendo usada como identidade principal do portal.</li>
+              <li class="site">As páginas base de Federação, Regulamento e Prancheta Tática continuam criadas no padrão novo.</li>
+              <li class="fix">A injeção global nas páginas antigas foi removida para evitar layout quebrado durante a migração.</li>
+              <li class="fix">Jogadores, clubes, eventos, tickets, perfis e histórico seguem preservados.</li>
             </ul>
           </article>
 `;
@@ -33,21 +33,28 @@ function patchUpdatesPage() {
 
   const versionTexts = [
     'Void Arena 5.1.3 • Atual',
-    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:20 BRT'
+    'Void Arena 5.1.3 • Atualizado em 13/07/2026 às 20:20 BRT',
+    'Hollow Nexus FRM • Atualizado em 13/07/2026 às 23:28 BRT'
   ];
   versionTexts.forEach((text) => {
     html = html.replace(
       '<span class="va-version-pill">' + text + '</span>',
-      '<span class="va-version-pill">Hollow Nexus FRM • Atualizado em 13/07/2026 às 23:28 BRT</span>'
+      '<span class="va-version-pill">Hollow Nexus FRM • Atualizado em 13/07/2026 às 23:40 BRT</span>'
     );
   });
 
-  html = html.replace(
-    '<h2 class="va-update-title">Navegação global, assets blindados, tickets de suporte e dados preservados.</h2>',
-    '<h2 class="va-update-title">Portal Hollow Nexus FRM integrado com dados vivos preservados.</h2>'
-  );
+  [
+    'Navegação global, assets blindados, tickets de suporte e dados preservados.',
+    'Portal Hollow Nexus FRM integrado com dados vivos preservados.'
+  ].forEach((text) => {
+    html = html.replace(
+      '<h2 class="va-update-title">' + text + '</h2>',
+      '<h2 class="va-update-title">Portal Hollow Nexus FRM limpo, isolado e pronto para migração por etapas.</h2>'
+    );
+  });
 
-  html = html.replace('<span><strong>Site</strong><b>tickets/histórico</b></span>', '<span><strong>Site</strong><b>portal FRM</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>tickets/histórico</b></span>', '<span><strong>Site</strong><b>portal FRM limpo</b></span>');
+  html = html.replace('<span><strong>Site</strong><b>portal FRM</b></span>', '<span><strong>Site</strong><b>portal FRM limpo</b></span>');
 
   if (html !== before) {
     fs.writeFileSync(updatesFile, html, 'utf8');
@@ -56,4 +63,4 @@ function patchUpdatesPage() {
 }
 
 patchUpdatesPage();
-console.log(changed ? '[Atualizacoes] Portal Hollow Nexus FRM registrado.' : '[Atualizacoes] Portal Hollow Nexus FRM ja estava registrado.');
+console.log(changed ? '[Atualizacoes] Portal Hollow Nexus FRM v2 limpo registrado.' : '[Atualizacoes] Portal Hollow Nexus FRM v2 limpo ja estava registrado.');
