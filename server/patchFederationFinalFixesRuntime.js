@@ -1,0 +1,76 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
+const ROOT = path.join(__dirname, '..');
+const pagesDir = path.join(ROOT, 'public', 'pages');
+const cssFile = path.join(ROOT, 'public', 'css', 'federation-polish.css');
+const jsFile = path.join(ROOT, 'public', 'js', 'core', 'federation-polish.js');
+const BUILD = '2026-07-14-frm-final-fixes-v1';
+const LOGO = '/api/brand/icon?v=' + BUILD;
+const CSS = '/css/federation-polish.css?v=' + BUILD;
+const JS = '/js/core/federation-polish.js?v=' + BUILD;
+let changed = false;
+
+function ensure(file) { fs.mkdirSync(path.dirname(file), { recursive: true }); }
+function read(file) { return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''; }
+function write(file, content) { ensure(file); if (read(file) !== content) { fs.writeFileSync(file, content, 'utf8'); changed = true; } }
+function appendOnce(file, marker, content) { const before = read(file); if (!before.includes(marker)) write(file, before + '\n' + content); }
+
+function nav(active='') {
+  const sections = [
+    ['Federação', [['⌂','Início','/pages/dashboard.html'],['ⓘ','Sobre a Federação','/pages/federacao.html'],['▤','Regulamento','/pages/regulamento.html'],['▧','Atualizações','/pages/atualizacoes.html'],['?','Suporte','/pages/suporte.html']]],
+    ['Competitivo', [['♕','Competições','/pages/competicoes.html'],['▣','Eventos','/pages/eventos.html'],['⌘','Chaveamento','/pages/chaveamento.html'],['☷','Grupos','/pages/grupos.html'],['⊙','Resultados','/pages/resultados.html'],['⌁','Rankings','/pages/rankings.html'],['▦','Calendário','/pages/calendario.html']]],
+    ['Clubes', [['♙','Clubes Afiliados','/pages/clubes.html'],['✥','Solicitar Afiliação','/pages/afiliacao.html'],['♧','Elencos','/pages/elencos.html'],['▣','Prancheta Tática','/pages/prancheta-tatica.html']]],
+    ['Atletas', [['♟','Jogadores Registrados','/pages/atletas.html'],['✧','Mercado / Recrutamento','/pages/mercado.html'],['⊙','Ranking de Jogadores','/pages/rankings.html'],['↔','Transferências','/pages/transferencias.html']]],
+    ['Administração', [['▤','Formulários','/pages/formularios.html'],['ⓘ','Permissões','/pages/permissoes.html'],['⚙','Configurações','/pages/configuracoes.html'],['◉','Análise de Partidas','/pages/analise-partidas.html']]]
+  ];
+  return sections.map(([title, links]) => `<div class="frm-nav-title">${title}</div>` + links.map(([icon,label,href]) => `<a${href===active?' class="active"':''} href="${href}"><i>${icon}</i><b>${label}</b></a>`).join('')).join('');
+}
+
+function footer() {
+  return `<footer class="frm-footer"><div><div class="frm-footer-brand"><img src="${LOGO}"/><div><strong>the HOLLOW NEXUS <span class="frm-accent">FRM</span></strong><p>Federação Comunitária de Rematch</p></div></div><p>Elevando o cenário competitivo de Rematch.</p></div><div><h4>Links rápidos</h4><p><a href="/pages/regulamento.html">Regulamento</a></p><p><a href="/pages/termos.html">Termos de Uso</a></p><p><a href="/pages/privacidade.html">Privacidade</a></p></div><div><h4>Contato</h4><p>Contato oficial em definição</p><p><a href="/pages/suporte.html">Suporte</a></p><p><a href="/api/discord/server/open" target="_blank">Discord Oficial</a></p></div><div><h4>Redes sociais</h4><div class="frm-socials"><span>𝕏</span><span>◎</span><span>▶</span><span>♪</span></div></div><div><h4>Direitos reservados</h4><p>© 2026 The Hollow Nexus FRM. Todos os direitos reservados.</p><p>Projeto comunitário independente. Não afiliado, patrocinado ou endossado pela Sloclap, Kepler Interactive ou Rematch.</p></div></footer>`;
+}
+
+function shell(o) {
+  const tabs = [['inicio','Início','/pages/dashboard.html'],['federacao','Federação','/pages/federacao.html'],['competitivo','Competitivo','/pages/competicoes.html'],['clubes','Clubes','/pages/clubes.html'],['atletas','Atletas','/pages/atletas.html'],['admin','Administração','/pages/administracao.html']];
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>${o.title} | Hollow Nexus FRM</title><link rel="icon" href="${LOGO}"/><link rel="stylesheet" href="${CSS}"/></head><body class="frm-polish-page" data-frm-module="${o.module||''}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}"/><div><small>the</small><strong>HOLLOW NEXUS <span>FRM</span></strong><p>Federação Comunitária</p></div></div><nav class="frm-nav">${nav(o.href)}</nav></aside><main class="frm-main"><header class="frm-header"><nav class="frm-tabs">${tabs.map(([k,l,u])=>`<a class="${k===o.tab?'active':''}" href="${u}">${l}</a>`).join('')}</nav><div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/pages/perfil.html">♙ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${o.body}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="${JS}"></script></body></html>`;
+}
+function hero(title, text) { return `<section class="frm-page-hero"><div><p class="frm-tag">Hollow Nexus FRM</p><h1><span class="frm-the">the</span>${title}</h1><p>${text}</p></div><img src="${LOGO}"/></section>`; }
+
+appendOnce(cssFile, 'FRM final fixes v1', `
+/* FRM final fixes v1 */
+html, body { width: 100%; min-height: 100%; overflow-x: hidden !important; }
+.frm-polish-page { margin: 0 !important; background: #02040a !important; }
+.frm-shell { min-height: 100vh; align-items: stretch; }
+.frm-sidebar { position: sticky; top: 0; align-self: start; height: 100vh; min-height: 100vh; background: linear-gradient(180deg, rgba(2,4,10,.98), rgba(7,4,20,.98)); }
+.frm-sidebar:after { content: ''; position: fixed; left: 0; top: 0; bottom: 0; width: 254px; background: linear-gradient(180deg, rgba(2,4,10,.98), rgba(7,4,20,.98)); z-index: -1; }
+.frm-main { min-height: 100vh; width: 100%; max-width: none; }
+.frm-card, .frm-page-hero { border-radius: 14px; }
+.frm-lit-title { color: #fff; text-shadow: 0 0 18px rgba(168,85,247,.55), 0 0 36px rgba(139,92,246,.28); }
+.frm-lit-title span { color: #a855f7; }
+.frm-join-form { display: grid; gap: 12px; }
+.frm-team-profile, .frm-player-profile { display: grid; grid-template-columns: 110px minmax(0,1fr); gap: 18px; align-items: center; }
+.frm-profile-cover { min-height: 160px; border-radius: 18px; background: radial-gradient(circle at 18% 22%, rgba(168,85,247,.45), transparent 28%), rgba(4,9,20,.9); border: 1px solid var(--frm-border); margin-bottom: 12px; }
+.frm-board-tools { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.frm-player-token { cursor: grab; user-select: none; }
+.frm-player-token:active { cursor: grabbing; }
+.frm-player-token.opp { background: rgba(127,29,29,.78); }
+.frm-ball-token { position: absolute; width: 28px; height: 28px; border-radius: 999px; background: #fff; color: #111; display: grid; place-items: center; transform: translate(-50%,-50%); cursor: grab; box-shadow: 0 8px 22px rgba(0,0,0,.35); z-index: 8; }
+.frm-rank-editor { display: grid; grid-template-columns: 1fr 90px 90px 110px; gap: 8px; align-items: end; margin-top: 12px; }
+@media (max-width: 900px) { .frm-sidebar:after { display: none; } .frm-sidebar { position: relative; height: auto; min-height: auto; } .frm-rank-editor { grid-template-columns: 1fr; } }
+`);
+
+write(path.join(pagesDir, 'afiliacao.html'), shell({ title:'Solicitar Afiliação', tab:'clubes', href:'/pages/afiliacao.html', module:'affiliate', body: hero('Solicitar Afiliação','Crie um clube afiliado à federação. O criador vira dono/capitão inicial do elenco.') + `<section class="frm-card"><h2>Cadastro de clube</h2><form id="clubCreateForm" class="frm-join-form"><input class="frm-input" name="name" placeholder="Nome do clube" required/><input class="frm-input" name="tag" placeholder="Sigla / TAG" maxlength="12"/><input class="frm-input" name="region" placeholder="Região"/><input class="frm-input" name="logo" placeholder="URL da logo ou imagem"/><textarea class="frm-textarea" name="description" placeholder="Descrição do clube"></textarea><button class="frm-btn primary" type="submit">Criar clube afiliado</button><p id="clubCreateStatus" class="frm-muted"></p></form></section>` }));
+
+write(path.join(pagesDir, 'formulario-clube.html'), read(path.join(pagesDir, 'afiliacao.html')));
+
+write(path.join(pagesDir, 'calendario.html'), shell({ title:'Calendário', tab:'competitivo', href:'/pages/calendario.html', module:'calendar', body: hero('Calendário de Julho','Calendário mensal oficial da federação. A Nexus Cup 1ª Edição aparece no sábado, dia 18.') + `<section class="frm-card"><div class="frm-toolbar"><span class="frm-pill">Julho 2026</span><a class="frm-btn" href="/pages/competicoes.html">Competições</a><a class="frm-btn" href="/pages/eventos.html">Eventos</a></div><div id="calendarGrid" class="frm-calendar"></div></section>` }));
+
+write(path.join(pagesDir, 'resultados.html'), shell({ title:'Resultados', tab:'competitivo', href:'/pages/resultados.html', module:'results', body: hero('Resultados','Histórico de partidas validadas, placares e gols registrados.') + `<section class="frm-card"><h2>Resultados registrados</h2><div id="resultsList" class="frm-list"><div class="frm-empty">Carregando resultados...</div></div></section>` }));
+
+write(path.join(pagesDir, 'transferencias.html'), shell({ title:'Transferências', tab:'atletas', href:'/pages/transferencias.html', module:'transfers', body: hero('Transferências','Solicite transferência de um atleta de um clube para outro. Não usa mais Formulários.') + `<section class="frm-card"><h2>Solicitar transferência</h2><form id="transferForm" class="frm-join-form"><select class="frm-select" id="transferPlayer" name="playerId"></select><select class="frm-select" id="transferFrom" name="fromTeamId"></select><select class="frm-select" id="transferTo" name="toTeamId"></select><textarea class="frm-textarea" name="note" placeholder="Motivo / observação"></textarea><button class="frm-btn primary" type="submit">Solicitar transferência</button><p id="transferStatus" class="frm-muted"></p></form></section>` }));
+
+write(path.join(pagesDir, 'perfil-jogador.html'), shell({ title:'Perfil do Atleta', tab:'atletas', href:'/pages/atletas.html', module:'player-profile', body: hero('Perfil Público do Atleta','Cards, conexões, função, clube e informações públicas.') + `<section id="playerProfile" class="frm-card"><div class="frm-empty">Carregando perfil...</div></section>` }));
+write(path.join(pagesDir, 'perfil-clube.html'), shell({ title:'Perfil do Clube', tab:'clubes', href:'/pages/clubes.html', module:'club-profile', body: hero('Perfil Público do Clube','Elenco, capitão, conexões e informações públicas do clube.') + `<section id="clubProfile" class="frm-card"><div class="frm-empty">Carregando clube...</div></section>` }));
+
+console.log(changed ? '[Federacao] Final fixes FRM aplicados.' : '[Federacao] Final fixes FRM ja estavam aplicados.');
