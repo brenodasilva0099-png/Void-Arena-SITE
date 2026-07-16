@@ -3,10 +3,12 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const pagesDir = path.join(ROOT, 'public', 'pages');
+const updatesFile = path.join(pagesDir, 'atualizacoes.html');
 const versionFile = path.join(ROOT, 'public', 'league-version.json');
 const cssFile = path.join(ROOT, 'public', 'css', 'federation-polish.css');
 const jsFile = path.join(ROOT, 'public', 'js', 'core', 'federation-polish.js');
 const BUILD = '2026-07-16-hollow-nexus-league-v1';
+const RELEASE_ID = 'release-2026-07-16-hollow-nexus-league-v1';
 let changed = false;
 
 function read(file) { return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''; }
@@ -33,8 +35,6 @@ function rebrandHtml(html) {
     ['Federação comunitária', 'Liga comunitária'],
     ['Federação', 'Liga'],
     ['federação', 'liga'],
-    ['Sobre a Liga', 'Sobre a Liga'],
-    ['Status da Liga', 'Status da Liga'],
     ['Clubes Afiliados', 'Clubes Participantes'],
     ['clubes afiliados', 'clubes participantes'],
     ['Solicitar Afiliação', 'Cadastrar Clube'],
@@ -60,7 +60,27 @@ function patchPage(file) {
   const next = rebrandHtml(html);
   if (next !== html) write(file, next);
 }
-
+function patchUpdates() {
+  let html = read(updatesFile);
+  if (!html) return;
+  const card = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-16-hollow-nexus-league-v1">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>16/07/2026 • 19:36 BRT</span><span>Site</span><span>Liga</span></div>
+            <h3>Identidade alterada para Hollow Nexus League</h3>
+            <p class="va-muted">O projeto deixou de se posicionar como federação e passa a usar identidade de liga organizadora de campeonatos, clubes e temporadas.</p>
+            <ul class="va-update-list">
+              <li class="site">FRM/Federação foi substituído por HNL/Hollow Nexus League na camada visual final.</li>
+              <li class="site">Clubes Afiliados vira Clubes Participantes e Solicitar Afiliação vira Cadastrar Clube.</li>
+              <li class="fix">O texto legal reforça que a liga é comunitária e independente, sem afiliação oficial com Rematch, Sloclap ou Kepler Interactive.</li>
+              <li class="fix">Dados vivos, clubes, jogadores, eventos, ranking e inscrições foram preservados.</li>
+            </ul>
+          </article>
+`;
+  if (!html.includes(RELEASE_ID)) html = html.replace('<div class="va-timeline">', '<div class="va-timeline">' + card);
+  html = rebrandHtml(html);
+  write(updatesFile, html);
+}
 function patchCss() {
   let css = read(cssFile);
   const block = '\n/* HNL league rebrand v1 */\n.frm-brand strong::after{content:""}.frm-tag{letter-spacing:.08em}.frm-league-note{color:var(--frm-muted);font-size:13px}.frm-page-hero h1 .frm-the{text-transform:none}.frm-footer .frm-socials span{color:#fff}\n';
@@ -93,6 +113,7 @@ function patchVersion() {
 }
 
 walk(pagesDir).forEach(patchPage);
+patchUpdates();
 patchCss();
 patchJs();
 patchVersion();
