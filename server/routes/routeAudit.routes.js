@@ -16,6 +16,13 @@ const EXPECTED_ROUTES = [
   ['get', '/api/notifications']
 ];
 
+function botTarget() {
+  const raw = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || '').trim();
+  if (!raw) return '';
+  try { return new URL(raw).origin; }
+  catch { return raw.replace(/[?#].*$/, '').replace(/\/+$/, ''); }
+}
+
 function routeStack(app) {
   return app?._router?.stack || app?.router?.stack || [];
 }
@@ -53,12 +60,12 @@ function registerRouteAuditRoutes(app) {
       assetStatus('assets/hollow-nexus-official.svg')
     ];
 
-    let botStorage = { available: false, database: null, message: '' };
+    let botStorage = { available: false, target: botTarget(), database: null, message: '' };
     try {
       const database = await storage.readDatabaseStatus();
-      botStorage = { available: true, database, message: '' };
+      botStorage = { available: true, target: botTarget(), database, message: '' };
     } catch (error) {
-      botStorage = { available: false, database: null, message: error.message };
+      botStorage = { available: false, target: botTarget(), database: null, message: error.message };
     }
 
     const missingRoutes = routes.filter((item) => !item.registered);
