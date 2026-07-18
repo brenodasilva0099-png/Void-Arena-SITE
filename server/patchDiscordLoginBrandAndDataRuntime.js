@@ -5,8 +5,10 @@ const ROOT = path.join(__dirname, '..');
 const APP_FILE = path.join(__dirname, 'app.js');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
+const UPDATES_FILE = path.join(PAGES_DIR, 'atualizacoes.html');
 const BRAND_SYNC_FILE = path.join(PUBLIC_DIR, 'js', 'core', 'discord-brand-sync.js');
 const BUILD = '2026-07-17-discord-login-brand-data-v1';
+const UPDATE_ID = 'release-2026-07-17-discord-login-brand-panels';
 const CANONICAL_SITE = 'https://hollow-nexus-league.onrender.com';
 let changed = false;
 
@@ -77,8 +79,36 @@ function patchBrandSync() {
   write(BRAND_SYNC_FILE, js);
 }
 
+function patchUpdatesPage() {
+  let html = read(UPDATES_FILE);
+  if (!html || html.includes(UPDATE_ID)) return;
+  const card = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-17-discord-login-brand-panels">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>17/07/2026 • 22:05 BRT</span><span>Site + Bot</span><span>Discord/Render</span></div>
+            <h3>Login Discord, logo do servidor e painéis públicos ajustados para o novo link</h3>
+            <p class="va-muted">Camada de correção para a migração do Render para https://hollow-nexus-league.onrender.com, mantendo dados vivos e atualizando fluxos que ainda apontavam para o serviço antigo.</p>
+            <ul class="va-update-list">
+              <li class="site">O callback do Discord passa a ignorar URLs antigas do Render e usar o link público atual da Hollow Nexus League.</li>
+              <li class="site">A logo/favico do site agora tenta sincronizar automaticamente com o ícone do servidor retornado pelo bot.</li>
+              <li class="bot">Painéis e mensagens do bot para formulários, partidas/treinos e placar passam a ser revisados e atualizados com o novo link do site.</li>
+              <li class="fix">A revisão preserva jogadores, clubes, rankings, eventos, inscrições e histórico; ela troca somente links, painéis e camada visual de integração.</li>
+            </ul>
+          </article>
+`;
+  if (html.includes('<article class="va-card va-update-card"')) {
+    html = html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
+  } else if (html.includes('</main>')) {
+    html = html.replace('</main>', card + '\n</main>');
+  } else {
+    html += card;
+  }
+  write(UPDATES_FILE, html);
+}
+
 patchApp();
 patchBrandSync();
+patchUpdatesPage();
 [...walkHtml(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].forEach(patchHtml);
 
 console.log(changed ? '[Discord/Login] Login, URL publica e logo Discord corrigidos.' : '[Discord/Login] Login, URL publica e logo Discord ja estavam corrigidos.');
