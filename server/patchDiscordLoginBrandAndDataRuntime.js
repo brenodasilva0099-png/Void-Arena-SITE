@@ -3,12 +3,14 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const APP_FILE = path.join(__dirname, 'app.js');
+const FEDERATION_ROUTES_FILE = path.join(__dirname, 'routes', 'federation.routes.js');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const UPDATES_FILE = path.join(PAGES_DIR, 'atualizacoes.html');
 const BRAND_SYNC_FILE = path.join(PUBLIC_DIR, 'js', 'core', 'discord-brand-sync.js');
-const BUILD = '2026-07-17-discord-login-brand-data-v1';
+const BUILD = '2026-07-17-discord-login-brand-data-v2';
 const UPDATE_ID = 'release-2026-07-17-discord-login-brand-panels';
+const UPDATE_ID_AUTH_FIX = 'release-2026-07-17-discord-auth-data-fix';
 const CANONICAL_SITE = 'https://hollow-nexus-league.onrender.com';
 let changed = false;
 
@@ -22,6 +24,133 @@ function write(file, content) {
     fs.writeFileSync(file, content, 'utf8');
     changed = true;
   }
+}
+
+function discordAuthBlock() {
+  return String.raw`  app.get('/auth/discord', (req, res) => {
+    const clientId = process.env.DISCORD_CLIENT_ID || process.env.DISCORD_OAUTH_CLIENT_ID || process.env.DISCORD_APP_ID || process.env.CLIENT_ID || '';
+    const redirectUri = getDiscordCallbackUrl();
+    const requestedNext = String(req.query.next || req.query.redirect || req.headers.referer || '/pages/perfil.html');
+    const safeNext = requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/pages/perfil.html';
+
+    if (req.session.userId) return res.redirect(safeNext);
+
+    req.session.oauthReturnTo = safeNext;
+
+    if (!clientId) {
+      return res.status(501).send('Login Discord ainda não configurado. Defina DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET e DISCORD_CALLBACK_URL no Render.');
+    }
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'identify email',
+      prompt: 'consent'
+    });
+
+    return req.session.save(() => res.redirect('https://discord.com/api/oauth2/authorize?' + params.toString()));
+  });
+
+  app.get('/auth/discord/callback', async (req, res) => {
+    const code = String(req.query.code || '');
+    const clientId = process.env.DISCORD_CLIENT_ID || process.env.DISCORD_OAUTH_CLIENT_ID || process.env.DISCORD_APP_ID || process.env.CLIENT_ID || '';
+    const clientSecret = process.env.DISCORD_CLIENT_SECRET || process.env.DISCORD_OAUTH_CLIENT_SECRET || process.env.CLIENT_SECRET || '';
+    const redirectUri = getDiscordCallbackUrl();
+
+    if (!code || !clientId || !clientSecret) {
+      return res.status(400).send('Callback Discord inválido ou variáveis Discord ausentes.');
+    }
+
+    try {
+      const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: redirectUri
+        })
+      });
+
+      const tokenData = await tokenResponse.json().catch(() => ({}));
+      if (!tokenResponse.ok) {
+        throw new Error(tokenData.error_description || tokenData.error || 'Falha ao trocar código Discord.');
+      }
+
+      const profileResponse = await fetch('https://discord.com/api/users/@me', {
+        headers: { Authorization: 'Bearer ' + tokenData.access_token }
+      });
+      const profile = await profileResponse.json().catch(() => ({}));
+
+      if (!profileResponse.ok || !profile.id) {
+        throw new Error(profile.message || 'Não foi possível carregar o perfil Discord.');
+      }
+
+      const email = profile.email ? String(profile.email || '').trim().toLowerCase() : '';
+      const username = profile.global_name || profile.username || 'Discord';
+      const discordTag = profile.discriminator && profile.discriminator !== '0'
+        ? String(profile.username || username) + '#' + profile.discriminator
+        : String(profile.username || username);
+      const avatar = profile.avatar ? discordAvatarUrl({ id: profile.id, avatar: profile.avatar }, 128) : null;
+
+      let user = await findUserByDiscordId(profile.id);
+      if (!user && email) user = await findUserByEmail(email);
+
+      user = await saveUser({
+        ...(user || {}),
+        id: user?.id || crypto.randomUUID(),
+        name: username || user?.name || discordTag,
+        email: email || user?.email || null,
+        avatar: avatar || user?.avatar || null,
+        provider: user?.provider || 'discord',
+        discordId: profile.id,
+        discordTag,
+        socials: user?.socials || {},
+        profile: normalizeUserProfile({
+          ...(user?.profile || {}),
+          username: user?.profile?.username || username || discordTag,
+          discord: discordTag
+        }),
+        createdAt: user?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      req.session.userId = user.id;
+      const next = String(req.session.oauthReturnTo || '/pages/perfil.html');
+      delete req.session.oauthReturnTo;
+      return req.session.save(() => res.redirect(next.startsWith('/') && !next.startsWith('//') ? next : '/pages/perfil.html'));
+    } catch (error) {
+      return res.status(500).send('Erro no login Discord: ' + error.message);
+    }
+  });
+
+`;
+}
+
+function publicDataRoutesBlock() {
+  return String.raw`  app.get('/api/teams', async (_req, res) => {
+    try {
+      const teams = await readTeams().catch(() => []);
+      return res.json({ success: true, teams, clubs: teams });
+    } catch (error) {
+      return res.json({ success: true, teams: [], clubs: [], message: error.message });
+    }
+  });
+
+  app.get('/api/players', async (_req, res) => {
+    try {
+      const users = await readUsers().catch(() => []);
+      const players = users.map((user) => safeUser(user));
+      return res.json({ success: true, players, users: players });
+    } catch (error) {
+      return res.json({ success: true, players: [], users: [], message: error.message });
+    }
+  });
+
+`;
 }
 
 function patchApp() {
@@ -49,7 +178,24 @@ function patchApp() {
     if (src.includes(anchor)) src = src.replace(anchor, block + anchor);
   }
 
+  if (!src.includes("app.get('/api/teams'")) {
+    const anchor = "  app.get('/api/health', async (_req, res) => {";
+    if (src.includes(anchor)) src = src.replace(anchor, publicDataRoutesBlock() + anchor);
+  }
+
+  if (!src.includes("app.get('/auth/discord'")) {
+    const anchor = "  app.get('/auth/google', (req, res) => {";
+    if (src.includes(anchor)) src = src.replace(anchor, discordAuthBlock() + anchor);
+  }
+
   write(APP_FILE, src);
+}
+
+function patchFederationRoutes() {
+  let src = read(FEDERATION_ROUTES_FILE);
+  if (!src) return;
+  src = src.replace('partidas: results.length, gols }', 'partidas: results.length, gols: goals }');
+  write(FEDERATION_ROUTES_FILE, src);
 }
 
 function walkHtml(dir) {
@@ -64,6 +210,8 @@ function patchHtml(file) {
   let html = read(file);
   if (!html) return;
   html = html.replace(/https:\/\/void-arena-site(?:-[a-z0-9]+)?\.onrender\.com/gi, CANONICAL_SITE);
+  html = html.replace(/data-frm-login\s+href="\/pages\/perfil\.html"/g, 'data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html"');
+  html = html.replace(/href="\/pages\/perfil\.html"\s+aria-label="Abrir perfil"/g, 'href="/auth/discord?next=%2Fpages%2Fperfil.html" aria-label="Entrar com Discord"');
   html = html.replace(/<meta name="discord-brand-sync-build" content="[^"]*"\s*\/?>/g, '');
   if (html.includes('</head>') && !html.includes('discord-brand-sync-build')) {
     html = html.replace('</head>', `  <meta name="discord-brand-sync-build" content="${BUILD}">\n</head>`);
@@ -75,14 +223,38 @@ function patchHtml(file) {
 }
 
 function patchBrandSync() {
-  const js = `(function(){\n  const BUILD='${BUILD}';\n  const FALLBACK_SITE='${CANONICAL_SITE}';\n  function setAttr(el,name,value){ if(el && value) el.setAttribute(name,value); }\n  function isLogoCandidate(img){\n    const src=String(img.getAttribute('src')||'');\n    const alt=String(img.getAttribute('alt')||'');\n    const cls=String(img.className||'');\n    return /hollow|void|logo|brand|server|nexus/i.test(src+' '+alt+' '+cls);\n  }\n  function normalizeUrl(value){ return String(value||'').trim(); }\n  async function getJson(url){\n    const res=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{headers:{Accept:'application/json'},cache:'no-store'});\n    if(!res.ok) throw new Error('HTTP '+res.status);\n    return res.json();\n  }\n  async function syncBrand(){\n    try{\n      const data=await getJson('/api/bot');\n      const icon=normalizeUrl(data.guildIcon||data.avatar||'');\n      const name=normalizeUrl(data.guildName||data.serverName||data.displayName||data.name||'Hollow Nexus League');\n      if(icon){\n        document.querySelectorAll('img').forEach((img)=>{ if(isLogoCandidate(img)) { img.src=icon; img.alt=name; } });\n        document.querySelectorAll('link[rel="icon"],link[rel="shortcut icon"],link[rel="apple-touch-icon"]').forEach((link)=>setAttr(link,'href',icon));\n      }\n      document.querySelectorAll('[data-discord-server-name]').forEach((el)=>{ el.textContent=name; });\n      document.documentElement.dataset.discordBrandSync=BUILD;\n    }catch(error){\n      document.documentElement.dataset.discordBrandSync='failed';\n    }\n  }\n  async function syncSiteUrl(){\n    try{\n      const data=await getJson('/api/public/site-url');\n      const base=normalizeUrl(data.siteUrl)||FALLBACK_SITE;\n      document.querySelectorAll('a[href*="void-arena-site"]').forEach((a)=>{\n        try{ const old=new URL(a.href); a.href=base+old.pathname+old.search+old.hash; }catch{}\n      });\n    }catch{}\n  }\n  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ syncBrand(); syncSiteUrl(); });\n  else { syncBrand(); syncSiteUrl(); }\n})();\n`;
+  const js = `(function(){\n  const BUILD='${BUILD}';\n  const FALLBACK_SITE='${CANONICAL_SITE}';\n  function setAttr(el,name,value){ if(el && value) el.setAttribute(name,value); }\n  function isLogoCandidate(img){\n    const src=String(img.getAttribute('src')||'');\n    const alt=String(img.getAttribute('alt')||'');\n    const cls=String(img.className||'');\n    return /hollow|void|logo|brand|server|nexus/i.test(src+' '+alt+' '+cls);\n  }\n  function normalizeUrl(value){ return String(value||'').trim(); }\n  async function getJson(url){\n    const res=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{headers:{Accept:'application/json'},cache:'no-store'});\n    if(!res.ok) throw new Error('HTTP '+res.status);\n    return res.json();\n  }\n  function patchLoginLinks(){\n    document.querySelectorAll('[data-frm-login],a[href="/pages/perfil.html"]').forEach((a)=>{\n      if(!a) return;\n      a.setAttribute('href','/auth/discord?next=%2Fpages%2Fperfil.html');\n      a.setAttribute('data-discord-login',BUILD);\n    });\n  }\n  async function syncBrand(){\n    try{\n      const data=await getJson('/api/bot');\n      const icon=normalizeUrl(data.guildIcon||data.avatar||'');\n      const name=normalizeUrl(data.guildName||data.serverName||data.displayName||data.name||'Hollow Nexus League');\n      if(icon){\n        document.querySelectorAll('img').forEach((img)=>{ if(isLogoCandidate(img)) { img.src=icon; img.alt=name; } });\n        document.querySelectorAll('link[rel="icon"],link[rel="shortcut icon"],link[rel="apple-touch-icon"]').forEach((link)=>setAttr(link,'href',icon));\n      }\n      document.querySelectorAll('[data-discord-server-name]').forEach((el)=>{ el.textContent=name; });\n      document.documentElement.dataset.discordBrandSync=BUILD;\n    }catch(error){\n      document.documentElement.dataset.discordBrandSync='failed';\n    }\n  }\n  async function syncSiteUrl(){\n    try{\n      const data=await getJson('/api/public/site-url');\n      const base=normalizeUrl(data.siteUrl)||FALLBACK_SITE;\n      document.querySelectorAll('a[href*="void-arena-site"]').forEach((a)=>{\n        try{ const old=new URL(a.href); a.href=base+old.pathname+old.search+old.hash; }catch{}\n      });\n    }catch{}\n  }\n  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>{ patchLoginLinks(); syncBrand(); syncSiteUrl(); });\n  else { patchLoginLinks(); syncBrand(); syncSiteUrl(); }\n})();\n`;
   write(BRAND_SYNC_FILE, js);
 }
 
 function patchUpdatesPage() {
   let html = read(UPDATES_FILE);
-  if (!html || html.includes(UPDATE_ID)) return;
-  const card = String.raw`
+  if (!html) return;
+  if (!html.includes(UPDATE_ID_AUTH_FIX)) {
+    const card = String.raw`
+          <article class="va-card va-update-card" id="release-2026-07-17-discord-auth-data-fix">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>17/07/2026 • 22:48 BRT</span><span>Site</span><span>Login/Dados</span></div>
+            <h3>Login Discord e dados da liga corrigidos no novo Render</h3>
+            <p class="va-muted">Ajuste para o botão Entrar/Painel abrir OAuth Discord, restaurar sessão no retorno e corrigir endpoints públicos de clubes, jogadores e overview da liga.</p>
+            <ul class="va-update-list">
+              <li class="site">O botão Entrar/Painel passa a apontar para /auth/discord com retorno ao perfil.</li>
+              <li class="site">O callback Discord cria/atualiza o usuário e salva a sessão do site após o OAuth.</li>
+              <li class="fix">Foram adicionados aliases públicos /api/teams e /api/players para evitar tela zerada quando a camada HNL chamar esses endpoints.</li>
+              <li class="fix">O overview da liga teve o erro de estatística de gols corrigido para não retornar 500.</li>
+            </ul>
+          </article>
+`;
+    if (html.includes('<article class="va-card va-update-card"')) {
+      html = html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
+    } else if (html.includes('</main>')) {
+      html = html.replace('</main>', card + '\n</main>');
+    } else {
+      html += card;
+    }
+  }
+  if (!html.includes(UPDATE_ID)) {
+    const card = String.raw`
           <article class="va-card va-update-card" id="release-2026-07-17-discord-login-brand-panels">
             <span class="va-update-dot"></span>
             <div class="va-update-meta"><span>17/07/2026 • 22:05 BRT</span><span>Site + Bot</span><span>Discord/Render</span></div>
@@ -96,19 +268,21 @@ function patchUpdatesPage() {
             </ul>
           </article>
 `;
-  if (html.includes('<article class="va-card va-update-card"')) {
-    html = html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
-  } else if (html.includes('</main>')) {
-    html = html.replace('</main>', card + '\n</main>');
-  } else {
-    html += card;
+    if (html.includes('<article class="va-card va-update-card"')) {
+      html = html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
+    } else if (html.includes('</main>')) {
+      html = html.replace('</main>', card + '\n</main>');
+    } else {
+      html += card;
+    }
   }
   write(UPDATES_FILE, html);
 }
 
 patchApp();
+patchFederationRoutes();
 patchBrandSync();
 patchUpdatesPage();
 [...walkHtml(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].forEach(patchHtml);
 
-console.log(changed ? '[Discord/Login] Login, URL publica e logo Discord corrigidos.' : '[Discord/Login] Login, URL publica e logo Discord ja estavam corrigidos.');
+console.log(changed ? '[Discord/Login] Login, dados publicos e logo Discord corrigidos.' : '[Discord/Login] Login, dados publicos e logo Discord ja estavam corrigidos.');
