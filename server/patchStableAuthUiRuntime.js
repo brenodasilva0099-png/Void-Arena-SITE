@@ -48,7 +48,10 @@ function patchLeagueJs() {
     } catch {}
   }`;
 
-  js = js.replace(/async function setupTop\(\)\{[\s\S]*?\n  \}/, () => stableSetup);
+  js = js.replace(
+    /async function setupTop\(\)\{[\s\S]*?\n  \}\n\n  async function overview/,
+    () => `${stableSetup}\n\n  async function overview`
+  );
   js = js.replace(/\/api\/federation\//g, '/api/league/');
   js = js.replace(/\/api\/federation/g, '/api/league');
   write(LEAGUE_JS, js);
@@ -61,8 +64,8 @@ function patchNoMockJs() {
   const profileNoop = "async function profileButton(){return;}";
   const notificationSafe = "async function notificationBadges(){try{const s=await api('/api/auth/session');if(!s.authenticated){$$('[data-frm-unread],[data-frm-mail]').forEach(b=>b.textContent='0');return;}const n=await api('/api/notifications');$$('[data-frm-unread],[data-frm-mail]').forEach(b=>b.textContent=String(n.unread||0));}catch{$$('[data-frm-unread],[data-frm-mail]').forEach(b=>b.textContent='0');}}";
 
-  js = js.replace(/async function profileButton\(\)\{[\s\S]*?\}/, profileNoop);
-  js = js.replace(/async function notificationBadges\(\)\{[\s\S]*?\}/, notificationSafe);
+  js = js.replace(/async function profileButton\(\)\{[^\n]*\}/, profileNoop);
+  js = js.replace(/async function notificationBadges\(\)\{[^\n]*\}/, notificationSafe);
   js = js.replace(/\/api\/federation\//g, '/api/league/');
   js = js.replace(/\/api\/federation/g, '/api/league');
   write(NO_MOCK_JS, js);
