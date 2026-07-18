@@ -11,11 +11,14 @@ const FED_CSS = path.join(PUBLIC_DIR, 'css', 'federation-polish.css');
 const LEAGUE_CSS = path.join(PUBLIC_DIR, 'css', 'league-polish.css');
 const UPDATES_FILE = path.join(PAGES_DIR, 'atualizacoes.html');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'league-namespace.json');
-const BUILD = '2026-07-17-league-namespace-logo-v1';
+const BUILD = '2026-07-18-league-runtime-hotfix-v2';
 const LOGO = '/api/brand/icon?v=' + BUILD;
 let changed = false;
 
-function read(file) { return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''; }
+function read(file) {
+  return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+}
+
 function write(file, content) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   if (read(file) !== content) {
@@ -23,6 +26,7 @@ function write(file, content) {
     changed = true;
   }
 }
+
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -34,32 +38,63 @@ function walk(dir) {
 function patchIndex() {
   let src = read(INDEX_FILE);
   if (!src) return;
+
   if (!src.includes('registerLeagueRoutes')) {
     src = src.replace(
       "const { registerDiscordServerLinkRoutes } = require('../server/routes/discordServerLink.routes');",
       "const { registerDiscordServerLinkRoutes } = require('../server/routes/discordServerLink.routes');\nconst { registerLeagueRoutes } = require('../server/routes/league.routes');"
     );
-    src = src.replace('registerDiscordServerLinkRoutes(app);', 'registerDiscordServerLinkRoutes(app);\nregisterLeagueRoutes(app);');
+    src = src.replace(
+      'registerDiscordServerLinkRoutes(app);',
+      'registerDiscordServerLinkRoutes(app);\nregisterLeagueRoutes(app);'
+    );
   }
+
   write(INDEX_FILE, src);
 }
 
 function loginSetupSource() {
   return `async function setupTop(){
     const loginHref = '/auth/discord?next=%2Fpages%2Fperfil.html';
-    const loginEls = $$('[data-frm-login],a[href="/pages/perfil.html"]');
-    loginEls.forEach(a => { a.href = loginHref; a.dataset.discordLogin = '${BUILD}'; });
+    const loginEls = Array.from(document.querySelectorAll('[data-frm-login],a[href="/pages/perfil.html"]'));
+
+    loginEls.forEach((a) => {
+      a.href = loginHref;
+      a.dataset.discordLogin = '${BUILD}';
+    });
+
+    if (!document.documentElement.dataset.hnlLoginGuard) {
+      document.documentElement.dataset.hnlLoginGuard = '${BUILD}';
+      document.addEventListener('click', (event) => {
+        const target = event.target && event.target.closest ? event.target.closest('[data-frm-login]') : null;
+        if (!target || target.dataset.loggedIn === '1') return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.location.assign(loginHref);
+      }, true);
+    }
+
     let logged = false;
     try {
       const me = await api('/api/me');
       logged = true;
       const u = me.user || {};
-      loginEls.forEach(a => { a.href = '/pages/perfil.html'; a.dataset.loggedIn = '1'; a.innerHTML = '<img class="frm-profile-avatar" src="' + esc(img(u.avatar)) + '" alt="Perfil"/>'; a.classList.remove('frm-btn'); a.title = 'Abrir perfil'; });
+      loginEls.forEach((a) => {
+        a.href = '/pages/perfil.html';
+        a.dataset.loggedIn = '1';
+        a.innerHTML = '<img class="frm-profile-avatar" src="' + esc(img(u.avatar)) + '" alt="Perfil"/>';
+        a.classList.remove('frm-btn');
+        a.title = 'Abrir perfil';
+      });
     } catch {}
+
     if (!logged) return;
+
     try {
       const n = await api('/api/notifications');
-      $$('[data-frm-unread],[data-frm-mail]').forEach(b => b.textContent = String(n.unread || 0));
+      Array.from(document.querySelectorAll('[data-frm-unread],[data-frm-mail]')).forEach((b) => {
+        b.textContent = String(n.unread || 0);
+      });
     } catch {}
   }`;
 }
@@ -79,9 +114,41 @@ function cleanJs(js) {
   out = out.replace(/atletas/g, 'jogadores');
   out = out.replace(/atleta/g, 'jogador');
   out = out.replace(/const logo = '[^']*';/, "const logo = '" + LOGO + "';");
-  out = out.replace(/async function setupTop\(\)\{[\s\S]*?\n  \}/, loginSetupSource());
-  if (!out.includes('HNL_LEAGUE_NAMESPACE')) out += '\n/* HNL_LEAGUE_NAMESPACE ' + BUILD + ' */\n';
+
+  // A função de substituição preserva os dois cifrões do helper $$.
+  // Usar uma string de substituição transformava $$ em $, causando loginEls.forEach is not a function.
+  out = out.replace(/async function setupTop\(\)\{[\s\S]*?\n  \}/, () => loginSetupSource());
+
+  if (!out.includes('HNL_LEAGUE_NAMESPACE')) {
+    out += '\n/* HNL_LEAGUE_NAMESPACE ' + BUILD + ' */\n';
+  }
+
   return out;
+}
+
+function balancedVisualCss() {
+  return `
+/* HNL visual balance ${BUILD} */
+:root{
+  --frm-bg:#080b16;
+  --frm-card:#111827;
+  --frm-card2:#172033;
+  --frm-muted:#c2c8d6;
+  --frm-line:rgba(255,255,255,.11);
+}
+body.frm-polish-page{
+  background:
+    radial-gradient(circle at 18% 0%,rgba(139,92,246,.22),transparent 36%),
+    radial-gradient(circle at 82% 18%,rgba(59,130,246,.13),transparent 34%),
+    linear-gradient(135deg,#080b16,#0c1120 48%,#11152a)!important;
+}
+.frm-sidebar{background:rgba(9,12,24,.96)!important}
+.frm-main{background:linear-gradient(180deg,rgba(15,20,36,.42),rgba(8,11,22,.14))}
+.frm-card,.frm-stat,.frm-footer,.frm-modal-panel{background:rgba(16,24,39,.92)!important}
+.frm-page-hero{background:radial-gradient(circle at 84% 50%,rgba(139,92,246,.38),transparent 30%),linear-gradient(116deg,rgba(15,23,42,.97),rgba(31,22,58,.95))!important}
+.frm-nav a{color:#e1e5ef}
+.frm-card p,.frm-muted,.frm-footer p,.frm-footer a{color:#c2c8d6}
+`;
 }
 
 function patchAssets() {
@@ -91,15 +158,23 @@ function patchAssets() {
     write(FED_JS, leagueJs);
     write(LEAGUE_JS, leagueJs);
   }
+
   const css = read(FED_CSS);
-  if (css) write(LEAGUE_CSS, css.replace(/federation/gi, 'league').replace(/frm/gi, 'hnl'));
+  if (css) {
+    // Classes frm-* são identificadores técnicos usados no HTML.
+    // Elas permanecem por compatibilidade; somente a identidade visível virou League/HNL.
+    write(LEAGUE_CSS, css + balancedVisualCss());
+  }
 }
 
 function patchHtml(file) {
   let html = read(file);
   if (!html) return;
+
   html = html.replace(/\/js\/core\/federation-polish\.js(\?[^"']*)?/g, '/js/core/league-polish.js?v=' + BUILD);
+  html = html.replace(/\/js\/core\/league-polish\.js(\?[^"']*)?/g, '/js/core/league-polish.js?v=' + BUILD);
   html = html.replace(/\/css\/federation-polish\.css(\?[^"']*)?/g, '/css/league-polish.css?v=' + BUILD);
+  html = html.replace(/\/css\/league-polish\.css(\?[^"']*)?/g, '/css/league-polish.css?v=' + BUILD);
   html = html.replace(/\/api\/federation\//g, '/api/league/');
   html = html.replace(/\/api\/federation/g, '/api/league');
   html = html.replace(/https:\/\/void-arena-site(?:-[a-z0-9]+)?\.onrender\.com/gi, 'https://hollow-nexus-league.onrender.com');
@@ -120,30 +195,46 @@ function patchHtml(file) {
   html = html.replace(/href="\/pages\/perfil\.html"\s+aria-label="Abrir perfil"/g, 'href="/auth/discord?next=%2Fpages%2Fperfil.html" aria-label="Entrar com Discord"');
   html = html.replace(/<link\s+rel="icon"[^>]*>/gi, '<link rel="icon" href="' + LOGO + '">');
   html = html.replace(/src="(?:\/assets\/hollow-nexus\.png|\/assets\/logo\.png|\/api\/brand\/icon[^"]*)"/g, 'src="' + LOGO + '"');
-  if (html.includes('</head>') && !html.includes('league-namespace-build')) html = html.replace('</head>', '<meta name="league-namespace-build" content="' + BUILD + '">\n</head>');
+
+  html = html.replace(/<meta name="league-namespace-build" content="[^"]*"\s*\/?>/g, '');
+  if (html.includes('</head>')) {
+    html = html.replace('</head>', '<meta name="league-namespace-build" content="' + BUILD + '">\n</head>');
+  }
+
   write(file, html);
+}
+
+function insertUpdate(html, card) {
+  if (html.includes('<article class="va-card va-update-card"')) {
+    return html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
+  }
+  if (html.includes('</main>')) return html.replace('</main>', card + '\n</main>');
+  return html + card;
 }
 
 function patchUpdates() {
   let html = read(UPDATES_FILE);
-  if (!html || html.includes('release-2026-07-17-league-namespace-logo')) return;
-  const card = `
-          <article class="va-card va-update-card" id="release-2026-07-17-league-namespace-logo">
+  if (!html) return;
+
+  const hotfixId = 'release-2026-07-18-league-runtime-hotfix';
+  if (!html.includes(hotfixId)) {
+    const card = `
+          <article class="va-card va-update-card" id="${hotfixId}">
             <span class="va-update-dot"></span>
-            <div class="va-update-meta"><span>17/07/2026 • 23:10 BRT</span><span>Site</span><span>League/Logo/Login</span></div>
-            <h3>Namespace League, login Discord e logo oficial consolidados</h3>
-            <p class="va-muted">A camada HNL passa a usar rotas /api/league, assets league-polish e favicon/logo vindos da marca oficial do servidor, mantendo compatibilidade com os dados antigos.</p>
+            <div class="va-update-meta"><span>18/07/2026 • 17:40 BRT</span><span>Site</span><span>Hotfix visual/login</span></div>
+            <h3>Layout League restaurado e login Discord estabilizado</h3>
+            <p class="va-muted">Correção da folha de estilos League que havia alterado identificadores técnicos do HTML e deixado a página sem formatação.</p>
             <ul class="va-update-list">
-              <li class="site">O botão Entrar/Painel é forçado para o OAuth Discord quando o usuário ainda não está logado.</li>
-              <li class="site">O frontend passa a chamar /api/league/overview, /api/league/ranking-settings e demais rotas League.</li>
-              <li class="fix">Logo e favicon agora usam /api/brand/icon, sincronizando com a logo atual do servidor/bot quando disponível.</li>
-              <li class="fix">As rotas antigas Federation/FRM continuam como compatibilidade para preservar dados e histórico.</li>
+              <li class="fix">As classes técnicas frm-* foram preservadas para compatibilidade, restaurando sidebar, cards, cabeçalho, logo e responsividade.</li>
+              <li class="site">O visual recebeu contraste mais equilibrado e superfícies um pouco mais claras sem abandonar a identidade roxa e escura.</li>
+              <li class="fix">O erro loginEls.forEach is not a function foi eliminado e o botão Entrar/Painel volta a abrir o OAuth Discord.</li>
+              <li class="fix">Jogadores, clubes, eventos, rankings e demais dados existentes não foram sobrescritos.</li>
             </ul>
           </article>
 `;
-  if (html.includes('<article class="va-card va-update-card"')) html = html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
-  else if (html.includes('</main>')) html = html.replace('</main>', card + '\n</main>');
-  else html += card;
+    html = insertUpdate(html, card);
+  }
+
   write(UPDATES_FILE, html);
 }
 
@@ -151,6 +242,14 @@ patchIndex();
 patchAssets();
 [...walk(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].forEach(patchHtml);
 patchUpdates();
-write(VERSION_FILE, JSON.stringify({ build: BUILD, namespace: 'league', logo: LOGO, updatedAt: '2026-07-17T23:10:00-03:00' }, null, 2));
+write(VERSION_FILE, JSON.stringify({
+  build: BUILD,
+  namespace: 'league',
+  logo: LOGO,
+  visual: 'balanced-dark',
+  updatedAt: '2026-07-18T17:40:00-03:00'
+}, null, 2));
 
-console.log(changed ? '[League] Namespace, login e logo oficial aplicados.' : '[League] Namespace, login e logo oficial ja estavam aplicados.');
+console.log(changed
+  ? '[League] CSS, login, identidade e visual restaurados.'
+  : '[League] CSS, login, identidade e visual ja estavam restaurados.');
