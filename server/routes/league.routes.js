@@ -152,6 +152,13 @@ async function resolveBrand() {
   };
 }
 
+async function redirectBrandIcon(res) {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  const brand = await resolveBrand();
+  if (/^https?:\/\//i.test(brand.icon)) return res.redirect(302, brand.icon);
+  return res.redirect(302, DEFAULT_LOGO);
+}
+
 function registerLeagueRoutes(app) {
   removeRoutes(app, [
     ['get', '/api/brand'],
@@ -174,14 +181,8 @@ function registerLeagueRoutes(app) {
     return res.json({ success: true, brand, logo: brand.icon || DEFAULT_LOGO, icon: brand.icon || DEFAULT_LOGO });
   });
 
-  app.get('/api/brand/icon', async (_req, res) => {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    const brand = await resolveBrand();
-    if (/^https?:\/\//i.test(brand.icon)) return res.redirect(302, brand.icon);
-    return res.redirect(302, DEFAULT_LOGO);
-  });
-
-  app.get('/api/brand/logo', async (req, res) => app._router.handle({ ...req, url: '/api/brand/icon', originalUrl: '/api/brand/icon' }, res, () => res.redirect(DEFAULT_LOGO)));
+  app.get('/api/brand/icon', async (_req, res) => redirectBrandIcon(res));
+  app.get('/api/brand/logo', async (_req, res) => redirectBrandIcon(res));
 
   app.get('/api/league/overview', async (_req, res) => {
     try {
@@ -319,12 +320,11 @@ function registerLeagueRoutes(app) {
       const users = await storage.readUsers().catch(() => []);
       const target = users.find((user) => String(user.id || '') === String(invite.targetUserId || invite.userId || '') || String(user.discordId || '') === String(invite.targetDiscordId || '')) || null;
       if (!target) throw new Error('Jogador alvo do convite não foi encontrado.');
-      let savedTeam = null;
       if (action === 'accept') {
         const teams = await storage.readTeams().catch(() => []);
         const team = teams.find((item) => String(item.id || '') === String(invite.teamId || invite.team?.id || '')) || null;
         if (!team) throw new Error('Clube do convite não encontrado.');
-        savedTeam = await storage.saveTeam(addUserToTeam(team, target, invite));
+        await storage.saveTeam(addUserToTeam(team, target, invite));
       }
       const status = action === 'accept' ? 'accepted' : 'declined';
       const next = { ...invite, status, respondedAt: new Date().toISOString(), responder: { id: target.id || '', name: nameOf(target), discordId: target.discordId || '', avatar: target.avatar || '' } };
