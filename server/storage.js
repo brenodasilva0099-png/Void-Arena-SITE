@@ -1,7 +1,7 @@
-const BOT_API_URL = String(process.env.BOT_API_URL || 'http://localhost:3002').replace(/\/$/, '');
+const BOT_API_URL = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || 'http://localhost:3002').replace(/\/$/, '');
 const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
-const STORAGE_TIMEOUT_MS = Number(process.env.SITE_BOT_STORAGE_TIMEOUT_MS || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 45000) || 45000;
-const STORAGE_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_RETRIES || 2) || 2);
+const STORAGE_TIMEOUT_MS = Number(process.env.SITE_BOT_STORAGE_TIMEOUT_MS || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 20000) || 20000;
+const STORAGE_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_RETRIES || 7) || 7);
 
 function internalHeaders(extra = {}) {
   return {
@@ -18,12 +18,31 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isTransientStatus(status) {
+  return [408, 425, 429, 500, 502, 503, 504].includes(Number(status));
+}
+
+async function wakeBotStorage() {
+  if (!BOT_API_URL) return false;
+  try {
+    const response = await fetch(`${BOT_API_URL}/public/maintenance?t=${Date.now()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      timeoutMs: Math.min(STORAGE_TIMEOUT_MS, 15000)
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function callBotStorage(method, args = []) {
   if (!BOT_API_URL) {
     throw new Error('BOT_API_URL não configurado. O SITE separado precisa chamar a API interna do BOT.');
   }
 
   let lastError = null;
+  wakeBotStorage().catch(() => false);
 
   for (let attempt = 1; attempt <= STORAGE_RETRIES; attempt += 1) {
     try {
@@ -35,19 +54,27 @@ async function callBotStorage(method, args = []) {
       });
 
       const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success !== false) return data.result;
 
-      if (!response.ok || data.success === false) {
-        throw new Error(data.message || `Falha no storage remoto do bot (${response.status}).`);
-      }
-
-      return data.result;
+      const error = new Error(data.message || `Falha no storage remoto do bot (${response.status}).`);
+      error.status = response.status;
+      if (!isTransientStatus(response.status)) throw error;
+      lastError = error;
     } catch (error) {
       lastError = error;
-      if (attempt < STORAGE_RETRIES) await wait(1200 * attempt);
+      const status = Number(error?.status || 0);
+      if (status && !isTransientStatus(status)) throw error;
+    }
+
+    if (attempt < STORAGE_RETRIES) {
+      wakeBotStorage().catch(() => false);
+      const delay = Math.min(8000, 1200 * attempt + 500 * Math.max(0, attempt - 2));
+      await wait(delay);
     }
   }
 
-  throw lastError;
+  const suffix = lastError?.message ? ` ${lastError.message}` : '';
+  throw new Error(`BOT storage indisponível após ${STORAGE_RETRIES} tentativas.${suffix}`);
 }
 
 function remoteStorageMethod(method) {
@@ -55,6 +82,8 @@ function remoteStorageMethod(method) {
 }
 
 module.exports = {
+  wakeBotStorage,
+  callBotStorage,
   readDatabaseStatus: remoteStorageMethod('readDatabaseStatus'),
   readEvents: remoteStorageMethod('readEvents'),
   saveTournamentEvent: remoteStorageMethod('saveTournamentEvent'),
