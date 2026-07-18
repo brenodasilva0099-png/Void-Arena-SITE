@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('../server/patchDiscordStorageFallbackRuntime');
 
 const http = require('node:http');
 const { createServer } = require('../server/app');
@@ -22,6 +23,8 @@ const { registerAccessControlRoutes } = require('../server/routes/accessControl.
 const { registerRuntimeRoutes } = require('../server/routes/runtime.routes');
 const { registerDiscordServerLinkRoutes } = require('../server/routes/discordServerLink.routes');
 const { registerStableDiscordAuthRoutes } = require('../server/routes/discordAuthStable.routes');
+const { registerLeagueRoutes } = require('../server/routes/league.routes');
+const { registerRouteAuditRoutes } = require('../server/routes/routeAudit.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -45,12 +48,14 @@ registerNotificationRoutes(app);
 registerAccessControlRoutes(app);
 registerRuntimeRoutes(app);
 registerDiscordServerLinkRoutes(app);
+registerLeagueRoutes(app);
+registerRouteAuditRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
 
 server.listen(PORT, () => {
-  console.log(`Site Void Arena 5.1.3 rodando em: http://localhost:${PORT}`);
+  console.log(`Site Hollow Nexus League rodando em: http://localhost:${PORT}`);
   console.log('Realtime WebSocket ativo em: /realtime');
 });
 
