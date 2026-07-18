@@ -21,10 +21,12 @@ const { registerNotificationRoutes } = require('../server/routes/notifications.r
 const { registerAccessControlRoutes } = require('../server/routes/accessControl.routes');
 const { registerRuntimeRoutes } = require('../server/routes/runtime.routes');
 const { registerDiscordServerLinkRoutes } = require('../server/routes/discordServerLink.routes');
+const { registerStableDiscordAuthRoutes } = require('../server/routes/discordAuthStable.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
 const app = createServer({ client: null });
+registerStableDiscordAuthRoutes(app);
 registerStaticAssetGuard(app);
 registerOrganizedRoutes(app);
 registerDebugRoutes(app);
