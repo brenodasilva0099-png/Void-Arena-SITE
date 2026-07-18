@@ -17,6 +17,14 @@ function write(file, content) {
   }
 }
 
+function validateJavaScript(source, label) {
+  try {
+    new Function(source);
+  } catch (error) {
+    throw new Error(`${label} inválido após o patch: ${error.message}`);
+  }
+}
+
 function patchAuthRoute() {
   let src = read(AUTH_FILE);
   if (!src || src.includes('function pendingDiscordUserFromProfile')) return;
@@ -187,6 +195,7 @@ async function syncPendingDiscordUser(pending = {}) {
 
   src = src.replace(oldStorage, newStorage);
   src = src.replace('OAuth, sessão persistente e status de autenticação registrados.', 'OAuth resiliente, sessão temporária e sincronização automática registrados.');
+  validateJavaScript(src, 'Rota Discord');
   write(AUTH_FILE, src);
 }
 
