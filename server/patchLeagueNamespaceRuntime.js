@@ -9,6 +9,7 @@ const FED_JS = path.join(PUBLIC_DIR, 'js', 'core', 'federation-polish.js');
 const LEAGUE_JS = path.join(PUBLIC_DIR, 'js', 'core', 'league-polish.js');
 const FED_CSS = path.join(PUBLIC_DIR, 'css', 'federation-polish.css');
 const LEAGUE_CSS = path.join(PUBLIC_DIR, 'css', 'league-polish.css');
+const UPDATES_FILE = path.join(PAGES_DIR, 'atualizacoes.html');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'league-namespace.json');
 const BUILD = '2026-07-17-league-namespace-logo-v1';
 const LOGO = '/api/brand/icon?v=' + BUILD;
@@ -118,13 +119,38 @@ function patchHtml(file) {
   html = html.replace(/data-frm-login\s+href="\/pages\/perfil\.html"/g, 'data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html"');
   html = html.replace(/href="\/pages\/perfil\.html"\s+aria-label="Abrir perfil"/g, 'href="/auth/discord?next=%2Fpages%2Fperfil.html" aria-label="Entrar com Discord"');
   html = html.replace(/<link\s+rel="icon"[^>]*>/gi, '<link rel="icon" href="' + LOGO + '">');
+  html = html.replace(/src="(?:\/assets\/hollow-nexus\.png|\/assets\/logo\.png|\/api\/brand\/icon[^"]*)"/g, 'src="' + LOGO + '"');
   if (html.includes('</head>') && !html.includes('league-namespace-build')) html = html.replace('</head>', '<meta name="league-namespace-build" content="' + BUILD + '">\n</head>');
   write(file, html);
+}
+
+function patchUpdates() {
+  let html = read(UPDATES_FILE);
+  if (!html || html.includes('release-2026-07-17-league-namespace-logo')) return;
+  const card = `
+          <article class="va-card va-update-card" id="release-2026-07-17-league-namespace-logo">
+            <span class="va-update-dot"></span>
+            <div class="va-update-meta"><span>17/07/2026 • 23:10 BRT</span><span>Site</span><span>League/Logo/Login</span></div>
+            <h3>Namespace League, login Discord e logo oficial consolidados</h3>
+            <p class="va-muted">A camada HNL passa a usar rotas /api/league, assets league-polish e favicon/logo vindos da marca oficial do servidor, mantendo compatibilidade com os dados antigos.</p>
+            <ul class="va-update-list">
+              <li class="site">O botão Entrar/Painel é forçado para o OAuth Discord quando o usuário ainda não está logado.</li>
+              <li class="site">O frontend passa a chamar /api/league/overview, /api/league/ranking-settings e demais rotas League.</li>
+              <li class="fix">Logo e favicon agora usam /api/brand/icon, sincronizando com a logo atual do servidor/bot quando disponível.</li>
+              <li class="fix">As rotas antigas Federation/FRM continuam como compatibilidade para preservar dados e histórico.</li>
+            </ul>
+          </article>
+`;
+  if (html.includes('<article class="va-card va-update-card"')) html = html.replace('<article class="va-card va-update-card"', card + '\n          <article class="va-card va-update-card"');
+  else if (html.includes('</main>')) html = html.replace('</main>', card + '\n</main>');
+  else html += card;
+  write(UPDATES_FILE, html);
 }
 
 patchIndex();
 patchAssets();
 [...walk(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].forEach(patchHtml);
+patchUpdates();
 write(VERSION_FILE, JSON.stringify({ build: BUILD, namespace: 'league', logo: LOGO, updatedAt: '2026-07-17T23:10:00-03:00' }, null, 2));
 
 console.log(changed ? '[League] Namespace, login e logo oficial aplicados.' : '[League] Namespace, login e logo oficial ja estavam aplicados.');
