@@ -11,6 +11,7 @@ const EXTRA_FILES = [
   path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-page-integrity.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-polish.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'grupos.js')
 ];
 const SKIP = new Set([
@@ -53,9 +54,11 @@ if (failures.length) {
   process.exit(1);
 }
 
+require('./patchLeagueExperienceRouteRegistrationRuntime');
+require('./patchLeagueExperienceRuntime');
 require('./patchSiteIntegrityRuntime');
 require('./patchNavigationIntegrityRuntime');
 require('./auditSitePages');
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe, páginas, assets e navegação aprovados.');
+console.log('[Check] Sintaxe, experiência, páginas, assets e navegação aprovados.');
