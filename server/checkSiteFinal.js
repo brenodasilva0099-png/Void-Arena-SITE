@@ -20,7 +20,8 @@ const patches = [
   './patchSiteIntegrityRuntime',
   './patchNavigationIntegrityRuntime',
   './patchLeagueProfilesCompetitionsHomeRuntime',
-  './patchProfileInlineCriticalExtrasRuntime'
+  './patchProfileInlineCriticalExtrasRuntime',
+  './patchAuditInlineProfileRuntime'
 ];
 
 require('./auditRuntimeSafety');
