@@ -26,7 +26,12 @@ const EXPECTED_ROUTES = [
   ['get', '/api/league/competitions/:eventId'],
   ['put', '/api/league/competitions/:eventId'],
   ['get', '/api/league/transfers'],
+  ['get', '/api/league/bracket'],
+  ['get', '/api/league/groups'],
+  ['get', '/api/match-results'],
   ['get', '/api/notifications'],
+  ['get', '/api/maintenance'],
+  ['get', '/debug/status'],
   ['get', '/api/health/routes'],
   ['get', '/api/health/pages']
 ];

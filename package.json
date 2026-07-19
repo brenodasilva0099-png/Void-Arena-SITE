@@ -22,7 +22,7 @@
     "vite": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "express": "latest",
+    "express": "4.21.2",
     "express-session": "latest",
     "bcryptjs": "latest",
     "discord.js": "latest",

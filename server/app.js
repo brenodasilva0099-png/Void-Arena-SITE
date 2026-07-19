@@ -241,35 +241,52 @@ function getDiscordCallbackUrl() {
   return process.env.DISCORD_CALLBACK_URL || `http://localhost:${Number(process.env.PORT || 3000)}/auth/discord/callback`;
 }
 
+const MAINTENANCE_CACHE_TTL_MS = 15000;
+const MAINTENANCE_REFRESH_TIMEOUT_MS = 2000;
+
 let maintenanceCache = {
   checkedAt: 0,
   data: { enabled: false }
 };
+let maintenanceRefreshPromise = null;
 
-async function fetchMaintenanceState() {
-  const now = Date.now();
-
-  if (now - maintenanceCache.checkedAt < 4000) {
-    return maintenanceCache.data;
-  }
-
+async function refreshMaintenanceState() {
   try {
     const response = await fetch(`${BOT_API_URL}/public/maintenance`, {
-      headers: { Accept: 'application/json' }
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(MAINTENANCE_REFRESH_TIMEOUT_MS)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json().catch(() => ({}));
     maintenanceCache = {
-      checkedAt: now,
+      checkedAt: Date.now(),
       data: data.maintenance || { enabled: false }
     };
   } catch {
     maintenanceCache = {
-      checkedAt: now,
+      checkedAt: Date.now(),
       data: { enabled: false }
     };
   }
 
   return maintenanceCache.data;
+}
+
+async function fetchMaintenanceState({ waitForRefresh = true } = {}) {
+  const now = Date.now();
+
+  if (now - maintenanceCache.checkedAt < MAINTENANCE_CACHE_TTL_MS) {
+    return maintenanceCache.data;
+  }
+
+  if (!maintenanceRefreshPromise) {
+    maintenanceRefreshPromise = refreshMaintenanceState().finally(() => {
+      maintenanceRefreshPromise = null;
+    });
+  }
+
+  if (!waitForRefresh) return maintenanceCache.data;
+  return maintenanceRefreshPromise;
 }
 
 function maintenanceHtml(state = {}) {
@@ -356,6 +373,27 @@ function maintenanceHtml(state = {}) {
 </html>`;
 }
 
+function voidArenaAssetContentType(filePath = '') {
+  const clean = String(filePath || '').toLowerCase().split('?')[0];
+  if (clean.endsWith('.css')) return 'text/css; charset=utf-8';
+  if (clean.endsWith('.js') || clean.endsWith('.mjs')) return 'application/javascript; charset=utf-8';
+  if (clean.endsWith('.json') || clean.endsWith('.map')) return 'application/json; charset=utf-8';
+  if (clean.endsWith('.svg')) return 'image/svg+xml';
+  if (clean.endsWith('.png')) return 'image/png';
+  if (clean.endsWith('.jpg') || clean.endsWith('.jpeg')) return 'image/jpeg';
+  if (clean.endsWith('.webp')) return 'image/webp';
+  if (clean.endsWith('.gif')) return 'image/gif';
+  if (clean.endsWith('.ico')) return 'image/x-icon';
+  if (clean.endsWith('.woff')) return 'font/woff';
+  if (clean.endsWith('.woff2')) return 'font/woff2';
+  return 'application/octet-stream';
+}
+
+function voidArenaPageFallbackHtml(pageName = 'pagina') {
+  const safePage = String(pageName || 'pagina').replace(/[<>&"']/g, '');
+  return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Void Arena</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#070711;color:#f8f7ff;font-family:Inter,system-ui,sans-serif}.card{width:min(92vw,560px);padding:30px;border:1px solid rgba(139,92,246,.35);border-radius:24px;background:rgba(15,14,35,.92);box-shadow:0 24px 80px rgba(0,0,0,.42)}h1{margin:0 0 10px;font-size:30px}p{color:#c9c4e8;line-height:1.55}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}a,button{border:1px solid rgba(167,139,250,.35);background:rgba(124,58,237,.18);color:#fff;border-radius:12px;padding:10px 14px;font-weight:800;text-decoration:none;cursor:pointer}</style></head><body><main class="card"><h1>Carregando página da Arena</h1><p>A página ' + safePage + ' não respondeu corretamente nesta tentativa. Recarregue a página; se o Render ainda estiver subindo, aguarde alguns segundos.</p><div class="actions"><button onclick="location.reload()">Recarregar</button><a href="/pages/dashboard.html">Ir para início</a><a href="/pages/suporte.html">Abrir suporte</a></div></main></body></html>';
+}
+
 function createServer({ client }) {
   const app = express();
   app.set('trust proxy', 1);
@@ -377,6 +415,31 @@ function createServer({ client }) {
     })
   );
 
+  app.get(/^\/(?:css|js|assets|uploads|images|img)\/.+/, (req, res) => {
+    const cleanPath = path.normalize(String(req.path || '').replace(/^\/+/, ''));
+    const fullPath = path.resolve(PUBLIC_DIR, cleanPath);
+    const publicPrefix = `${path.resolve(PUBLIC_DIR)}${path.sep}`;
+    if (!cleanPath || cleanPath.startsWith('..') || !fullPath.startsWith(publicPrefix)) {
+      return res.status(400).type('text/plain; charset=utf-8').send('Asset inválido.');
+    }
+
+    res.set('Cache-Control', /\.(?:css|js|mjs|map|html)$/i.test(cleanPath)
+      ? 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      : 'public, max-age=60, must-revalidate');
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('X-Void-Arena-Asset-Route', 'hard-assets-v2');
+    res.type(voidArenaAssetContentType(cleanPath));
+    return res.sendFile(fullPath, (error) => {
+      if (!error) return;
+      console.error(`[Assets] Falha ao servir ${req.path}:`, error.message);
+      if (!res.headersSent) {
+        const status = Number(error.statusCode || error.status || 404) === 404 ? 404 : 500;
+        return res.status(status).type('text/plain; charset=utf-8').send(
+          status === 404 ? 'Asset não encontrado.' : 'Falha ao carregar asset.'
+        );
+      }
+    });
+  });
 
   app.get('/api/maintenance', async (_req, res) => {
     const maintenance = await fetchMaintenanceState();
@@ -387,12 +450,18 @@ function createServer({ client }) {
     if (
       req.path === '/api/maintenance' ||
       req.path.startsWith('/assets/') ||
+      req.path.startsWith('/css/') ||
+      req.path.startsWith('/js/') ||
+      req.path.startsWith('/uploads/') ||
+      req.path.startsWith('/images/') ||
+      req.path.startsWith('/img/') ||
+      /\.(?:css|js|mjs|json|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|map)$/i.test(req.path) ||
       req.path === '/favicon.png'
     ) {
       return next();
     }
 
-    const maintenance = await fetchMaintenanceState();
+    const maintenance = await fetchMaintenanceState({ waitForRefresh: false });
 
     if (maintenance?.enabled) {
       res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

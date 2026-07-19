@@ -21,6 +21,7 @@ const patches = [
   './patchNavigationIntegrityRuntime'
 ];
 
+require('./auditRuntimeSafety');
 for (const patch of patches) require(patch);
 
 function walk(dir) {
