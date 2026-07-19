@@ -3,6 +3,8 @@ const path = require('node:path');
 const storage = require('../storage');
 
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
+const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
+const PAGE_INTEGRITY_FILE = path.join(PUBLIC_DIR, 'page-integrity.json');
 const EXPECTED_ROUTES = [
   ['get', '/api/health'],
   ['get', '/api/auth/session'],
@@ -13,7 +15,9 @@ const EXPECTED_ROUTES = [
   ['get', '/api/players'],
   ['get', '/api/league/overview'],
   ['get', '/api/league/news'],
-  ['get', '/api/notifications']
+  ['get', '/api/notifications'],
+  ['get', '/api/health/routes'],
+  ['get', '/api/health/pages']
 ];
 
 function botTarget() {
@@ -46,7 +50,52 @@ function assetStatus(relativePath) {
   }
 }
 
+function walkHtml(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walkHtml(full);
+    return entry.isFile() && entry.name.toLowerCase().endsWith('.html') ? [full] : [];
+  });
+}
+
+function readIntegrityManifest() {
+  try { return JSON.parse(fs.readFileSync(PAGE_INTEGRITY_FILE, 'utf8')); }
+  catch { return null; }
+}
+
 function registerRouteAuditRoutes(app) {
+  app.get('/api/health/pages', (_req, res) => {
+    const pages = [...walkHtml(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].filter(fs.existsSync);
+    const manifest = readIntegrityManifest();
+    const requiredAssets = [
+      assetStatus('css/league-critical.css'),
+      assetStatus('css/league-polish.css'),
+      assetStatus('css/league-auth-ui.css'),
+      assetStatus('js/core/league-page-integrity.js'),
+      assetStatus('js/core/league-auth-ui.js'),
+      assetStatus('js/core/league-polish.js')
+    ];
+    const missingAssets = requiredAssets.filter((item) => !item.exists);
+    const missingLocalAssets = Array.isArray(manifest?.missingLocalAssets) ? manifest.missingLocalAssets : [];
+    const status = !manifest || missingAssets.length || missingLocalAssets.length ? 'degraded' : 'ok';
+
+    return res.json({
+      success: true,
+      service: 'Hollow Nexus League page integrity',
+      status,
+      checkedAt: new Date().toISOString(),
+      pageCount: pages.length,
+      manifest,
+      requiredAssets,
+      summary: {
+        normalizedPages: Number(manifest?.scannedPages || 0),
+        missingAssets: missingAssets.map((item) => item.path),
+        missingLocalAssets
+      }
+    });
+  });
+
   app.get('/api/health/routes', async (_req, res) => {
     const routes = EXPECTED_ROUTES.map(([method, routePath]) => ({
       method: method.toUpperCase(),
@@ -56,7 +105,11 @@ function registerRouteAuditRoutes(app) {
 
     const assets = [
       assetStatus('js/core/league-auth-ui.js'),
+      assetStatus('js/core/league-page-integrity.js'),
+      assetStatus('js/core/league-polish.js'),
       assetStatus('css/league-auth-ui.css'),
+      assetStatus('css/league-critical.css'),
+      assetStatus('css/league-polish.css'),
       assetStatus('assets/hollow-nexus-official.svg')
     ];
 
@@ -80,6 +133,7 @@ function registerRouteAuditRoutes(app) {
       routes,
       assets,
       botStorage,
+      pageIntegrity: readIntegrityManifest(),
       summary: {
         expectedRoutes: routes.length,
         registeredRoutes: routes.length - missingRoutes.length,
@@ -89,7 +143,7 @@ function registerRouteAuditRoutes(app) {
     });
   });
 
-  console.log('[Routes] Auditoria de rotas, assets e storage registrada em /api/health/routes.');
+  console.log('[Routes] Auditoria de rotas, páginas, assets e storage registrada.');
 }
 
 module.exports = { registerRouteAuditRoutes, routeExists };
