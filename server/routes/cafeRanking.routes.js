@@ -50,7 +50,7 @@ function registerCafeRankingRoutes(app) {
     const [users, messageGroups, discordData] = await Promise.all([
       storage.readUsers().catch(() => []),
       Promise.all(CHANNELS.map((channelId) => storage.readChatMessages({ channelId, limit: 500 }).catch(() => []))),
-      callBot('/internal/discord/mentions', { method: 'GET' }).catch(() => ({ members: [] }))
+      callBot('/internal/discord/members/all?limit=1000', { method: 'GET' }).catch(() => ({ members: [] }))
     ]);
 
     const activeUsers = users.filter((user) => !user.deletedAt && !user.hiddenFromPlayersDirectory);
@@ -58,7 +58,7 @@ function registerCafeRankingRoutes(app) {
     const participants = new Map();
 
     messageGroups.flat().map(parseMessage).filter(Boolean).filter((entry) => entry.status !== 'deleted').forEach((entry) => {
-      participationKeys(entry).forEach((key) => participants.set(key, Math.max(1, (participants.get(key) || 0) + 1)));
+      participationKeys(entry).forEach((key) => participants.set(key, (participants.get(key) || 0) + 1));
     });
 
     const records = new Map();
@@ -70,13 +70,14 @@ function registerCafeRankingRoutes(app) {
     };
 
     (Array.isArray(discordData.members) ? discordData.members : []).forEach((member) => {
-      const linked = byDiscord.get(String(member.id || '').trim()) || null;
+      const linked = byDiscord.get(String(member.id || member.discordId || '').trim()) || null;
       upsert({
-        id: linked?.id || member.id || '',
-        discordId: member.id || linked?.discordId || '',
+        id: linked?.id || member.id || member.discordId || '',
+        discordId: member.id || member.discordId || linked?.discordId || '',
         name: linked ? nameOf(linked) : (member.name || member.username || 'Membro'),
         avatar: linked?.avatar || member.avatar || '',
         profile: linked?.profile || {},
+        roles: Array.isArray(member.roles) ? member.roles : [],
         registered: Boolean(linked),
         user: linked
       });
@@ -88,6 +89,7 @@ function registerCafeRankingRoutes(app) {
       name: nameOf(user),
       avatar: user.avatar || '',
       profile: user.profile || {},
+      roles: Array.isArray(user.roles) ? user.roles : [],
       registered: true,
       user
     }));
@@ -101,6 +103,7 @@ function registerCafeRankingRoutes(app) {
         name: record.name || 'Membro',
         avatar: record.avatar || '',
         profile: record.profile || {},
+        roles: record.roles || [],
         registered: Boolean(record.registered),
         participations,
         ...statistics(record.user || {}, participations),
@@ -111,12 +114,13 @@ function registerCafeRankingRoutes(app) {
     return res.json({
       success: true,
       source: discordData.members?.length ? 'discord-members-and-site' : 'site-users-fallback',
+      memberCount: ranking.length,
       ranking,
       metrics: ['points', 'goals', 'passes', 'assists', 'wins', 'matches', 'mvp']
     });
   });
 
-  console.log('[Cafe com Leite] Ranking de membros do Discord registrado.');
+  console.log('[Cafe com Leite] Ranking completo de membros do Discord registrado.');
 }
 
 module.exports = { registerCafeRankingRoutes };
