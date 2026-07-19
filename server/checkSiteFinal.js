@@ -19,7 +19,8 @@ const patches = [
   './patchLeagueExperienceFinalChangelogRuntime',
   './patchSiteIntegrityRuntime',
   './patchNavigationIntegrityRuntime',
-  './patchLeagueProfilesCompetitionsHomeRuntime'
+  './patchLeagueProfilesCompetitionsHomeRuntime',
+  './patchProfileInlineCriticalExtrasRuntime'
 ];
 
 require('./auditRuntimeSafety');
