@@ -5,6 +5,7 @@ const storage = require('../storage');
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const PAGE_INTEGRITY_FILE = path.join(PUBLIC_DIR, 'page-integrity.json');
+const NAVIGATION_INTEGRITY_FILE = path.join(PUBLIC_DIR, 'navigation-integrity.json');
 const EXPECTED_ROUTES = [
   ['get', '/api/health'],
   ['get', '/api/auth/session'],
@@ -59,15 +60,24 @@ function walkHtml(dir) {
   });
 }
 
-function readIntegrityManifest() {
-  try { return JSON.parse(fs.readFileSync(PAGE_INTEGRITY_FILE, 'utf8')); }
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
   catch { return null; }
+}
+
+function readIntegrityManifest() {
+  return readJson(PAGE_INTEGRITY_FILE);
+}
+
+function readNavigationManifest() {
+  return readJson(NAVIGATION_INTEGRITY_FILE);
 }
 
 function registerRouteAuditRoutes(app) {
   app.get('/api/health/pages', (_req, res) => {
     const pages = [...walkHtml(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].filter(fs.existsSync);
     const manifest = readIntegrityManifest();
+    const navigation = readNavigationManifest();
     const requiredAssets = [
       assetStatus('css/league-critical.css'),
       assetStatus('css/league-polish.css'),
@@ -78,7 +88,8 @@ function registerRouteAuditRoutes(app) {
     ];
     const missingAssets = requiredAssets.filter((item) => !item.exists);
     const missingLocalAssets = Array.isArray(manifest?.missingLocalAssets) ? manifest.missingLocalAssets : [];
-    const status = !manifest || missingAssets.length || missingLocalAssets.length ? 'degraded' : 'ok';
+    const missingTargets = Array.isArray(navigation?.missingTargets) ? navigation.missingTargets : [];
+    const status = !manifest || !navigation || missingAssets.length || missingLocalAssets.length || missingTargets.length ? 'degraded' : 'ok';
 
     return res.json({
       success: true,
@@ -87,11 +98,15 @@ function registerRouteAuditRoutes(app) {
       checkedAt: new Date().toISOString(),
       pageCount: pages.length,
       manifest,
+      navigation,
       requiredAssets,
       summary: {
         normalizedPages: Number(manifest?.scannedPages || 0),
+        scannedLinks: Number(navigation?.scannedLinks || 0),
+        changedLinks: Number(navigation?.changedLinks || 0),
         missingAssets: missingAssets.map((item) => item.path),
-        missingLocalAssets
+        missingLocalAssets,
+        missingTargets
       }
     });
   });
@@ -121,9 +136,12 @@ function registerRouteAuditRoutes(app) {
       botStorage = { available: false, target: botTarget(), database: null, message: error.message };
     }
 
+    const pageIntegrity = readIntegrityManifest();
+    const navigationIntegrity = readNavigationManifest();
     const missingRoutes = routes.filter((item) => !item.registered);
     const missingAssets = assets.filter((item) => !item.exists);
-    const status = missingRoutes.length || missingAssets.length || !botStorage.available ? 'degraded' : 'ok';
+    const missingTargets = Array.isArray(navigationIntegrity?.missingTargets) ? navigationIntegrity.missingTargets : [];
+    const status = missingRoutes.length || missingAssets.length || missingTargets.length || !botStorage.available ? 'degraded' : 'ok';
 
     return res.json({
       success: true,
@@ -133,17 +151,19 @@ function registerRouteAuditRoutes(app) {
       routes,
       assets,
       botStorage,
-      pageIntegrity: readIntegrityManifest(),
+      pageIntegrity,
+      navigationIntegrity,
       summary: {
         expectedRoutes: routes.length,
         registeredRoutes: routes.length - missingRoutes.length,
         missingRoutes: missingRoutes.map((item) => item.path),
-        missingAssets: missingAssets.map((item) => item.path)
+        missingAssets: missingAssets.map((item) => item.path),
+        missingTargets
       }
     });
   });
 
-  console.log('[Routes] Auditoria de rotas, páginas, assets e storage registrada.');
+  console.log('[Routes] Auditoria de rotas, páginas, navegação, assets e storage registrada.');
 }
 
 module.exports = { registerRouteAuditRoutes, routeExists };
