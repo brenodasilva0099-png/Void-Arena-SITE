@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 require('./patchLeagueMenuDedupRuntime');
+require('./patchLeagueProfilesCompetitionsHomeRuntime');
 
 const file = path.join(__dirname, '..', 'public', 'css', 'league-experience.css');
 if (!fs.existsSync(file)) process.exit(0);
