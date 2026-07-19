@@ -70,6 +70,15 @@ for (const file of files) {
     failures.push(`${relative}: runtime legado carregado junto com a experiência nova`);
   }
 
+  if (relative === 'public/pages/chaveamento.html') {
+    if (!/<body\b[^>]*data-page=["']chaveamento["']/i.test(html)) {
+      failures.push(`${relative}: marcador data-page="chaveamento" ausente; o layout visual não será ativado`);
+    }
+    if (!html.includes('/css/bracket-desktop.css')) {
+      failures.push(`${relative}: stylesheet do chaveamento ausente`);
+    }
+  }
+
   for (const ref of refs(html)) {
     if (!ref.startsWith('/') || ref.startsWith('//') || ref.startsWith('/api/') || ref.startsWith('/auth/')) continue;
     const full = path.join(PUBLIC_DIR, ref.replace(/^\/+/, ''));
