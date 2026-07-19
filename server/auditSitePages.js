@@ -8,6 +8,7 @@ const REQUIRED = [
   '/css/league-critical.css',
   '/css/league-polish.css',
   '/css/league-auth-ui.css',
+  '/js/core/league-polish.js',
   '/js/core/league-page-integrity.js',
   '/js/core/league-auth-ui.js'
 ];
