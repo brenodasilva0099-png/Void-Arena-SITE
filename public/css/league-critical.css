@@ -1,0 +1,58 @@
+/* Hollow Nexus League critical layout fallback
+ * Loaded before the full theme so pages remain usable if another stylesheet is delayed.
+ */
+:root{
+  color-scheme:dark;
+  --hnl-critical-bg:#080b16;
+  --hnl-critical-panel:#111827;
+  --hnl-critical-border:rgba(139,92,246,.28);
+  --hnl-critical-text:#f8f7ff;
+  --hnl-critical-muted:#c2c8d6;
+  --hnl-critical-accent:#a855f7;
+}
+*{box-sizing:border-box}
+html,body{width:100%;min-height:100%;margin:0;overflow-x:hidden}
+body{
+  background:linear-gradient(135deg,#080b16,#0c1120 52%,#11152a);
+  color:var(--hnl-critical-text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+img{max-width:100%}
+a{color:inherit}
+.frm-polish-page{min-height:100vh}
+.frm-shell{display:grid;grid-template-columns:254px minmax(0,1fr);min-height:100vh;align-items:start}
+.frm-sidebar{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:18px 16px 28px;background:#090c18;border-right:1px solid var(--hnl-critical-border);z-index:20}
+.frm-main{width:100%;min-width:0;max-width:100%;padding:18px 22px 0}
+.frm-header{min-height:62px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:16px}
+.frm-header-actions,.frm-tabs,.frm-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.frm-brand{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;align-items:center;margin-bottom:22px}
+.frm-brand img{width:62px;height:62px;border-radius:999px;object-fit:cover;background:#000;border:1px solid var(--hnl-critical-border)}
+.frm-nav{display:grid;gap:2px}
+.frm-nav a{min-height:34px;display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;align-items:center;padding:8px 10px;border-radius:8px;text-decoration:none}
+.frm-nav a:hover,.frm-nav a.active{background:rgba(139,92,246,.24)}
+.frm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.frm-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.frm-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.frm-card,.frm-page-hero,.frm-stat,.frm-footer,.frm-modal-panel{border:1px solid var(--hnl-critical-border);background:var(--hnl-critical-panel);border-radius:10px}
+.frm-card{padding:18px;min-width:0}
+.frm-page-hero{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:22px;align-items:center;min-height:220px;margin-bottom:14px;padding:26px 30px;overflow:hidden}
+.frm-page-hero img{width:168px;height:168px;border-radius:999px;object-fit:cover;justify-self:center}
+.frm-btn,button.frm-btn{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 15px;border:1px solid var(--hnl-critical-border);border-radius:7px;background:#0b1020;color:#fff;text-decoration:none;cursor:pointer}
+.frm-btn.primary,.frm-btn.discord{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.frm-input,.frm-select,.frm-textarea{width:100%;min-height:40px;border:1px solid var(--hnl-critical-border);border-radius:8px;background:rgba(255,255,255,.04);color:#fff;padding:10px 12px}
+.frm-table{width:100%;border-collapse:collapse}
+.frm-table th,.frm-table td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.09);text-align:left}
+.frm-list{display:grid;gap:10px}
+.frm-list-row{display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px;border:1px solid rgba(255,255,255,.09);border-radius:10px}
+.frm-footer{display:grid;grid-template-columns:1.5fr .8fr .8fr .9fr 1.3fr;gap:24px;margin-top:14px;padding:22px 26px;border-left:0;border-right:0;border-bottom:0;border-radius:0}
+.frm-muted,.frm-card p,.frm-footer p,.frm-footer a{color:var(--hnl-critical-muted)}
+.hnl-page-loading{opacity:.72;pointer-events:none}
+.hnl-page-ready{opacity:1;transition:opacity .12s ease}
+@media(max-width:1180px){
+  .frm-shell{grid-template-columns:1fr}
+  .frm-sidebar{position:relative;height:auto;min-height:auto}
+  .frm-main{padding:14px}
+  .frm-grid,.frm-grid.two,.frm-grid.four,.frm-page-hero,.frm-footer{grid-template-columns:1fr}
+  .frm-page-hero img{display:none}
+  .frm-header{flex-direction:column;align-items:flex-start}
+}
