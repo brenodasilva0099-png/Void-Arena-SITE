@@ -44,6 +44,7 @@ const patches = [
   './patchSupportNavEverywhereRuntime',
   './patchLeagueExperienceRouteRegistrationRuntime',
   './patchLeagueExperienceRuntime',
+  './patchLeagueNavStateRuntime',
   './patchSiteIntegrityRuntime',
   './patchNavigationIntegrityRuntime'
 ];
@@ -58,5 +59,5 @@ for (const patch of patches) {
   }
 }
 
-console.log(`[Boot] ${patches.length} patches carregados; experiência League, integridade visual e navegação aplicadas por último.`);
+console.log(`[Boot] ${patches.length} patches carregados; experiência League, estado de navegação, integridade visual e links aplicados por último.`);
 require('../site/index');
