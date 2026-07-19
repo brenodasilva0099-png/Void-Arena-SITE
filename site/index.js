@@ -24,7 +24,10 @@ const { registerRuntimeRoutes } = require('../server/routes/runtime.routes');
 const { registerDiscordServerLinkRoutes } = require('../server/routes/discordServerLink.routes');
 const { registerStableDiscordAuthRoutes } = require('../server/routes/discordAuthStable.routes');
 const { registerLeagueRoutes } = require('../server/routes/league.routes');
+const { registerLeagueExperienceRoutes } = require('../server/routes/leagueExperience.routes');
+const { registerCafeRankingRoutes } = require('../server/routes/cafeRanking.routes');
 const { registerRouteAuditRoutes } = require('../server/routes/routeAudit.routes');
+const { registerLeagueStableRoutes } = require('../server/routes/leagueStable.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -49,7 +52,10 @@ registerAccessControlRoutes(app);
 registerRuntimeRoutes(app);
 registerDiscordServerLinkRoutes(app);
 registerLeagueRoutes(app);
+registerLeagueExperienceRoutes(app);
+registerCafeRankingRoutes(app);
 registerRouteAuditRoutes(app);
+registerLeagueStableRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
