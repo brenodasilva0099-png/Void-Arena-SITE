@@ -42,7 +42,8 @@ const patches = [
   './patchPlayerApplicationDeleteRuntime',
   './patchSupportRoutesRuntime',
   './patchSupportNavEverywhereRuntime',
-  './patchSiteIntegrityRuntime'
+  './patchSiteIntegrityRuntime',
+  './patchNavigationIntegrityRuntime'
 ];
 
 for (const patch of patches) {
@@ -55,5 +56,5 @@ for (const patch of patches) {
   }
 }
 
-console.log(`[Boot] ${patches.length} patches carregados; integridade visual aplicada por último.`);
+console.log(`[Boot] ${patches.length} patches carregados; integridade visual e navegação aplicadas por último.`);
 require('../site/index');
