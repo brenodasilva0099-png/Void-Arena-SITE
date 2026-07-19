@@ -29,6 +29,23 @@
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   }
 
+  function readable(value = '') {
+    return String(value || '')
+      .replaceAll('ª', '__HNL_ORD_F__')
+      .replaceAll('º', '__HNL_ORD_M__')
+      .normalize('NFKC')
+      .replaceAll('__HNL_ORD_F__', 'ª')
+      .replaceAll('__HNL_ORD_M__', 'º')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function competitionTitle(event = {}) {
+    return readable(event.name || event.title || 'Competição')
+      .replace(/\bnexus\s+cup\b/i, 'Nexus Cup')
+      .replace(/\s+(\d+[ªº]\s+edição)\b/i, ' — $1');
+  }
+
   function notice(message, type = '') {
     return `<div class="hnl-notice ${esc(type)}">${esc(message)}</div>`;
   }
@@ -81,16 +98,16 @@
     const map = { clubes: stats.clubes || 0, jogadores: stats.jogadores ?? stats.atletas ?? 0, competicoes: stats.competicoes || 0, partidas: stats.partidas || 0 };
     Object.entries(map).forEach(([key, value]) => $$(`[data-hnl-stat="${key}"]`).forEach((node) => { node.textContent = String(value); }));
     const competitions = $('#homeCompetitions');
-    if (competitions) competitions.innerHTML = (data.events || []).length ? data.events.slice(0, 4).map((event) => `<div class="hnl-profile-row"><div class="hnl-rank">♕</div><div><strong>${esc(event.name || event.title || 'Competição')}</strong><p>${fmt(event.startAt)}</p></div><a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Detalhes</a></div>`).join('') : empty('Nenhuma competição cadastrada.');
+    if (competitions) competitions.innerHTML = (data.events || []).length ? data.events.slice(0, 4).map((event) => `<div class="hnl-profile-row"><div class="hnl-rank">♕</div><div><strong>${esc(competitionTitle(event))}</strong><p>${fmt(event.startAt)}</p></div><a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Detalhes</a></div>`).join('') : empty('Nenhuma competição cadastrada.');
     const ranking = $('#homeClubRanking');
-    if (ranking) ranking.innerHTML = (data.teams || []).length ? data.teams.slice(0, 5).map((team, index) => `<div class="hnl-profile-row"><div class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</div><div><strong>${esc(team.name || 'Clube')}</strong><p>${esc(team.tag || '')}</p></div><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Ver</a></div>`).join('') : empty('Nenhum clube cadastrado.');
+    if (ranking) ranking.innerHTML = (data.teams || []).length ? data.teams.slice(0, 5).map((team, index) => `<div class="hnl-profile-row"><img class="hnl-club-logo" src="${esc(image(team.logo))}" alt="Logo de ${esc(team.name || 'clube')}"><div><strong>${index + 1}. ${esc(team.name || 'Clube')}</strong><p>${esc(team.tag || '')}</p></div><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Ver</a></div>`).join('') : empty('Nenhum clube cadastrado.');
   }
 
   async function clubs() {
     const box = $('#clubsList');
     if (!box) return;
-    const data = await api('/api/teams');
-    const teams = data.teams || [];
+    const data = await api('/api/league/clubs');
+    const teams = data.clubs || [];
     const input = $('#clubSearch');
     const render = () => {
       const term = String(input?.value || '').trim().toLowerCase();
@@ -133,6 +150,12 @@
       <div class="hnl-stat"><strong>${stats.points || 0}</strong><span>Pontos</span></div><div class="hnl-stat"><strong>${stats.goals || 0}</strong><span>Gols</span></div><div class="hnl-stat"><strong>${stats.assists || 0}</strong><span>Assistências</span></div><div class="hnl-stat"><strong>${stats.passes || 0}</strong><span>Passes</span></div>
     </section>
     <section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Informações</h2><p><strong>Posição principal:</strong> ${esc(player.profile?.primaryPosition || 'Não informada')}</p><p><strong>Posição secundária:</strong> ${esc(player.profile?.secondaryPosition || 'Não informada')}</p><p><strong>Região:</strong> ${esc(player.profile?.competitiveRegion || player.profile?.region || 'Não informada')}</p><p><strong>País:</strong> ${esc(player.profile?.country || 'Não informado')}</p></article><article class="hnl-card"><h2>Conexões</h2>${socials(player.socials || {})}</article></section>`;
+  }
+
+  function publicPersonLink(name, userId, discordId) {
+    const id = String(userId || discordId || '').trim();
+    const label = esc(name || 'Não definido');
+    return id ? `<a href="/pages/perfil-jogador.html?id=${encodeURIComponent(id)}">${label}</a>` : label;
   }
 
   function rosterHtml(players = []) {
@@ -218,14 +241,17 @@
   }
 
   async function rankings() {
-    const [teamsData, playersData] = await Promise.all([api('/api/teams'), api('/api/league/cafe-ranking')]);
-    const teams = teamsData.teams || [];
-    const players = playersData.ranking || [];
+    const data = await api('/api/league/rankings');
+    const clubs = data.clubs || [];
+    const players = data.players || [];
     const clubBody = $('#clubRanking');
     const playerBody = $('#playerRanking');
-    if (clubBody) clubBody.innerHTML = teams.length ? teams.map((team, index) => `<tr><td><span class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</span></td><td><div class="hnl-profile-row" style="padding:0;border:0;background:transparent"><img class="hnl-club-logo" src="${esc(image(team.logo))}"><div><a href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}"><strong>${esc(team.name || 'Clube')}</strong></a><small>${esc(team.tag || '')}</small></div></div></td><td>${Number(team.points || 0)}</td><td>${Number(team.wins || 0)}</td><td>${Number(team.goals || 0)}</td></tr>`).join('') : '<tr><td colspan="5">Nenhum clube cadastrado.</td></tr>';
-    if (playerBody) playerBody.innerHTML = players.length ? players.map((player, index) => `<tr><td><span class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</span></td><td><div class="hnl-profile-row" style="padding:0;border:0;background:transparent"><img class="hnl-avatar round" src="${esc(image(player.avatar))}"><div><a href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}"><strong>${esc(player.name || 'Jogador')}</strong></a><small>${esc(player.profile?.primaryPosition || '')}</small></div></div></td><td>${player.points || 0}</td><td>${player.goals || 0}</td><td>${player.passes || 0}</td></tr>`).join('') : '<tr><td colspan="5">Nenhum jogador cadastrado.</td></tr>';
+    if (clubBody) clubBody.innerHTML = clubs.length ? clubs.map((team, index) => `<tr><td><span class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</span></td><td><div class="hnl-profile-row hnl-table-person"><img class="hnl-club-logo" src="${esc(image(team.logo))}" alt="Logo"><div><a href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}"><strong>${esc(team.name || 'Clube')}</strong></a><small>${esc(team.tag || '')}</small></div></div></td><td>${numberValue(team.points)}</td><td>${numberValue(team.wins)}</td><td>${numberValue(team.goals)}</td></tr>`).join('') : '<tr><td colspan="5">Nenhum clube cadastrado.</td></tr>';
+    if (playerBody) playerBody.innerHTML = players.length ? players.map((player, index) => `<tr><td><span class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</span></td><td><div class="hnl-profile-row hnl-table-person"><img class="hnl-avatar round" src="${esc(image(player.avatar))}" alt="Avatar"><div>${player.profileUrl ? `<a href="${esc(player.profileUrl)}"><strong>${esc(player.name || 'Jogador')}</strong></a>` : `<strong>${esc(player.name || 'Jogador')}</strong>`}<small>${esc(player.profile?.primaryPosition || 'Membro')}</small></div></div></td><td>${numberValue(player.points)}</td><td>${numberValue(player.goals)}</td><td>${numberValue(player.passes)}</td></tr>`).join('') : '<tr><td colspan="5">Nenhum jogador cadastrado.</td></tr>';
+    if (data.degraded && $('#pageStatus')) $('#pageStatus').innerHTML = notice('Alguns dados ainda estão sincronizando com o BOT; o que já foi carregado permanece disponível.', '');
   }
+
+  function numberValue(value) { const parsed = Number(value || 0); return Number.isFinite(parsed) ? parsed : 0; }
 
   async function cafe() {
     const box = $('#cafeRanking');
@@ -233,12 +259,31 @@
     const data = await api('/api/league/cafe-ranking');
     const ranking = data.ranking || [];
     const select = $('#cafeSort');
+    const search = $('#cafeSearch');
+    const direction = $('#cafeDirection');
+    const buttons = $('#cafeMetricButtons');
+    const metrics = [
+      ['points', 'Pontuação'], ['goals', 'Gols'], ['passes', 'Passes'], ['assists', 'Assistências'], ['wins', 'Vitórias'], ['matches', 'Jogos'], ['mvp', 'MVP']
+    ];
+    let metric = select?.value || 'points';
+    let descending = true;
+    if (buttons) buttons.innerHTML = metrics.map(([key, label]) => `<button class="hnl-btn ${key === metric ? 'primary' : ''}" type="button" data-cafe-metric="${key}">${label}</button>`).join('');
     const render = () => {
-      const metric = select?.value || 'points';
-      const sorted = [...ranking].sort((a, b) => Number(b[metric] || 0) - Number(a[metric] || 0) || Number(b.points || 0) - Number(a.points || 0));
-      box.innerHTML = sorted.length ? `<div class="hnl-table-wrap"><table class="hnl-table"><thead><tr><th>#</th><th>Jogador</th><th>Pontos</th><th>Gols</th><th>Passes</th><th>Assist.</th><th>Jogos</th><th>MVP</th></tr></thead><tbody>${sorted.map((player, index) => `<tr><td><span class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</span></td><td><div class="hnl-profile-row" style="padding:0;border:0;background:transparent"><img class="hnl-avatar round" src="${esc(image(player.avatar))}"><div><a href="${esc(player.profileUrl || '#')}"><strong>${esc(player.name || 'Jogador')}</strong></a><small>${esc(player.profile?.primaryPosition || 'Membro')}</small></div></div></td><td>${player.points || 0}</td><td>${player.goals || 0}</td><td>${player.passes || 0}</td><td>${player.assists || 0}</td><td>${player.matches || 0}</td><td>${player.mvp || 0}</td></tr>`).join('')}</tbody></table></div>` : empty('Nenhum membro encontrado.');
+      const term = String(search?.value || '').trim().toLocaleLowerCase('pt-BR');
+      const filtered = ranking.filter((player) => String(player.name || '').toLocaleLowerCase('pt-BR').includes(term));
+      const sorted = [...filtered].sort((a, b) => {
+        const diff = numberValue(b[metric]) - numberValue(a[metric]);
+        return (descending ? diff : -diff) || numberValue(b.points) - numberValue(a.points) || String(a.name).localeCompare(String(b.name), 'pt-BR');
+      });
+      box.innerHTML = sorted.length ? `<div class="hnl-table-wrap"><table class="hnl-table"><thead><tr><th>#</th><th>Jogador</th><th>Pontos</th><th>Gols</th><th>Passes</th><th>Assist.</th><th>Jogos</th><th>MVP</th></tr></thead><tbody>${sorted.map((player, index) => `<tr><td><span class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</span></td><td><div class="hnl-profile-row hnl-table-person"><img class="hnl-avatar round" src="${esc(image(player.avatar))}" alt="Avatar"><div>${player.profileUrl ? `<a href="${esc(player.profileUrl)}"><strong>${esc(player.name || 'Jogador')}</strong></a>` : `<strong>${esc(player.name || 'Jogador')}</strong>`}<small>${esc(player.profile?.primaryPosition || player.roles?.[0]?.name || 'Membro')}</small></div></div></td><td>${numberValue(player.points)}</td><td>${numberValue(player.goals)}</td><td>${numberValue(player.passes)}</td><td>${numberValue(player.assists)}</td><td>${numberValue(player.matches)}</td><td>${numberValue(player.mvp)}</td></tr>`).join('')}</tbody></table></div>` : empty('Nenhum membro encontrado para esse filtro.');
+      if (direction) direction.textContent = descending ? 'Maior primeiro' : 'Menor primeiro';
+      if (select) select.value = metric;
+      if (buttons) buttons.querySelectorAll('[data-cafe-metric]').forEach((button) => button.classList.toggle('primary', button.dataset.cafeMetric === metric));
     };
-    select?.addEventListener('change', render);
+    buttons?.addEventListener('click', (event) => { const button = event.target.closest('[data-cafe-metric]'); if (!button) return; metric = button.dataset.cafeMetric || 'points'; render(); });
+    select?.addEventListener('change', () => { metric = select.value || 'points'; render(); });
+    search?.addEventListener('input', render);
+    direction?.addEventListener('click', () => { descending = !descending; render(); });
     render();
   }
 
@@ -283,8 +328,8 @@
   async function competitions() {
     const box = $('#competitionsList');
     if (!box) return;
-    const data = await api('/api/events');
-    const events = data.events || [];
+    const data = await api('/api/league/competitions');
+    const events = data.competitions || [];
     const activeStatuses = new Set(['open', 'running', 'active']);
     const finishedStatuses = new Set(['closed', 'finished', 'archived']);
     const statusLabel = (status) => ({ open: 'Inscrições abertas', running: 'Em andamento', active: 'Ativa', closed: 'Inscrições encerradas', finished: 'Finalizada', upcoming: 'Em breve' })[String(status || '').toLowerCase()] || 'Em breve';
@@ -308,7 +353,7 @@
       const progress = Math.min(100, Math.round((registered / limit) * 100));
       const fee = event.feeLabel || event.entryFee || event.registrationFee || 'Gratuita';
       const reward = event.reward || event.prize || 'Premiação conforme regulamento';
-      return `<article class="hnl-card hnl-competition-feature"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">Edição oficial</span></div><h2 class="hnl-competition-title">${esc(event.name || event.title || 'Competição')}</h2><p class="hnl-competition-description">${esc(event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.')}</p></div><div class="hnl-competition-mark" aria-hidden="true">♕</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>Início</small><strong>${esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p><div class="hnl-actions"><a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
+      return `<article class="hnl-card hnl-competition-feature"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">Edição oficial</span></div><h2 class="hnl-competition-title">${esc(competitionTitle(event))}</h2><p class="hnl-competition-description">${esc(event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.')}</p></div><div class="hnl-competition-mark" aria-hidden="true">♕</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>Início</small><strong>${esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p><div class="hnl-actions"><a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
     }
 
     function render(filter = 'active') {
@@ -328,7 +373,7 @@
     if (!id) { box.innerHTML = empty('Competição não informada.'); return; }
     const [data, viewerData] = await Promise.all([api(`/api/league/competitions/${encodeURIComponent(id)}`), viewer()]);
     const event = data.competition || {};
-    box.innerHTML = `<section class="hnl-card"><span class="hnl-section-kicker">🏆 Competição oficial</span><h1>${esc(event.name || event.title || 'Competição')}</h1><p>${esc(event.description || 'Sem descrição cadastrada.')}</p><div class="hnl-grid cols-4"><div class="hnl-stat"><strong>${esc(event.matchFormat || 'MD1')}</strong><span>Formato</span></div><div class="hnl-stat"><strong>${event.teamLimit || 16}</strong><span>Limite</span></div><div class="hnl-stat"><strong>${(event.registrations || []).length}</strong><span>Inscritos</span></div><div class="hnl-stat"><strong>${esc(event.status || 'open')}</strong><span>Status</span></div></div><p><strong>Início:</strong> ${fmt(event.startAt)}</p></section>${viewerData.isAdmin ? `<section class="hnl-card" style="margin-top:14px"><h2>Editar competição</h2><div id="competitionEditStatus"></div><form id="competitionEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(event.name || event.title || '')}"></div><div class="hnl-field"><label>Início</label><input class="hnl-input" type="datetime-local" name="startAt" value="${esc(String(event.startAt || '').slice(0, 16))}"></div><div class="hnl-field"><label>Formato</label><select class="hnl-select" name="matchFormat">${['MD1','MD2','MD3','MD5'].map((value) => `<option ${value === event.matchFormat ? 'selected' : ''}>${value}</option>`).join('')}</select></div><div class="hnl-field"><label>Limite de clubes</label><input class="hnl-input" type="number" min="2" max="64" name="teamLimit" value="${event.teamLimit || 16}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(event.description || '')}</textarea></div><div class="hnl-actions full"><button class="hnl-btn primary">Salvar competição</button></div></form></section>` : ''}`;
+    box.innerHTML = `<section class="hnl-card"><span class="hnl-section-kicker">♕ Competição oficial</span><h1>${esc(competitionTitle(event))}</h1><p>${esc(event.description || 'Sem descrição cadastrada.')}</p><div class="hnl-grid cols-4"><div class="hnl-stat"><strong>${esc(event.matchFormat || 'MD1')}</strong><span>Formato</span></div><div class="hnl-stat"><strong>${event.teamLimit || 16}</strong><span>Limite</span></div><div class="hnl-stat"><strong>${(event.registrations || []).length}</strong><span>Inscritos</span></div><div class="hnl-stat"><strong>${esc(event.status || 'open')}</strong><span>Status</span></div></div><p><strong>Início:</strong> ${fmt(event.startAt)}</p></section>${viewerData.isAdmin ? `<section class="hnl-card" style="margin-top:14px"><h2>Editar competição</h2><div id="competitionEditStatus"></div><form id="competitionEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(event.name || event.title || '')}"></div><div class="hnl-field"><label>Início</label><input class="hnl-input" type="datetime-local" name="startAt" value="${esc(String(event.startAt || '').slice(0, 16))}"></div><div class="hnl-field"><label>Formato</label><select class="hnl-select" name="matchFormat">${['MD1','MD2','MD3','MD5'].map((value) => `<option ${value === event.matchFormat ? 'selected' : ''}>${value}</option>`).join('')}</select></div><div class="hnl-field"><label>Limite de clubes</label><input class="hnl-input" type="number" min="2" max="64" name="teamLimit" value="${event.teamLimit || 16}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(event.description || '')}</textarea></div><div class="hnl-actions full"><button class="hnl-btn primary">Salvar competição</button></div></form></section>` : ''}`;
     $('#competitionEditForm')?.addEventListener('submit', async (eventSubmit) => {
       eventSubmit.preventDefault();
       const payload = Object.fromEntries(new FormData(eventSubmit.currentTarget).entries());
@@ -340,9 +385,9 @@
   async function transfers() {
     const box = $('#transferHistory');
     if (!box) return;
-    const [playersData, teamsData, transfersData, viewerData] = await Promise.all([api('/api/league/players'), api('/api/teams'), api('/api/league/transfers'), viewer()]);
+    const [playersData, teamsData, transfersData, viewerData] = await Promise.all([api('/api/league/players'), api('/api/league/clubs'), api('/api/league/transfers'), viewer()]);
     const form = $('#transferForm');
-    const teams = teamsData.teams || [];
+    const teams = teamsData.clubs || teamsData.teams || [];
     if (form) {
       $('#transferPlayer').innerHTML = (playersData.players || []).map((player) => `<option value="${esc(player.id || player.discordId || '')}">${esc(player.name || '')}</option>`).join('');
       $('#transferFrom').innerHTML = teams.map((team) => `<option value="${esc(team.id || '')}">${esc(team.name || '')}</option>`).join('');
@@ -434,11 +479,20 @@
     render();
   }
 
-  async function simpleCompetitive() {
-    const box = $('#competitiveData');
+  async function results() {
+    const box = $('#resultsList');
     if (!box) return;
-    const [teams, events] = await Promise.all([api('/api/teams').catch(() => ({ teams: [] })), api('/api/events').catch(() => ({ events: [] }))]);
-    box.innerHTML = `<div class="hnl-grid cols-2"><article class="hnl-card"><h2>Clubes disponíveis</h2>${(teams.teams || []).length ? (teams.teams || []).map((team) => `<div class="hnl-profile-row"><img class="hnl-club-logo" src="${esc(image(team.logo))}"><div><strong>${esc(team.name)}</strong><p>${esc(team.tag || '')}</p></div><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Ver</a></div>`).join('') : empty('Nenhum clube cadastrado.')}</article><article class="hnl-card"><h2>Competições</h2>${(events.events || []).length ? (events.events || []).map((event) => `<div class="hnl-profile-row"><div class="hnl-rank">🏆</div><div><strong>${esc(event.name || event.title)}</strong><p>${fmt(event.startAt)}</p></div><a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Abrir</a></div>`).join('') : empty('Nenhuma competição cadastrada.')}</article></div>`;
+    const data = await api('/api/match-results');
+    const resultsList = data.results || [];
+    box.innerHTML = resultsList.length ? resultsList.map((result) => `<article class="hnl-card"><span class="hnl-chip ${result.status === 'validated' ? 'green' : ''}">${esc(result.status || 'pending')}</span><h2>${esc(result.match?.teamA?.name || result.teamA?.name || 'Equipe A')} ${numberValue(result.finalScoreA ?? result.scoreA)} × ${numberValue(result.finalScoreB ?? result.scoreB)} ${esc(result.match?.teamB?.name || result.teamB?.name || 'Equipe B')}</h2><p>${fmt(result.updatedAt || result.createdAt)}</p></article>`).join('') : empty('Nenhum resultado registrado.');
+  }
+
+  async function notificationsPage() {
+    const box = $('#notificationsPage') || $('#mailPage');
+    if (!box) return;
+    const data = await api('/api/notifications').catch(() => ({ notifications: [] }));
+    const items = data.notifications || [];
+    box.innerHTML = items.length ? items.map((item) => `<article class="hnl-card"><span class="hnl-chip">${esc(item.status || 'nova')}</span><h2>${esc(item.title || 'Notificação')}</h2><p>${esc(item.note || item.message || '')}</p></article>`).join('') : empty('Nenhuma notificação no momento.');
   }
 
   function globalInteractions() {
@@ -448,10 +502,18 @@
     });
   }
 
+  document.addEventListener('error', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLImageElement)) return;
+    if (target.dataset.hnlFallbackApplied === '1') return;
+    target.dataset.hnlFallbackApplied = '1';
+    target.src = FALLBACK_LOGO;
+  }, true);
+
   async function run() {
     globalInteractions();
     const module = document.body?.dataset?.hnlModule || document.body?.dataset?.frmModule || '';
-    const handlers = { dashboard, clubs, players, 'player-profile': playerProfile, 'club-profile': clubProfile, 'create-club': createClub, market, rankings, cafe, calendar, competitions, 'competition-detail': competitionDetail, transfers, tactics, bracket: simpleCompetitive, groups: simpleCompetitive, results: simpleCompetitive };
+    const handlers = { dashboard, clubs, players, 'player-profile': playerProfile, 'club-profile': clubProfile, 'create-club': createClub, market, rankings, cafe, calendar, competitions, 'competition-detail': competitionDetail, transfers, tactics, results, notifications: notificationsPage, mail: notificationsPage };
     try { if (handlers[module]) await handlers[module](); }
     catch (error) {
       console.error('[HNL Experience]', error);
