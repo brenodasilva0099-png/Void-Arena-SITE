@@ -55,6 +55,7 @@ const initialFiles = Array.from(new Set([
 checkFiles(initialFiles, 'sintaxe inicial');
 
 require('./patchLeagueExperienceRouteRegistrationRuntime');
+require('./patchCafeRankingRouteRegistrationRuntime');
 require('./patchLeagueExperienceRuntime');
 require('./patchLegacyTeamOwnershipRuntime');
 require('./patchLeagueNavStateRuntime');
@@ -66,6 +67,7 @@ const patchedFiles = [
   path.join(ROOT, 'site', 'index.js'),
   path.join(ROOT, 'server', 'routes', 'publicTeam.routes.js'),
   path.join(ROOT, 'server', 'routes', 'leagueExperience.routes.js'),
+  path.join(ROOT, 'server', 'routes', 'cafeRanking.routes.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js')
 ].filter(fs.existsSync);
 checkFiles(patchedFiles, 'sintaxe após patches');
@@ -79,4 +81,4 @@ if (!fs.existsSync(finalVersion)) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe antes/depois dos patches, experiência, gestão de clubes, menus, changelog, páginas, assets e navegação aprovados.');
+console.log('[Check] Sintaxe antes/depois, ranking do Discord, experiência, gestão de clubes, menus, changelog, páginas, assets e navegação aprovados.');
