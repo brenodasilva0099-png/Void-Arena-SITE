@@ -6,12 +6,13 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const UPDATES_FILE = path.join(PAGES_DIR, 'atualizacoes.html');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'page-integrity.json');
-const BUILD = '2026-07-18-page-integrity-v1';
+const BUILD = '2026-07-18-page-integrity-v2';
 
 const ASSETS = {
   criticalCss: `/css/league-critical.css?v=${BUILD}`,
   themeCss: `/css/league-polish.css?v=${BUILD}`,
   authCss: `/css/league-auth-ui.css?v=${BUILD}`,
+  themeJs: `/js/core/league-polish.js?v=${BUILD}`,
   integrityJs: `/js/core/league-page-integrity.js?v=${BUILD}`,
   authJs: `/js/core/league-auth-ui.js?v=${BUILD}`
 };
@@ -24,7 +25,7 @@ const report = {
   generatedAssets: [],
   missingLocalAssets: [],
   duplicateAssetsRemoved: 0,
-  updatedAt: '2026-07-18T21:28:00-03:00'
+  updatedAt: '2026-07-18T21:34:00-03:00'
 };
 
 function read(file) {
@@ -92,7 +93,7 @@ function normalizePage(file) {
     .replace(/\/api\/federation\//gi, '/api/league/')
     .replace(/\/api\/federation\b/gi, '/api/league');
 
-  html = removeAssetTags(html, /\s*<script[^>]+(?:discord-brand-sync|discord-auth-avatar|league-page-integrity|league-auth-ui)\.js[^>]*><\/script>/gi);
+  html = removeAssetTags(html, /\s*<script[^>]+(?:discord-brand-sync|discord-auth-avatar|league-polish|league-page-integrity|league-auth-ui)\.js[^>]*><\/script>/gi);
   html = removeAssetTags(html, /\s*<link[^>]+(?:discord-auth-avatar|league-critical|league-polish|league-auth-ui)\.css[^>]*>/gi);
   html = html.replace(/\s*<meta name="page-integrity-build"[^>]*>/gi, '');
 
@@ -107,6 +108,7 @@ function normalizePage(file) {
   else html = `${headInjection}\n${html}`;
 
   const bodyInjection = [
+    `  <script src="${ASSETS.themeJs}"></script>`,
     `  <script src="${ASSETS.integrityJs}"></script>`,
     `  <script src="${ASSETS.authJs}"></script>`
   ].join('\n');
@@ -159,13 +161,13 @@ function insertUpdate() {
   const card = `
           <article class="va-card va-update-card" id="release-2026-07-18-page-integrity">
             <span class="va-update-dot"></span>
-            <div class="va-update-meta"><span>18/07/2026 • 21:28 BRT</span><span>Site</span><span>CSS/JS/Navegação</span></div>
+            <div class="va-update-meta"><span>18/07/2026 • 21:34 BRT</span><span>Site</span><span>CSS/JS/Navegação</span></div>
             <h3>Integridade visual aplicada em todas as páginas</h3>
             <p class="va-muted">Todas as páginas agora recebem a mesma ordem de CSS e JavaScript depois dos patches, com fallback visual permanente e recuperação automática de estilos.</p>
             <ul class="va-update-list">
               <li class="fix">CSS crítico físico mantém sidebar, conteúdo, cards e responsividade utilizáveis mesmo se o tema principal atrasar.</li>
               <li class="fix">Referências duplicadas, antigas ou geradas de autenticação e identidade são removidas antes da versão canônica ser inserida.</li>
-              <li class="site">A navegação entre páginas executa verificação de estilo e recupera folhas que falharem sem depender de recarregar o servidor.</li>
+              <li class="site">Tema, recuperação visual e autenticação são carregados nessa ordem e apenas uma vez por página.</li>
               <li class="fix">A auditoria percorre todos os HTMLs e lista assets locais ausentes, sem alterar jogadores, clubes, eventos ou qualquer dado vivo.</li>
             </ul>
           </article>`;
