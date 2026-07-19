@@ -8,10 +8,20 @@
   const announcementList = document.getElementById('announcementList');
   const roleNotificationForm = document.getElementById('roleNotificationForm');
   const roleNotifyRoles = document.getElementById('roleNotifyRoles');
+  const roleNotifyRoleSearch = document.getElementById('roleNotifyRoleSearch');
+  const roleNotifyRoleCards = document.getElementById('roleNotifyRoleCards');
+  const roleNotifyRoleCount = document.getElementById('roleNotifyRoleCount');
+  let roleNotifyRolesCache = [];
   const roleNotificationStatus = document.getElementById('roleNotificationStatus');
   const roleNotificationHistory = document.getElementById('roleNotificationHistory');
   const dmHistoryDiscordId = document.getElementById('dmHistoryDiscordId');
+  const dmHistoryPlayerSelect = document.getElementById('dmHistoryPlayerSelect');
+  const dmHistoryPlayerSearch = document.getElementById('dmHistoryPlayerSearch');
+  const dmHistoryPlayerCards = document.getElementById('dmHistoryPlayerCards');
+  const dmHistoryPlayerCount = document.getElementById('dmHistoryPlayerCount');
+  let dmHistoryPlayersCache = [];
   const dmHistoryList = document.getElementById('dmHistoryList');
+  const dmHistoryRefreshBtn = document.getElementById('dmHistoryRefreshBtn');
   const matchVoicesForm = document.getElementById('matchVoicesForm');
   const matchVoiceList = document.getElementById('matchVoiceList');
   const matchVoiceStatus = document.getElementById('matchVoiceStatus');
@@ -134,13 +144,104 @@
     return Array.from(roleNotifyRoles?.selectedOptions || []).map((option) => option.value).filter(Boolean);
   }
 
+  function selectedRoleSet() { return new Set(selectedRoleIds().map(String)); }
+
+  function roleSearchText(role = {}) { return [role.name, role.id, role.guildName, role.mention].join(' ').toLowerCase(); }
+
+  function syncRoleCount() {
+    if (!roleNotifyRoleCount) return;
+    const count = selectedRoleIds().length;
+    roleNotifyRoleCount.textContent = String(count) + ' selecionado(s)';
+  }
+
+  function toggleRoleId(roleId = '') {
+    if (!roleNotifyRoles || !roleId) return;
+    const option = Array.from(roleNotifyRoles.options || []).find((item) => String(item.value) === String(roleId));
+    if (!option) return;
+    option.selected = !option.selected;
+    syncRoleCount();
+    renderRoleCards();
+  }
+
+  function renderRoleCards(roles = roleNotifyRolesCache) {
+    if (!roleNotifyRoleCards) return;
+    roleNotifyRolesCache = Array.isArray(roles) ? roles : [];
+    const selected = selectedRoleSet();
+    const query = String(roleNotifyRoleSearch?.value || '').trim().toLowerCase();
+    const filtered = roleNotifyRolesCache.filter((role) => !query || roleSearchText(role).includes(query)).slice(0, 120);
+    syncRoleCount();
+    if (!filtered.length) { roleNotifyRoleCards.innerHTML = '<div class="va-role-card empty"><strong>Nenhum cargo encontrado</strong><span>Ajuste a busca.</span></div>'; return; }
+    roleNotifyRoleCards.innerHTML = filtered.map((role) => {
+      const id = String(role.id || '');
+      const active = selected.has(id);
+      const guild = role.guildName ? ' • ' + esc(role.guildName) : '';
+      const dot = role.color && role.color !== '#000000' ? '<span class="va-role-dot" style="background:' + esc(role.color) + '"></span>' : '<span class="va-role-dot"></span>';
+      return '<button type="button" class="va-role-card ' + (active ? 'active' : '') + '" data-role-card-id="' + esc(id) + '">' + dot + '<span><strong>' + esc(role.name || id) + '</strong><small>' + esc(id + guild) + '</small></span><em>' + (active ? 'Selecionado' : 'Selecionar') + '</em></button>';
+    }).join('');
+    roleNotifyRoleCards.querySelectorAll('[data-role-card-id]').forEach((card) => { card.addEventListener('click', () => toggleRoleId(card.dataset.roleCardId || '')); });
+  }
   function renderRoleOptions(roles = []) {
     if (!roleNotifyRoles) return;
     const current = new Set(selectedRoleIds());
     const sorted = [...roles].sort((a, b) => String(a.guildName || '').localeCompare(String(b.guildName || '')) || String(a.name || '').localeCompare(String(b.name || '')));
     roleNotifyRoles.innerHTML = sorted.map((role) => `<option value="${esc(role.id)}" ${current.has(String(role.id)) ? 'selected' : ''}>${esc(roleLabel(role))}</option>`).join('');
+    renderRoleCards(sorted);
   }
 
+  function playerLabel(player = {}) {
+    const registered = player.registered ? ' • cadastrado no site' : '';
+    const guild = player.guildName ? ' • ' + player.guildName : '';
+    return String(player.name || player.username || player.discordId || '') + registered + guild;
+  }
+
+  function renderDmPlayerOptions(players = []) {
+    if (!dmHistoryPlayerSelect) return;
+    const current = String(dmHistoryPlayerSelect.value || dmHistoryDiscordId?.value || '');
+    const sorted = [...players].sort((a, b) => Number(b.registered) - Number(a.registered) || String(a.name || '').localeCompare(String(b.name || '')));
+    dmHistoryPlayerSelect.innerHTML = '<option value="">Selecionar jogador/membro...</option>' + sorted.map((player) => '<option value="' + esc(player.discordId || '') + '" ' + (current && current === String(player.discordId || '') ? 'selected' : '') + '>' + esc(playerLabel(player)) + '</option>').join('');
+  }
+  function dmPlayerInitials(player = {}) {
+    const name = String(player.name || player.username || player.discordId || '?').trim();
+    return name.split(/\s+/).slice(0, 2).map((part) => part[0] || '').join('').toUpperCase() || '?';
+  }
+
+  function renderDmPlayerCards(players = dmHistoryPlayersCache) {
+    if (!dmHistoryPlayerCards) return;
+    dmHistoryPlayersCache = Array.isArray(players) ? players : [];
+    const query = String(dmHistoryPlayerSearch?.value || '').trim().toLowerCase();
+    const selectedId = String(dmHistoryPlayerSelect?.value || dmHistoryDiscordId?.value || '');
+    const filtered = dmHistoryPlayersCache.filter((player) => {
+      const roles = (player.roles || []).map((role) => role.name || '').join(' ');
+      const haystack = [player.name, player.username, player.discordId, player.guildName, roles, player.registered ? 'cadastrado site' : ''].join(' ').toLowerCase();
+      return !query || haystack.includes(query);
+    }).slice(0, 80);
+    if (dmHistoryPlayerCount) dmHistoryPlayerCount.textContent = String(filtered.length) + ' de ' + String(dmHistoryPlayersCache.length || 0);
+    if (!filtered.length) {
+      dmHistoryPlayerCards.innerHTML = '<div class="va-player-card empty"><strong>Nenhum jogador encontrado</strong><span>Ajuste a busca ou use o Discord ID manual.</span></div>';
+      return;
+    }
+    dmHistoryPlayerCards.innerHTML = filtered.map((player) => {
+      const roles = (player.roles || []).slice(0, 3).map((role) => role.name).filter(Boolean).join(', ');
+      const active = selectedId && selectedId === String(player.discordId || '');
+      const registered = player.registered ? '<span class="va-player-pill ok">cadastrado no site</span>' : '<span class="va-player-pill">membro Discord</span>';
+      const avatar = player.avatar ? '<img src="' + esc(player.avatar) + '" alt="" />' : '<span>' + esc(dmPlayerInitials(player)) + '</span>';
+      return '<button type="button" class="va-player-card ' + (active ? 'active' : '') + '" data-dm-player-id="' + esc(player.discordId || '') + '">' +
+        '<span class="va-player-avatar">' + avatar + '</span>' +
+        '<span class="va-player-info"><strong>' + esc(player.name || player.username || player.discordId || 'Jogador') + '</strong><small>' + esc(player.discordId || '') + (player.guildName ? ' • ' + esc(player.guildName) : '') + '</small><em>' + esc(roles || 'Sem cargos exibidos') + '</em></span>' +
+        '<span class="va-player-meta">' + registered + '<span>Ver conversa</span></span>' +
+      '</button>';
+    }).join('');
+    dmHistoryPlayerCards.querySelectorAll('[data-dm-player-id]').forEach((card) => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.dmPlayerId || '';
+        if (!id) return;
+        if (dmHistoryPlayerSelect) dmHistoryPlayerSelect.value = id;
+        if (dmHistoryDiscordId) dmHistoryDiscordId.value = id;
+        renderDmPlayerCards();
+        loadDmHistory(id);
+      });
+    });
+  }
   function targetLine(target = {}) {
     const roles = (target.roles || []).slice(0, 4).map((role) => role.name).filter(Boolean).join(', ');
     const replyHint = target.dmDelivered ? ' • DM enviada' : (target.dmError ? ` • DM falhou: ${target.dmError}` : '');
@@ -166,13 +267,16 @@
     if (!roleNotificationForm) return;
     status(roleNotificationStatus, 'Carregando cargos e histórico...');
     try {
-      const [rolesData, historyData] = await Promise.all([
+      const [rolesData, historyData, playersData] = await Promise.all([
         VoidArena.request('/api/discord/roles', { timeoutMs: 12000 }).catch((error) => ({ success: false, roles: [], message: error.message })),
-        VoidArena.request('/api/admin/role-notifications/history', { timeoutMs: 12000 }).catch((error) => ({ success: false, campaigns: [], message: error.message }))
+        VoidArena.request('/api/admin/role-notifications/history', { timeoutMs: 12000 }).catch((error) => ({ success: false, campaigns: [], message: error.message })),
+        VoidArena.request('/api/admin/role-notifications/players', { timeoutMs: 16000 }).catch((error) => ({ success: false, players: [], message: error.message }))
       ]);
       renderRoleOptions(rolesData.roles || []);
       renderRoleHistory(historyData.campaigns || []);
-      status(roleNotificationStatus, `${rolesData.roles?.length || 0} cargo(s) carregado(s). Histórico: ${historyData.campaigns?.length || 0} envio(s).`, 'ok');
+      renderDmPlayerOptions(playersData.players || []);
+      renderDmPlayerCards(playersData.players || []);
+      status(roleNotificationStatus, String(rolesData.roles?.length || 0) + ' cargo(s) carregado(s). Histórico: ' + String(historyData.campaigns?.length || 0) + ' envio(s). Jogadores: ' + String(playersData.players?.length || 0) + '.', 'ok');
     } catch (error) { status(roleNotificationStatus, `❌ ${error.message}`, 'err'); }
   }
 
@@ -211,13 +315,15 @@
   }
 
   async function loadDmHistory(discordId = '') {
-    const id = String(discordId || dmHistoryDiscordId?.value || '').trim();
+    const id = String(discordId || dmHistoryPlayerSelect?.value || dmHistoryDiscordId?.value || '').trim();
     if (!id) return;
     if (dmHistoryDiscordId) dmHistoryDiscordId.value = id;
+    if (dmHistoryPlayerSelect && id) dmHistoryPlayerSelect.value = id;
     dmHistoryList.innerHTML = '<div class="va-item"><strong>Carregando conversa...</strong></div>';
     try {
       const data = await VoidArena.request(`/api/admin/role-notifications/dm-history/${encodeURIComponent(id)}`, { timeoutMs: 12000 });
       renderDmHistory(data);
+      renderDmPlayerCards();
     } catch (error) { dmHistoryList.innerHTML = `<div class="va-item"><strong>Erro ao carregar conversa</strong><div class="va-muted">${esc(error.message)}</div></div>`; }
   }
 
@@ -272,7 +378,11 @@
   document.getElementById('openInboxPreviewBtn')?.addEventListener('click', () => VoidArena.openNotifications?.());
   document.getElementById('enableBrowserNotificationsBtn')?.addEventListener('click', enableBrowserNotifications);
   document.getElementById('reloadRoleNotifyBtn')?.addEventListener('click', loadRoleNotifications);
+  roleNotifyRoleSearch?.addEventListener('input', () => renderRoleCards());
   document.getElementById('loadDmHistoryBtn')?.addEventListener('click', () => loadDmHistory());
+  dmHistoryRefreshBtn?.addEventListener('click', () => loadDmHistory());
+  dmHistoryPlayerSelect?.addEventListener('change', () => { if (dmHistoryPlayerSelect.value) loadDmHistory(dmHistoryPlayerSelect.value); });
+  dmHistoryPlayerSearch?.addEventListener('input', () => renderDmPlayerCards());
   document.getElementById('loadMatchVoicesBtn')?.addEventListener('click', loadMatchVoices);
   document.getElementById('deleteMatchVoicesBtn')?.addEventListener('click', deleteMatchVoices);
   document.getElementById('clearAllMatchVoicesBtn')?.addEventListener('click', clearAllMatchVoices);

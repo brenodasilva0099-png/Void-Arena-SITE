@@ -128,6 +128,15 @@ for (const file of files) {
     }
   }
 
+  if (relative === 'public/pages/configuracoes.html') {
+    if (!html.includes('class="frm-shell"') || html.includes('class="va-shell"') || html.includes('/css/style.css')) {
+      failures.push(`${relative}: configurações ainda usa a estrutura visual antiga`);
+    }
+    for (const marker of ['hnl-config-workspace', 'id="config-announcements"', 'id="config-roles"', 'id="config-voices"', '/js/pages/configuracoes.js']) {
+      if (!html.includes(marker)) failures.push(`${relative}: central organizada ausente ${marker}`);
+    }
+  }
+
   for (const ref of refs(html)) {
     if (!ref.startsWith('/') || ref.startsWith('//') || ref.startsWith('/api/') || ref.startsWith('/auth/')) continue;
     const full = path.join(PUBLIC_DIR, ref.replace(/^\/+/, ''));

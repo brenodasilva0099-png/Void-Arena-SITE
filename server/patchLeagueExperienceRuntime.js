@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PAGES = path.join(ROOT, 'public', 'pages');
 const UPDATES = path.join(PAGES, 'atualizacoes.html');
 const VERSION = path.join(ROOT, 'public', 'league-experience.json');
-const BUILD = '2026-07-19-league-experience-v4';
+const BUILD = '2026-07-19-league-experience-v5';
 const LOGO = '/assets/hollow-nexus-official.svg';
 let changed = false;
 
@@ -85,6 +85,106 @@ const profileBody = `<section class="hnl-profile-toolbar"><div><h2>Perfil e cone
   </article>
 </section>`;
 
+const configHead = '<link rel="stylesheet" href="/css/organization.css">';
+const configScripts = `<script src="/js/core/api.js?v=${BUILD}"></script><script src="/js/pages/configuracoes.js?v=${BUILD}"></script><script>
+document.addEventListener('click', function (event) {
+  const trigger = event.target.closest('[data-config-open]');
+  if (!trigger) return;
+  const target = document.getElementById(trigger.getAttribute('data-config-open') || '');
+  if (!target) return;
+  if (target.tagName === 'DETAILS') target.open = true;
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+</script>`;
+const configBody = `<section class="hnl-config-overview" id="config-system">
+  <article class="hnl-card hnl-config-status-card">
+    <div class="hnl-config-card-head"><div><span class="hnl-config-number">01</span><h2>Saúde do sistema</h2><p>Veja SITE, BOT e banco remoto sem misturar com as ferramentas de manutenção.</p></div><span class="hnl-config-card-icon" aria-hidden="true">◉</span></div>
+    <div id="systemStatusList" class="va-list hnl-config-list"></div>
+    <div class="hnl-actions"><button id="reloadConfigBtn" class="hnl-btn primary" type="button">Recarregar status</button><a class="hnl-btn" href="/pages/permissoes.html">Abrir permissões</a></div>
+    <div id="configStatus" class="va-status">Carregando...</div>
+  </article>
+  <article class="hnl-card hnl-config-backup-card">
+    <div class="hnl-config-card-head"><div><span class="hnl-config-number">02</span><h2>Backups</h2><p>Consulte o último ponto seguro antes de criar ou restaurar uma cópia.</p></div><span class="hnl-config-card-icon" aria-hidden="true">↻</span></div>
+    <div id="backupSummary" class="va-list hnl-config-list"></div>
+    <div class="hnl-actions"><button id="createBackupBtn" class="hnl-btn primary" type="button">Salvar backup agora</button><button id="restoreBackupBtn" class="hnl-btn danger" type="button">Restaurar último</button></div>
+    <div id="backupStatus" class="va-status">Aguardando...</div>
+  </article>
+</section>
+
+<section class="hnl-config-workspace">
+  <aside class="hnl-config-index" aria-label="Atalhos das configurações">
+    <span class="hnl-section-kicker">Central administrativa</span>
+    <h2>Ferramentas</h2>
+    <p>Abra somente a área que pretende usar. As demais ficam recolhidas para manter a tela limpa.</p>
+    <button type="button" data-config-open="config-announcements"><span>03</span><b>Avisos do site</b><small>Correios e navegador</small></button>
+    <button type="button" data-config-open="config-roles"><span>04</span><b>Mensagens por cargo</b><small>Site e DM Discord</small></button>
+    <button type="button" data-config-open="config-voices"><span>05</span><b>Calls privadas</b><small>Listar e remover calls</small></button>
+    <div class="hnl-config-integrations"><strong>Integrações ativas</strong><span>✓ Site conectado</span><span>✓ Ponte com o BOT</span><span>✓ Backup pelo GitHub</span><span>✓ Permissões por cargo</span></div>
+  </aside>
+
+  <div class="hnl-config-stack">
+    <details class="hnl-settings-panel" id="config-announcements" open>
+      <summary><span class="hnl-config-number">03</span><div><h2>Avisos do site</h2><p>Envie uma mensagem geral para os Correios e controle os alertas do navegador.</p></div><b class="hnl-settings-toggle" aria-hidden="true">+</b></summary>
+      <div class="hnl-settings-content">
+        <form id="siteAnnouncementForm" class="va-form-grid two hnl-config-form">
+          <label>Título do aviso<input name="title" maxlength="120" placeholder="Ex: Nova função disponível" value="Aviso da Hollow Nexus League" required></label>
+          <label>Mensagem<textarea name="message" maxlength="1000" rows="4" placeholder="Digite o aviso que os jogadores verão nos Correios..." required></textarea></label>
+          <div class="hnl-actions wide"><button class="hnl-btn primary" type="submit">Enviar para os Correios</button><button id="openInboxPreviewBtn" class="hnl-btn" type="button">Ver meus Correios</button><button id="enableBrowserNotificationsBtn" class="hnl-btn" type="button">Ativar alerta do navegador</button></div>
+        </form>
+        <div id="announcementStatus" class="va-status">Aguardando mensagem.</div>
+        <div class="hnl-config-history"><h3>Últimos avisos</h3><div id="announcementList" class="va-list"></div></div>
+      </div>
+    </details>
+
+    <details class="hnl-settings-panel" id="config-roles">
+      <summary><span class="hnl-config-number">04</span><div><h2>Notificações por cargo do Discord</h2><p>Escolha cargos e envie pelo site, por DM no Discord ou pelos dois canais.</p></div><b class="hnl-settings-toggle" aria-hidden="true">+</b></summary>
+      <div class="hnl-settings-content">
+        <form id="roleNotificationForm" class="va-form-grid two hnl-config-form">
+          <label class="wide">Cargos do Discord
+            <select name="roleIds" id="roleNotifyRoles" multiple size="8" style="display:none"></select>
+            <div class="va-role-picker">
+              <div class="va-role-picker-head"><span>Selecionar cargos</span><small id="roleNotifyRoleCount">0 selecionado(s)</small></div>
+              <input id="roleNotifyRoleSearch" class="va-player-picker-search" placeholder="Buscar cargo por nome ou servidor..." autocomplete="off">
+              <div id="roleNotifyRoleCards" class="va-role-picker-cards"><div class="va-role-card skeleton">Carregando cargos...</div></div>
+              <small class="va-muted">Clique nos cards para marcar ou desmarcar vários cargos.</small>
+            </div>
+          </label>
+          <label>Modo de envio<select name="deliveryMode"><option value="both">Site + DM Discord</option><option value="site">Somente site / Correios</option><option value="discord">Somente DM Discord</option></select></label>
+          <label>Título<input name="title" maxlength="120" value="Aviso da Hollow Nexus League" required></label>
+          <label class="wide">Mensagem<textarea name="message" maxlength="1200" rows="5" placeholder="Digite a mensagem para os usuários dos cargos selecionados..." required></textarea></label>
+          <div class="hnl-actions wide"><button class="hnl-btn primary" type="submit">Enviar por cargo</button><button id="reloadRoleNotifyBtn" class="hnl-btn" type="button">Atualizar cargos e histórico</button></div>
+        </form>
+        <div id="roleNotificationStatus" class="va-status">Carregando cargos...</div>
+        <div class="hnl-config-two-columns">
+          <section class="hnl-config-subpanel"><h3>Histórico de envios</h3><div id="roleNotificationHistory" class="va-list"></div></section>
+          <section class="hnl-config-subpanel"><h3>Conversa e respostas</h3><p class="va-muted">Selecione um jogador do servidor ou informe um Discord ID.</p>
+            <div class="va-player-picker">
+              <div class="va-player-picker-head"><span>Jogadores do servidor</span><small id="dmHistoryPlayerCount">Carregando...</small></div>
+              <input id="dmHistoryPlayerSearch" class="va-player-picker-search" placeholder="Buscar nome, Discord ID ou cargo..." autocomplete="off">
+              <select id="dmHistoryPlayerSelect" size="8" style="display:none"><option value="">Carregando jogadores...</option></select>
+              <div id="dmHistoryPlayerCards" class="va-player-picker-cards"><div class="va-player-card skeleton">Carregando jogadores...</div></div>
+            </div>
+            <div class="hnl-config-id-row"><input id="dmHistoryDiscordId" class="hnl-input" placeholder="Discord ID manual"><button id="loadDmHistoryBtn" class="hnl-btn" type="button">Ver conversa</button><button id="dmHistoryRefreshBtn" class="hnl-btn" type="button">Atualizar</button></div>
+            <div id="dmHistoryList" class="va-list"></div>
+          </section>
+        </div>
+      </div>
+    </details>
+
+    <details class="hnl-settings-panel" id="config-voices">
+      <summary><span class="hnl-config-number">05</span><div><h2>Calls privadas dos times</h2><p>Consulte as calls criadas pelo chaveamento antes de remover canais.</p></div><b class="hnl-settings-toggle" aria-hidden="true">+</b></summary>
+      <div class="hnl-settings-content">
+        <form id="matchVoicesForm" class="va-form-grid two hnl-config-form">
+          <label>Categoria das calls<input name="categoryId" value="1523133579570184194" placeholder="ID da categoria Discord"></label>
+          <div class="hnl-actions"><button id="loadMatchVoicesBtn" class="hnl-btn primary" type="button">Carregar calls</button><button id="deleteMatchVoicesBtn" class="hnl-btn danger" type="button">Apagar selecionadas</button><button id="clearAllMatchVoicesBtn" class="hnl-btn danger" type="button">Apagar todas</button></div>
+        </form>
+        <div id="matchVoiceStatus" class="va-status">Aguardando carregamento das calls.</div>
+        <div id="matchVoiceList" class="va-list"></div>
+      </div>
+    </details>
+  </div>
+</section>`;
+
 const pages = {
   'dashboard.html': shell({ title: 'Início', tab: 'inicio', href: '', module: 'dashboard', heroHtml: hero('the HOLLOW NEXUS <span class="frm-accent">LEAGUE</span>', 'Liga comunitária de Rematch para clubes, jogadores, competições, calendário e eventos.', '✨', 'Bem-vindo à'), body: `<section class="hnl-grid cols-4"><div class="hnl-stat"><strong data-hnl-stat="clubes">0</strong><span>Clubes participantes</span></div><div class="hnl-stat"><strong data-hnl-stat="jogadores">0</strong><span>Jogadores registrados</span></div><div class="hnl-stat"><strong data-hnl-stat="competicoes">0</strong><span>Competições ativas</span></div><div class="hnl-stat"><strong data-hnl-stat="partidas">0</strong><span>Partidas disputadas</span></div></section><section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Competições em destaque</h2><div class="hnl-grid" id="homeCompetitions"></div></article><article class="hnl-card"><h2>Ranking de clubes</h2><div class="hnl-grid" id="homeClubRanking"></div></article></section>` }),
   'perfil.html': shell({ title: 'Meu Perfil', tab: 'jogadores', href: '', module: 'profile-settings', heroHtml: hero('Meu perfil', 'Seu perfil público, conexões, time atual e configurações em um só lugar.', '👤', 'Área do jogador'), body: profileBody, extraHead: profileHead, extraScripts: profileScripts }),
@@ -109,6 +209,7 @@ const pages = {
   'chaveamento.html': shell({ title: 'Chaveamento', tab: 'competitivo', href: '/pages/chaveamento.html', module: 'bracket', heroHtml: hero('Chaveamento', 'Estrutura competitiva dentro do visual atual da liga.', '⌘'), body: '<section id="competitiveData"></section>' }),
   'grupos.html': shell({ title: 'Grupos', tab: 'competitivo', href: '/pages/grupos.html', module: 'groups', heroHtml: hero('Fase de Grupos', 'Clubes, competições e estrutura de grupos sem retornar ao site antigo.', '☷'), body: '<section id="competitiveData"></section>' }),
   'resultados.html': shell({ title: 'Resultados', tab: 'competitivo', href: '/pages/resultados.html', module: 'results', heroHtml: hero('Resultados', 'Resultados e competições no mesmo shell visual da liga.', '◉'), body: '<section id="competitiveData"></section>' }),
+  'configuracoes.html': shell({ title: 'Configurações', tab: 'admin', href: '/pages/configuracoes.html', module: 'config', heroHtml: hero('Central de Configurações', 'Saúde do sistema, backups e comunicação organizados em uma única central administrativa.', '⚙'), body: configBody, extraHead: configHead, extraScripts: configScripts }),
   'administracao.html': shell({ title: 'Administração', tab: 'admin', href: '', module: '', heroHtml: hero('Administração', 'Acesso central às áreas administrativas do site e do bot.', '⚙'), body: `<section class="hnl-grid cols-2"><a class="hnl-card" href="/pages/formularios.html"><h2>▤ Formulários</h2><p>Inscrições e solicitações enviadas.</p></a><a class="hnl-card" href="/pages/permissoes.html"><h2>ⓘ Permissões</h2><p>Cargos e acessos do site.</p></a><a class="hnl-card" href="/pages/configuracoes.html"><h2>⚙ Configurações</h2><p>Integrações, canais e ajustes.</p></a><a class="hnl-card" href="/pages/analise-partidas.html"><h2>◉ Análise de Partidas</h2><p>Submissões e revisão da equipe.</p></a></section>` })
 };
 pages['times.html'] = pages['clubes.html'];
@@ -120,7 +221,7 @@ const heroEmojis = {
   'times.html': '🛡️', 'cadastrar-clube.html': '🏗️', 'elencos.html': '👥', 'perfil-clube.html': '🛡️',
   'atletas.html': '👥', 'jogadores.html': '👥', 'perfil-jogador.html': '👤', 'mercado.html': '🤝',
   'recrutamento.html': '🤝', 'transferencias.html': '🔄', 'rankings.html': '📊', 'prancheta-tatica.html': '⚽',
-  'chaveamento.html': '🧩', 'grupos.html': '🗂️', 'resultados.html': '📌', 'administracao.html': '🛠️'
+  'chaveamento.html': '🧩', 'grupos.html': '🗂️', 'resultados.html': '📌', 'configuracoes.html': '⚙️', 'administracao.html': '🛠️'
 };
 function applyHeroEmoji(name, html) {
   const emoji = heroEmojis[name];

@@ -1,114 +1,97 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Configurações | Void Arena</title>
-  <link rel="icon" href="/assets/hollow-nexus.png" />
-  <link rel="stylesheet" href="/css/style.css" />
-  <link rel="stylesheet" href="/css/organization.css" />
-</head>
-<body class="va-organized-body" data-page="config">
-  <div class="va-shell">
-<aside class="va-sidebar">
-  <div class="va-brand">
-    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
-  </div>
-  <nav class="va-nav">
-    <div class="va-nav-title">Principal</div>
-    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-    <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
-    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-    <div class="va-nav-title">Comunicação</div>
-    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-    <div class="va-nav-title">Admin</div>
-    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
-  </nav>
-</aside>
-    <main class="va-main">
-      <header class="va-topbar">
-        <div>
-          <p class="va-eyebrow">Void Arena 5.1.3</p>
-          <h1 class="va-title">Configurações</h1>
-          <p class="va-subtitle">Configurações, saúde do sistema, backups e comunicação por cargo.</p>
-        </div>
-        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
-      </header>
-
-<section class="va-grid">
-  <article class="va-card large">
-    <h2>Status geral</h2>
-    <p>Resumo do SITE, BOT e banco remoto. Use isto antes de mexer em backup/deploy.</p>
-    <div id="systemStatusList" class="va-list"></div>
-    <div class="va-actions"><button id="reloadConfigBtn" class="va-btn" type="button">Recarregar status</button><a class="va-btn" href="/pages/permissoes.html">Permissões</a></div>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configurações | Hollow Nexus League</title><link rel="icon" href="/assets/hollow-nexus-official.svg"><link rel="stylesheet" href="/css/organization.css"><script src="/js/core/league-navigation.js?v=2026-07-19-league-experience-v5"></script><link rel="stylesheet" href="/css/league-critical.css?v=2026-07-19-league-experience-v5"><link rel="stylesheet" href="/css/league-polish.css?v=2026-07-19-league-experience-v5"><link rel="stylesheet" href="/css/league-experience.css?v=2026-07-19-league-experience-v5"></head><body class="frm-polish-page" data-page="config" data-hnl-module="config" data-frm-module="config"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav"><div class="frm-nav-title">Competitivo</div><a class="" href="/pages/competicoes.html"><i>♕</i><b>Competições</b></a><a class="" href="/pages/eventos.html"><i>◇</i><b>Eventos</b></a><a class="" href="/pages/chaveamento.html"><i>⌘</i><b>Chaveamento</b></a><a class="" href="/pages/grupos.html"><i>≡</i><b>Grupos</b></a><a class="" href="/pages/resultados.html"><i>◎</i><b>Resultados</b></a><a class="" href="/pages/rankings.html"><i>▥</i><b>Rankings</b></a><a class="" href="/pages/calendario.html"><i>□</i><b>Calendário</b></a><div class="frm-nav-title">Clubes</div><a class="" href="/pages/clubes.html"><i>◈</i><b>Clubes Participantes</b></a><a class="" href="/pages/cadastrar-clube.html"><i>+</i><b>Cadastrar Clube</b></a><a class="" href="/pages/elencos.html"><i>▱</i><b>Elencos</b></a><a class="" href="/pages/prancheta-tatica.html"><i>▣</i><b>Prancheta Tática</b></a><a class="" href="/pages/transferencias.html"><i>↔</i><b>Transferências</b></a><div class="frm-nav-title">Jogadores</div><a class="" href="/pages/atletas.html"><i>♙</i><b>Jogadores Registrados</b></a><a class="" href="/pages/mercado.html"><i>✦</i><b>Mercado / Recrutamento</b></a><a class="" href="/pages/rankings.html"><i>▥</i><b>Ranking de Jogadores</b></a><div class="frm-nav-title">Administração</div><a class="" href="/pages/formularios.html"><i>▤</i><b>Formulários</b></a><a class="" href="/pages/permissoes.html"><i>ⓘ</i><b>Permissões</b></a><a class="" href="/pages/configuracoes.html"><i>⚙</i><b>Configurações</b></a><a class="" href="/pages/analise-partidas.html"><i>◉</i><b>Análise de Partidas</b></a></nav></aside><main class="frm-main"><header class="frm-header"><nav class="frm-tabs"><a class="" href="/pages/dashboard.html">Início</a><a class="" href="/pages/competicoes.html">Competitivo</a><a class="" href="/pages/clubes.html">Clubes</a><a class="" href="/pages/atletas.html">Jogadores</a><a class="" href="/pages/cafe-com-leite.html">Café com Leite</a><a class="" href="/pages/administracao.html">Administração</a></nav><div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header><section class="frm-page-hero"><div><span class="hnl-section-kicker">Hollow Nexus League</span><h1>Central de Configurações</h1><p>Saúde do sistema, backups e comunicação organizados em uma única central administrativa.</p></div><div class="hnl-hero-icon" aria-hidden="true">⚙️</div></section><div id="pageStatus"></div><section class="hnl-config-overview" id="config-system">
+  <article class="hnl-card hnl-config-status-card">
+    <div class="hnl-config-card-head"><div><span class="hnl-config-number">01</span><h2>Saúde do sistema</h2><p>Veja SITE, BOT e banco remoto sem misturar com as ferramentas de manutenção.</p></div><span class="hnl-config-card-icon" aria-hidden="true">◉</span></div>
+    <div id="systemStatusList" class="va-list hnl-config-list"></div>
+    <div class="hnl-actions"><button id="reloadConfigBtn" class="hnl-btn primary" type="button">Recarregar status</button><a class="hnl-btn" href="/pages/permissoes.html">Abrir permissões</a></div>
     <div id="configStatus" class="va-status">Carregando...</div>
   </article>
-  <article class="va-card">
-    <h2>Backups</h2>
-    <p>O backup oficial continua no GitHub pelo BOT. Aqui você consulta, cria e restaura o último backup seguro.</p>
-    <div id="backupSummary" class="va-list"></div>
-    <div class="va-actions"><button id="createBackupBtn" class="va-btn primary" type="button">Salvar backup agora</button><button id="restoreBackupBtn" class="va-btn danger" type="button">Restaurar último</button></div>
+  <article class="hnl-card hnl-config-backup-card">
+    <div class="hnl-config-card-head"><div><span class="hnl-config-number">02</span><h2>Backups</h2><p>Consulte o último ponto seguro antes de criar ou restaurar uma cópia.</p></div><span class="hnl-config-card-icon" aria-hidden="true">↻</span></div>
+    <div id="backupSummary" class="va-list hnl-config-list"></div>
+    <div class="hnl-actions"><button id="createBackupBtn" class="hnl-btn primary" type="button">Salvar backup agora</button><button id="restoreBackupBtn" class="hnl-btn danger" type="button">Restaurar último</button></div>
     <div id="backupStatus" class="va-status">Aguardando...</div>
-  </article>
-  <article class="va-card full">
-    <h2>Correios / notificações do site</h2>
-    <p>Envie avisos para os Correios. Os alertas do navegador funcionam enquanto o usuário estiver com o site aberto e tiver permitido notificações.</p>
-    <form id="siteAnnouncementForm" class="va-form-grid two">
-      <label>Título do aviso<input name="title" maxlength="120" placeholder="Ex: Nova função disponível" value="Aviso da Void Arena" required /></label>
-      <label class="wide">Mensagem<textarea name="message" maxlength="1000" rows="4" placeholder="Digite o aviso que os jogadores verão nos Correios..." required></textarea></label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar para os Correios</button><button id="openInboxPreviewBtn" class="va-btn" type="button">Ver meus Correios</button><button id="enableBrowserNotificationsBtn" class="va-btn" type="button">Ativar alerta do navegador</button></div>
-    </form>
-    <div id="announcementList" class="va-list"></div>
-    <div id="announcementStatus" class="va-status">Aguardando mensagem.</div>
-  </article>
-  <article class="va-card full">
-    <h2>Notificações por cargo do Discord</h2>
-    <p>Selecione cargos do servidor e envie mensagem para usuários cadastrados no site que possuem esses cargos. Você escolhe se envia no site, por DM no Discord ou nos dois.</p>
-    <form id="roleNotificationForm" class="va-form-grid two">
-      <label>Cargos do Discord<select name="roleIds" id="roleNotifyRoles" multiple size="8"></select><small class="va-muted">Segure Ctrl para selecionar mais de um cargo.</small></label>
-      <label>Modo de envio<select name="deliveryMode"><option value="both">Site + DM Discord</option><option value="site">Somente site / Correios</option><option value="discord">Somente DM Discord</option></select></label>
-      <label>Título<input name="title" maxlength="120" value="Aviso da Void Arena" required /></label>
-      <label class="wide">Mensagem<textarea name="message" maxlength="1200" rows="5" placeholder="Digite a mensagem para os usuários do cargo selecionado..." required></textarea></label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar por cargo</button><button id="reloadRoleNotifyBtn" class="va-btn" type="button">Recarregar cargos/histórico</button></div>
-    </form>
-    <div id="roleNotificationStatus" class="va-status">Carregando cargos...</div>
-    <div class="va-grid" style="margin-top:14px">
-      <div class="va-card" style="box-shadow:none"><h3>Histórico de envios</h3><div id="roleNotificationHistory" class="va-list"></div></div>
-      <div class="va-card" style="box-shadow:none"><h3>Conversa / respostas</h3><p class="va-muted">Clique em “Ver conversa” em um alvo do histórico ou informe um Discord ID.</p><div class="va-actions"><input id="dmHistoryDiscordId" placeholder="Discord ID do usuário" /><button id="loadDmHistoryBtn" class="va-btn" type="button">Ver conversa</button></div><div id="dmHistoryList" class="va-list"></div></div>
-    </div>
-  </article>
-  <article class="va-card full">
-    <h2>Calls privadas dos times</h2>
-    <p>Liste as calls criadas pelo chaveamento dentro da categoria e selecione quais quer limpar.</p>
-    <form id="matchVoicesForm" class="va-form-grid two">
-      <label>Categoria das calls<input name="categoryId" value="1523133579570184194" placeholder="ID da categoria Discord" /></label>
-      <div class="va-actions"><button id="loadMatchVoicesBtn" class="va-btn" type="button">Carregar calls</button><button id="deleteMatchVoicesBtn" class="va-btn danger" type="button">Apagar selecionadas</button><button id="clearAllMatchVoicesBtn" class="va-btn danger" type="button">Apagar todas</button></div>
-    </form>
-    <div id="matchVoiceList" class="va-list"></div>
-    <div id="matchVoiceStatus" class="va-status">Aguardando carregamento das calls.</div>
-  </article>
-  <article class="va-card full">
-    <h2>Checklist da base 5.0</h2>
-    <div class="va-checklist">
-      <span>✅ Páginas separadas</span><span>✅ Painel completo preservado</span><span>✅ Ponte SITE → BOT</span><span>✅ Backups via BOT</span><span>✅ Permissões por cargo</span><span>✅ Chaveamento premium integrado</span>
-    </div>
   </article>
 </section>
 
-    </main>
+<section class="hnl-config-workspace">
+  <aside class="hnl-config-index" aria-label="Atalhos das configurações">
+    <span class="hnl-section-kicker">Central administrativa</span>
+    <h2>Ferramentas</h2>
+    <p>Abra somente a área que pretende usar. As demais ficam recolhidas para manter a tela limpa.</p>
+    <button type="button" data-config-open="config-announcements"><span>03</span><b>Avisos do site</b><small>Correios e navegador</small></button>
+    <button type="button" data-config-open="config-roles"><span>04</span><b>Mensagens por cargo</b><small>Site e DM Discord</small></button>
+    <button type="button" data-config-open="config-voices"><span>05</span><b>Calls privadas</b><small>Listar e remover calls</small></button>
+    <div class="hnl-config-integrations"><strong>Integrações ativas</strong><span>✓ Site conectado</span><span>✓ Ponte com o BOT</span><span>✓ Backup pelo GitHub</span><span>✓ Permissões por cargo</span></div>
+  </aside>
+
+  <div class="hnl-config-stack">
+    <details class="hnl-settings-panel" id="config-announcements" open>
+      <summary><span class="hnl-config-number">03</span><div><h2>Avisos do site</h2><p>Envie uma mensagem geral para os Correios e controle os alertas do navegador.</p></div><b class="hnl-settings-toggle" aria-hidden="true">+</b></summary>
+      <div class="hnl-settings-content">
+        <form id="siteAnnouncementForm" class="va-form-grid two hnl-config-form">
+          <label>Título do aviso<input name="title" maxlength="120" placeholder="Ex: Nova função disponível" value="Aviso da Hollow Nexus League" required></label>
+          <label>Mensagem<textarea name="message" maxlength="1000" rows="4" placeholder="Digite o aviso que os jogadores verão nos Correios..." required></textarea></label>
+          <div class="hnl-actions wide"><button class="hnl-btn primary" type="submit">Enviar para os Correios</button><button id="openInboxPreviewBtn" class="hnl-btn" type="button">Ver meus Correios</button><button id="enableBrowserNotificationsBtn" class="hnl-btn" type="button">Ativar alerta do navegador</button></div>
+        </form>
+        <div id="announcementStatus" class="va-status">Aguardando mensagem.</div>
+        <div class="hnl-config-history"><h3>Últimos avisos</h3><div id="announcementList" class="va-list"></div></div>
+      </div>
+    </details>
+
+    <details class="hnl-settings-panel" id="config-roles">
+      <summary><span class="hnl-config-number">04</span><div><h2>Notificações por cargo do Discord</h2><p>Escolha cargos e envie pelo site, por DM no Discord ou pelos dois canais.</p></div><b class="hnl-settings-toggle" aria-hidden="true">+</b></summary>
+      <div class="hnl-settings-content">
+        <form id="roleNotificationForm" class="va-form-grid two hnl-config-form">
+          <label class="wide">Cargos do Discord
+            <select name="roleIds" id="roleNotifyRoles" multiple size="8" style="display:none"></select>
+            <div class="va-role-picker">
+              <div class="va-role-picker-head"><span>Selecionar cargos</span><small id="roleNotifyRoleCount">0 selecionado(s)</small></div>
+              <input id="roleNotifyRoleSearch" class="va-player-picker-search" placeholder="Buscar cargo por nome ou servidor..." autocomplete="off">
+              <div id="roleNotifyRoleCards" class="va-role-picker-cards"><div class="va-role-card skeleton">Carregando cargos...</div></div>
+              <small class="va-muted">Clique nos cards para marcar ou desmarcar vários cargos.</small>
+            </div>
+          </label>
+          <label>Modo de envio<select name="deliveryMode"><option value="both">Site + DM Discord</option><option value="site">Somente site / Correios</option><option value="discord">Somente DM Discord</option></select></label>
+          <label>Título<input name="title" maxlength="120" value="Aviso da Hollow Nexus League" required></label>
+          <label class="wide">Mensagem<textarea name="message" maxlength="1200" rows="5" placeholder="Digite a mensagem para os usuários dos cargos selecionados..." required></textarea></label>
+          <div class="hnl-actions wide"><button class="hnl-btn primary" type="submit">Enviar por cargo</button><button id="reloadRoleNotifyBtn" class="hnl-btn" type="button">Atualizar cargos e histórico</button></div>
+        </form>
+        <div id="roleNotificationStatus" class="va-status">Carregando cargos...</div>
+        <div class="hnl-config-two-columns">
+          <section class="hnl-config-subpanel"><h3>Histórico de envios</h3><div id="roleNotificationHistory" class="va-list"></div></section>
+          <section class="hnl-config-subpanel"><h3>Conversa e respostas</h3><p class="va-muted">Selecione um jogador do servidor ou informe um Discord ID.</p>
+            <div class="va-player-picker">
+              <div class="va-player-picker-head"><span>Jogadores do servidor</span><small id="dmHistoryPlayerCount">Carregando...</small></div>
+              <input id="dmHistoryPlayerSearch" class="va-player-picker-search" placeholder="Buscar nome, Discord ID ou cargo..." autocomplete="off">
+              <select id="dmHistoryPlayerSelect" size="8" style="display:none"><option value="">Carregando jogadores...</option></select>
+              <div id="dmHistoryPlayerCards" class="va-player-picker-cards"><div class="va-player-card skeleton">Carregando jogadores...</div></div>
+            </div>
+            <div class="hnl-config-id-row"><input id="dmHistoryDiscordId" class="hnl-input" placeholder="Discord ID manual"><button id="loadDmHistoryBtn" class="hnl-btn" type="button">Ver conversa</button><button id="dmHistoryRefreshBtn" class="hnl-btn" type="button">Atualizar</button></div>
+            <div id="dmHistoryList" class="va-list"></div>
+          </section>
+        </div>
+      </div>
+    </details>
+
+    <details class="hnl-settings-panel" id="config-voices">
+      <summary><span class="hnl-config-number">05</span><div><h2>Calls privadas dos times</h2><p>Consulte as calls criadas pelo chaveamento antes de remover canais.</p></div><b class="hnl-settings-toggle" aria-hidden="true">+</b></summary>
+      <div class="hnl-settings-content">
+        <form id="matchVoicesForm" class="va-form-grid two hnl-config-form">
+          <label>Categoria das calls<input name="categoryId" value="1523133579570184194" placeholder="ID da categoria Discord"></label>
+          <div class="hnl-actions"><button id="loadMatchVoicesBtn" class="hnl-btn primary" type="button">Carregar calls</button><button id="deleteMatchVoicesBtn" class="hnl-btn danger" type="button">Apagar selecionadas</button><button id="clearAllMatchVoicesBtn" class="hnl-btn danger" type="button">Apagar todas</button></div>
+        </form>
+        <div id="matchVoiceStatus" class="va-status">Aguardando carregamento das calls.</div>
+        <div id="matchVoiceList" class="va-list"></div>
+      </div>
+    </details>
   </div>
-  <script src="/js/core/api.js"></script>
-  <script src="/js/pages/configuracoes.js"></script>
-</body>
-</html>
+</section><footer class="frm-footer"><div><div class="frm-footer-brand"><img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus League"><div><strong>the HOLLOW NEXUS <span class="frm-accent">LEAGUE</span></strong><p>Liga Comunitária de Rematch</p></div></div><p>Competições, clubes, jogadores e eventos em uma plataforma comunitária independente.</p></div><div><h4>Liga</h4><div class="hnl-footer-links"><a href="/pages/federacao.html">Sobre a Liga</a><a href="/pages/regulamento.html">Regulamento</a><a href="/pages/atualizacoes.html">Atualizações</a><a href="/pages/suporte.html">Suporte</a></div></div><div><h4>Links rápidos</h4><div class="hnl-footer-links"><a href="/pages/competicoes.html">Competições</a><a href="/pages/clubes.html">Clubes</a><a href="/pages/atletas.html">Jogadores</a><a href="/pages/cafe-com-leite.html">Café com Leite</a></div></div><div><h4>Contato</h4><div class="hnl-footer-links"><a href="/api/discord/server/open" target="_blank" rel="noopener">Discord Oficial</a><a href="/pages/suporte.html">Abrir suporte</a></div></div><div><h4>Legal</h4><p>Liga comunitária independente. Não afiliada, patrocinada ou endossada por Rematch, Sloclap ou Kepler Interactive.</p><p>© 2026 The Hollow Nexus League.</p></div></footer></main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=2026-07-19-league-experience-v5"></script><script src="/js/core/league-experience.js?v=2026-07-19-league-experience-v5"></script><script src="/js/core/api.js?v=2026-07-19-league-experience-v5"></script><script src="/js/pages/configuracoes.js?v=2026-07-19-league-experience-v5"></script><script>
+document.addEventListener('click', function (event) {
+  const trigger = event.target.closest('[data-config-open]');
+  if (!trigger) return;
+  const target = document.getElementById(trigger.getAttribute('data-config-open') || '');
+  if (!target) return;
+  if (target.tagName === 'DETAILS') target.open = true;
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+</script><script src="/js/core/league-auth-ui.js?v=2026-07-19-league-experience-v5"></script><script src="/js/core/league-page-integrity.js?v=2026-07-19-league-experience-v5"></script></body></html>
