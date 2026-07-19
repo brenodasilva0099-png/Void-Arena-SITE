@@ -58,6 +58,7 @@ require('./patchLeagueExperienceRouteRegistrationRuntime');
 require('./patchLeagueExperienceRuntime');
 require('./patchLegacyTeamOwnershipRuntime');
 require('./patchLeagueNavStateRuntime');
+require('./patchLeagueExperienceFinalChangelogRuntime');
 require('./patchSiteIntegrityRuntime');
 require('./patchNavigationIntegrityRuntime');
 
@@ -71,5 +72,11 @@ checkFiles(patchedFiles, 'sintaxe após patches');
 
 require('./auditSitePages');
 
+const finalVersion = path.join(ROOT, 'public', 'league-experience-final.json');
+if (!fs.existsSync(finalVersion)) {
+  console.error('[Check] Marcador final league-experience-final.json não foi gerado.');
+  process.exit(1);
+}
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe antes/depois dos patches, experiência, gestão de clubes, menus, páginas, assets e navegação aprovados.');
+console.log('[Check] Sintaxe antes/depois dos patches, experiência, gestão de clubes, menus, changelog, páginas, assets e navegação aprovados.');
