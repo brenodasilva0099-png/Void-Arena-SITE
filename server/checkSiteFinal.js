@@ -18,7 +18,8 @@ const patches = [
   './patchLeagueExperienceCssRuntime',
   './patchLeagueExperienceFinalChangelogRuntime',
   './patchSiteIntegrityRuntime',
-  './patchNavigationIntegrityRuntime'
+  './patchNavigationIntegrityRuntime',
+  './patchLeagueProfilesCompetitionsHomeRuntime'
 ];
 
 require('./auditRuntimeSafety');
@@ -37,6 +38,7 @@ const files = [
   ...walk(path.join(ROOT, 'server')),
   ...walk(path.join(ROOT, 'site')),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-home-competitions-upgrade.js'),
   path.join(ROOT, 'public', 'js', 'core', 'social-icons.js'),
   path.join(ROOT, 'public', 'js', 'core', 'profile-api.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-navigation.js'),
@@ -62,11 +64,11 @@ if (failures.length) {
 }
 
 require('./auditSitePages');
-for (const name of ['league-stable-final.json', 'page-integrity.json', 'navigation-integrity.json']) {
+for (const name of ['league-stable-final.json', 'page-integrity.json', 'navigation-integrity.json', 'league-home-competition-profile.json']) {
   if (!fs.existsSync(path.join(ROOT, 'public', name))) {
     console.error(`[Check Final] Marcador ausente: ${name}`);
     process.exit(1);
   }
 }
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Rotas, assets, menus, chaveamento, grupos, rankings, Café com Leite e navegação aprovados.');
+console.log('[Check Final] Perfis, inscrições de competição, home, rotas, assets, menus, chaveamento, grupos, rankings e navegação aprovados.');
