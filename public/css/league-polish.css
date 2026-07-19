@@ -1,0 +1,11 @@
+/* Hollow Nexus League permanent fallback */
+:root{--frm-bg:#080b16;--frm-card:#111827;--frm-border:rgba(142,96,255,.28);--frm-purple:#8b5cf6;--frm-purple2:#a855f7;--frm-text:#f8f7ff;--frm-muted:#c2c8d6}
+body.frm-polish-page{background:linear-gradient(135deg,#080b16,#0c1120 48%,#11152a);color:var(--frm-text)}
+.frm-sidebar{background:#090c18;border-right:1px solid var(--frm-border)}
+.frm-main{background:linear-gradient(180deg,rgba(15,20,36,.42),rgba(8,11,22,.14))}
+.frm-card,.frm-stat,.frm-footer,.frm-modal-panel{background:rgba(16,24,39,.92);border:1px solid var(--frm-border)}
+.frm-page-hero{background:linear-gradient(116deg,rgba(15,23,42,.97),rgba(31,22,58,.95));border:1px solid var(--frm-border)}
+.frm-nav a{color:#e1e5ef}
+.frm-card p,.frm-muted,.frm-footer p,.frm-footer a{color:var(--frm-muted)}
+.frm-accent,.frm-brand span,.frm-page-hero h1 span:not(.frm-the){color:var(--frm-purple2)}
+.frm-btn.primary,.frm-btn.discord{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
