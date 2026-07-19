@@ -3,6 +3,9 @@ require('dotenv').config();
 const patches = [
   './fetchTimeoutPatch',
   './sessionPatch',
+  './patchBotPublicUrlRuntime',
+  './patchStaticMaintenanceBypassRuntime',
+  './patchBracketGroupStandingsRuntime',
   './patchAdminDiscordAccessRuntime',
   './patchStablePageRoutesRuntime',
   './patchGlobalNavigationShellRuntime',
@@ -45,8 +48,10 @@ const patches = [
   './patchLeagueExperienceRouteRegistrationRuntime',
   './patchCafeRankingRouteRegistrationRuntime',
   './patchLeagueExperienceRuntime',
+  './patchLeagueCompetitionScriptsRuntime',
   './patchLegacyTeamOwnershipRuntime',
   './patchLeagueNavStateRuntime',
+  './patchLeagueFinalRuntime',
   './patchLeagueExperienceFinalChangelogRuntime',
   './patchSiteIntegrityRuntime',
   './patchNavigationIntegrityRuntime'
@@ -62,5 +67,5 @@ for (const patch of patches) {
   }
 }
 
-console.log(`[Boot] ${patches.length} patches carregados; experiência League, ranking do Discord, gestão legada, changelog, navegação e integridade aplicados por último.`);
+console.log(`[Boot] ${patches.length} patches carregados em ordem final.`);
 require('../site/index');
