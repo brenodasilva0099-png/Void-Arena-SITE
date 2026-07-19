@@ -54,12 +54,11 @@
   }
 
   function teamCard(team = {}) {
-    const manage = team.canManage ? `<a class="hnl-btn primary" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}#administrar">Administrar</a>` : '';
-    return `<article class="hnl-card">
+    return `<article class="hnl-card hnl-club-card">
       <div class="hnl-profile-row">
         <img class="hnl-club-logo" src="${esc(image(team.logo))}" alt="Logo de ${esc(team.name || 'clube')}">
-        <div><h3><a href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">${esc(team.name || 'Clube')}</a></h3><span class="hnl-chip">${esc(team.tag || 'Sem tag')}</span><p>${esc(team.captainName || team.ownerName || 'Capitão não definido')}</p></div>
-        <div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Perfil público</a>${manage}</div>
+        <div class="hnl-club-card-copy"><h3><a href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">${esc(team.name || 'Clube')}</a></h3><div class="hnl-actions"><span class="hnl-chip">${esc(team.tag || 'Sem tag')}</span>${team.region ? `<span class="hnl-chip">${esc(team.region)}</span>` : ''}</div><p>${esc(team.description || 'Clube participante da Hollow Nexus League.')}</p><small>Diretor: ${esc(team.directorName || team.ownerName || 'Não definido')} · Capitão: ${esc(team.captainName || 'Não definido')}</small>${socials(team.socials || {})}</div>
+        <div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Perfil público</a></div>
       </div>
     </article>`;
   }
@@ -82,7 +81,7 @@
     const map = { clubes: stats.clubes || 0, jogadores: stats.jogadores ?? stats.atletas ?? 0, competicoes: stats.competicoes || 0, partidas: stats.partidas || 0 };
     Object.entries(map).forEach(([key, value]) => $$(`[data-hnl-stat="${key}"]`).forEach((node) => { node.textContent = String(value); }));
     const competitions = $('#homeCompetitions');
-    if (competitions) competitions.innerHTML = (data.events || []).length ? data.events.slice(0, 4).map((event) => `<div class="hnl-profile-row"><div class="hnl-rank">🏆</div><div><strong>${esc(event.name || event.title || 'Competição')}</strong><p>${fmt(event.startAt)}</p></div><a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Detalhes</a></div>`).join('') : empty('Nenhuma competição cadastrada.');
+    if (competitions) competitions.innerHTML = (data.events || []).length ? data.events.slice(0, 4).map((event) => `<div class="hnl-profile-row"><div class="hnl-rank">♕</div><div><strong>${esc(event.name || event.title || 'Competição')}</strong><p>${fmt(event.startAt)}</p></div><a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Detalhes</a></div>`).join('') : empty('Nenhuma competição cadastrada.');
     const ranking = $('#homeClubRanking');
     if (ranking) ranking.innerHTML = (data.teams || []).length ? data.teams.slice(0, 5).map((team, index) => `<div class="hnl-profile-row"><div class="hnl-rank ${index < 3 ? 'top' : ''}">${index + 1}</div><div><strong>${esc(team.name || 'Clube')}</strong><p>${esc(team.tag || '')}</p></div><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Ver</a></div>`).join('') : empty('Nenhum clube cadastrado.');
   }
@@ -149,11 +148,12 @@
     const club = data.club || {};
     box.innerHTML = `<section class="hnl-card hnl-profile-hero">
       <img src="${esc(image(club.logo))}" alt="Logo de ${esc(club.name || 'clube')}">
-      <div><span class="hnl-section-kicker">🛡️ Clube participante</span><h1>${esc(club.name || 'Clube')} ${club.tag ? `<small>[${esc(club.tag)}]</small>` : ''}</h1><p>${esc(club.description || 'O clube ainda não adicionou uma descrição pública.')}</p>${socials(club.socials || {})}</div>
-      ${club.canManage ? '<a class="hnl-btn primary" href="#administrar">Administrar clube</a>' : ''}
+      <div><span class="hnl-section-kicker">◈ Clube participante</span><h1>${esc(club.name || 'Clube')} ${club.tag ? `<small>[${esc(club.tag)}]</small>` : ''}</h1><p>${esc(club.description || 'O clube ainda não adicionou uma descrição pública.')}</p></div>
+      <span class="hnl-chip">${esc(club.region || 'Região não informada')}</span>
     </section>
-    <section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Direção</h2><p><strong>Dono/diretor:</strong> ${esc(club.directorName || club.ownerName || 'Não definido')}</p><p><strong>Capitão:</strong> ${esc(club.captainName || 'Não definido')}</p><p><strong>Região:</strong> ${esc(club.region || 'Não informada')}</p></article><article class="hnl-card"><h2>Elenco (${club.rosterCount || 0})</h2><div class="hnl-grid">${rosterHtml(club.roster || [])}</div></article></section>
-    ${club.canManage ? `<section class="hnl-card" id="administrar" style="margin-top:14px"><h2>Administração do clube</h2><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field full"><label>Logo (URL)</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button><button class="hnl-btn danger" type="button" id="deleteClub">Excluir clube</button></div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
+    <section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Direção</h2><p><strong>Diretor:</strong> ${esc(club.directorName || club.ownerName || 'Não definido')}</p><p><strong>Capitão:</strong> ${esc(club.captainName || 'Não definido')}</p></article><article class="hnl-card"><h2>Conexões oficiais</h2>${socials(club.socials || {})}</article></section>
+    <section class="hnl-card" style="margin-top:14px"><h2>Elenco (${club.rosterCount || 0})</h2><div class="hnl-grid cols-2">${rosterHtml(club.roster || [])}</div></section>
+    ${club.canManage ? `<section class="hnl-card" id="editar-clube" style="margin-top:14px"><div class="hnl-console-head"><div><h2>Edição do clube</h2><p class="hnl-edit-lock">◌ Área exclusiva do diretor e do capitão vinculados.</p></div></div><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field"><label>Região</label><input class="hnl-input" name="region" value="${esc(club.region || '')}"></div><div class="hnl-field"><label>Logo (URL)</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-field full"><h3>Conexões públicas</h3><p class="frm-muted">Preencha somente os canais oficiais do clube.</p></div><div class="hnl-field"><label>Discord</label><input class="hnl-input" name="socialDiscord" value="${esc(club.socials?.discord || '')}"></div><div class="hnl-field"><label>Instagram</label><input class="hnl-input" name="socialInstagram" value="${esc(club.socials?.instagram || '')}"></div><div class="hnl-field"><label>X / Twitter</label><input class="hnl-input" name="socialTwitter" value="${esc(club.socials?.twitter || '')}"></div><div class="hnl-field"><label>TikTok</label><input class="hnl-input" name="socialTiktok" value="${esc(club.socials?.tiktok || '')}"></div><div class="hnl-field"><label>YouTube</label><input class="hnl-input" name="socialYoutube" value="${esc(club.socials?.youtube || '')}"></div><div class="hnl-field"><label>Twitch</label><input class="hnl-input" name="socialTwitch" value="${esc(club.socials?.twitch || '')}"></div><div class="hnl-field full"><label>Site</label><input class="hnl-input" name="socialWebsite" value="${esc(club.socials?.website || club.socials?.site || '')}"></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button></div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
 
     if (!club.canManage) return;
     const playersData = await api('/api/league/players').catch(() => ({ players: [] }));
@@ -163,14 +163,9 @@
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       try {
-        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.get('name'), tag: form.get('tag'), logo: form.get('logo'), description: form.get('description'), players: (club.playerDetails || []).map((item) => item.name), reserves: (club.reserveDetails || []).map((item) => item.name), playerDetails: club.playerDetails || [], reserveDetails: club.reserveDetails || [] }) });
+        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.get('name'), tag: form.get('tag'), region: form.get('region'), logo: form.get('logo'), description: form.get('description'), socials: { discord: form.get('socialDiscord'), instagram: form.get('socialInstagram'), twitter: form.get('socialTwitter'), tiktok: form.get('socialTiktok'), youtube: form.get('socialYoutube'), twitch: form.get('socialTwitch'), website: form.get('socialWebsite') }, players: (club.playerDetails || []).map((item) => item.name), reserves: (club.reserveDetails || []).map((item) => item.name), playerDetails: club.playerDetails || [], reserveDetails: club.reserveDetails || [] }) });
         $('#clubManageStatus').innerHTML = notice('Clube atualizado.', 'success');
       } catch (error) { $('#clubManageStatus').innerHTML = notice(error.message, 'error'); }
-    });
-    $('#deleteClub')?.addEventListener('click', async () => {
-      if (!confirm(`Excluir o clube ${club.name}? Essa ação não apaga os perfis dos jogadores.`)) return;
-      try { await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'DELETE' }); location.assign('/pages/clubes.html'); }
-      catch (error) { $('#clubManageStatus').innerHTML = notice(error.message, 'error'); }
     });
     $('#sendClubInvite')?.addEventListener('click', async () => {
       try {
@@ -206,7 +201,7 @@
       const invite = teams.length ? `<button class="hnl-btn primary" data-invite-player="${esc(player.id || player.discordId || '')}" data-player-name="${esc(player.name || '')}">Convidar</button>` : '';
       return playerCard(player, invite);
     }).join('') : empty('Nenhum jogador registrado.');
-    if (!teams.length) $('#marketInfo').innerHTML = notice(viewerData.authenticated ? 'Você não administra nenhum clube. Crie um clube ou peça vínculo de capitão/diretor.' : 'Entre com Discord para convidar jogadores.', '');
+    if (!teams.length) $('#marketInfo').innerHTML = notice(viewerData.authenticated ? 'Você não está vinculado como capitão ou diretor de nenhum clube.' : 'Entre com Discord para convidar jogadores.', '');
     $$('[data-invite-player]').forEach((button) => button.addEventListener('click', () => {
       const panel = $('#frmModalPanel');
       if (!panel) return;
@@ -290,7 +285,40 @@
     if (!box) return;
     const data = await api('/api/events');
     const events = data.events || [];
-    box.innerHTML = events.length ? events.map((event) => `<article class="hnl-card"><span class="hnl-chip ${event.status === 'open' ? 'green' : ''}">${esc(event.status || 'open')}</span><h2>${esc(event.name || event.title || 'Competição')}</h2><p>${esc(event.description || 'Sem descrição.')}</p><div class="hnl-actions"><span class="hnl-chip">${esc(event.matchFormat || 'MD1')}</span><span class="hnl-chip">${event.registeredCount || 0}/${event.teamLimit || 16} clubes</span></div><p>${fmt(event.startAt)}</p><a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Abrir detalhes</a></article>`).join('') : empty('Nenhuma competição cadastrada.');
+    const activeStatuses = new Set(['open', 'running', 'active']);
+    const finishedStatuses = new Set(['closed', 'finished', 'archived']);
+    const statusLabel = (status) => ({ open: 'Inscrições abertas', running: 'Em andamento', active: 'Ativa', closed: 'Inscrições encerradas', finished: 'Finalizada', upcoming: 'Em breve' })[String(status || '').toLowerCase()] || 'Em breve';
+    const structureLabel = (value) => ({ single_elimination: 'Mata-mata', groups: 'Fase de grupos', groups_playoffs: 'Grupos + playoffs' })[String(value || '')] || String(value || 'Mata-mata').replaceAll('_', ' ');
+    const totalRegistered = events.reduce((sum, event) => sum + Number(event.registeredCount || event.registrations?.length || 0), 0);
+    const totalSlots = events.reduce((sum, event) => sum + Math.max(0, Number(event.teamLimit || 16) - Number(event.registeredCount || event.registrations?.length || 0)), 0);
+    $$('[data-competition-stat="active"]').forEach((node) => { node.textContent = String(events.filter((event) => activeStatuses.has(String(event.status || 'open').toLowerCase())).length); });
+    $$('[data-competition-stat="registered"]').forEach((node) => { node.textContent = String(totalRegistered); });
+    $$('[data-competition-stat="slots"]').forEach((node) => { node.textContent = String(totalSlots); });
+
+    function category(event) {
+      const status = String(event.status || 'open').toLowerCase();
+      if (activeStatuses.has(status)) return 'active';
+      if (finishedStatuses.has(status)) return 'finished';
+      return 'upcoming';
+    }
+
+    function competitionCard(event) {
+      const registered = Number(event.registeredCount || event.registrations?.length || 0);
+      const limit = Math.max(1, Number(event.teamLimit || 16));
+      const progress = Math.min(100, Math.round((registered / limit) * 100));
+      const fee = event.feeLabel || event.entryFee || event.registrationFee || 'Gratuita';
+      const reward = event.reward || event.prize || 'Premiação conforme regulamento';
+      return `<article class="hnl-card hnl-competition-feature"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">Edição oficial</span></div><h2 class="hnl-competition-title">${esc(event.name || event.title || 'Competição')}</h2><p class="hnl-competition-description">${esc(event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.')}</p></div><div class="hnl-competition-mark" aria-hidden="true">♕</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>Início</small><strong>${esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p><div class="hnl-actions"><a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
+    }
+
+    function render(filter = 'active') {
+      const filtered = events.filter((event) => category(event) === filter);
+      box.innerHTML = filtered.length ? filtered.map(competitionCard).join('') : empty(filter === 'active' ? 'Nenhuma competição ativa no momento.' : filter === 'finished' ? 'Nenhuma competição encerrada.' : 'Nenhuma próxima competição anunciada.');
+      $$('[data-competition-filter]').forEach((button) => button.classList.toggle('active', button.dataset.competitionFilter === filter));
+    }
+
+    $$('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => render(button.dataset.competitionFilter || 'active')));
+    render('active');
   }
 
   async function competitionDetail() {

@@ -37,6 +37,7 @@ const files = [
   ...walk(path.join(ROOT, 'server')),
   ...walk(path.join(ROOT, 'site')),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-navigation.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-page-integrity.js'),
   path.join(ROOT, 'public', 'js', 'core', 'api.js'),

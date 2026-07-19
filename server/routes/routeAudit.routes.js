@@ -93,7 +93,7 @@ function experienceAssets() {
     assetStatus('css/league-critical.css'),
     assetStatus('css/league-polish.css'),
     assetStatus('css/league-experience.css'),
-    assetStatus('css/league-auth-ui.css'),
+    assetStatus('js/core/league-navigation.js'),
     assetStatus('js/core/league-page-integrity.js'),
     assetStatus('js/core/league-experience.js'),
     assetStatus('js/core/league-auth-ui.js'),

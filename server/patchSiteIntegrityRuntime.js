@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'page-integrity.json');
-const BUILD = '2026-07-19-page-integrity-v3';
+const BUILD = '2026-07-19-page-integrity-v4';
 
 let changed = false;
 const report = {
@@ -95,15 +95,14 @@ function normalizePage(file) {
     .replace(/\/assets\/logo\.png/gi, '/assets/hollow-nexus-official.svg')
     .replace(/\/assets\/hollow-nexus-official-brand(?:\?[^"']*)?/gi, '/assets/hollow-nexus-official.svg');
 
-  html = removeTags(html, /\s*<script[^>]+(?:discord-brand-sync|discord-auth-avatar|federation-portal|federation-polish|federation-no-mock|league-polish|league-experience|league-page-integrity|league-auth-ui)\.js[^>]*><\/script>/gi);
+  html = removeTags(html, /\s*<script[^>]+(?:discord-brand-sync|discord-auth-avatar|federation-portal|federation-polish|federation-no-mock|league-polish|league-experience|league-page-integrity|league-auth-ui|league-navigation)\.js[^>]*><\/script>/gi);
   html = removeTags(html, /\s*<link[^>]+(?:discord-auth-avatar|federation-polish|league-critical|league-polish|league-experience|league-auth-ui)\.css[^>]*>/gi);
   html = html.replace(/\s*<meta name="page-integrity-build"[^>]*>/gi, '');
 
   const styles = [
     `/css/league-critical.css?v=${BUILD}`,
     `/css/league-polish.css?v=${BUILD}`,
-    ...(experience ? [`/css/league-experience.css?v=${BUILD}`] : []),
-    `/css/league-auth-ui.css?v=${BUILD}`
+    ...(experience ? [`/css/league-experience.css?v=${BUILD}`] : [])
   ];
   const scripts = [
     ...(experience ? [`/js/core/league-experience.js?v=${BUILD}`] : [`/js/core/league-polish.js?v=${BUILD}`]),
@@ -112,6 +111,7 @@ function normalizePage(file) {
   ];
 
   const headInjection = [
+    `  <script src="/js/core/league-navigation.js?v=${BUILD}"></script>`,
     ...styles.map((href) => `  <link rel="stylesheet" href="${href}">`),
     `  <meta name="page-integrity-build" content="${BUILD}">`
   ].join('\n');

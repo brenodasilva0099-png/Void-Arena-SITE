@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 
 const RANKING_CHANNEL = 'frm-ranking-settings';
 const TRANSFER_CHANNEL = 'frm-transfer-requests';
@@ -20,16 +21,6 @@ function displayUser(user = {}) {
 
 function teamName(team = {}) {
   return team?.name || team?.teamName || team?.tag || 'Clube';
-}
-
-async function canManageTeam(user = {}, team = {}) {
-  if (!user) return false;
-  if (await isAdminRecord(user)) return true;
-  return String(team.ownerUserId || '') === String(user.id || '')
-    || String(team.captainUserId || '') === String(user.id || '')
-    || String(team.captainDiscordId || '') === String(user.discordId || '')
-    || String(team.directorUserId || '') === String(user.id || '')
-    || String(team.directorDiscordId || '') === String(user.discordId || '');
 }
 
 function safeJson(message = {}) {
@@ -109,7 +100,7 @@ function registerFederationFixRoutes(app) {
       const toTeam = teams.find((team) => String(team.id || '') === String(req.body?.toTeamId || ''));
       const player = users.find((user) => String(user.id || '') === String(req.body?.playerId || '') || String(user.discordId || '') === String(req.body?.playerId || ''));
       if (!fromTeam || !toTeam || !player) return res.status(404).json({ success: false, message: 'Clube ou jogador não encontrado.' });
-      if (!(await canManageTeam(viewer, toTeam)) && !(await isAdminRecord(viewer))) return res.status(403).json({ success: false, message: 'Apenas capitão/diretor/admin do clube de destino pode solicitar transferência.' });
+      if (!(await canManageTeam(viewer, toTeam))) return res.status(403).json({ success: false, message: 'Apenas capitão ou diretor do clube de destino pode solicitar transferência.' });
       const payload = { type: 'transfer_request', status: 'pending', fromTeam: { id: fromTeam.id, name: teamName(fromTeam) }, toTeam: { id: toTeam.id, name: teamName(toTeam) }, player: { id: player.id || '', name: displayUser(player), discordId: player.discordId || '', avatar: player.avatar || '' }, requestedBy: { id: viewer.id || '', name: displayUser(viewer) }, createdAt: new Date().toISOString(), note: clean(req.body?.note, 400) };
       const saved = await storage.saveChatMessage({ channelId: TRANSFER_CHANNEL, source: 'system', authorId: viewer.id || '', authorName: displayUser(viewer), content: JSON.stringify(payload), attachments: [], createdAt: payload.createdAt });
       return res.json({ success: true, transfer: { id: saved.id, ...payload } });

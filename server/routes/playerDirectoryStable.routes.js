@@ -1,5 +1,6 @@
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord, isAdminRecord } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { resolveTeamLogo } = require('../services/bracket.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
@@ -22,16 +23,6 @@ function canonicalPlayerKey(player = {}) { return keyOf(player.userId || player.
 function isVisibleUser(user = {}) { return !user.deletedAt && !user.hiddenFromPlayersDirectory; }
 function publicUser(user = {}) { return { id: user.id || '', name: userName(user), discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {} }; }
 function publicTeam(team = {}) { return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: resolveTeamLogo(team), ownerUserId: team.ownerUserId || '', directorName: team.directorName || team.ownerName || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' }; }
-function canManageTeam(user = null, team = {}) {
-  if (!user) return false;
-  if (isOwnerRecord(user)) return true;
-  if (String(team.ownerUserId || '') === String(user.id || '')) return true;
-  if (String(team.directorUserId || '') && String(team.directorUserId) === String(user.id || '')) return true;
-  if (String(team.directorDiscordId || '') && String(team.directorDiscordId) === String(user.discordId || '')) return true;
-  if (String(team.captainUserId || '') && String(team.captainUserId) === String(user.id || '')) return true;
-  if (String(team.captainDiscordId || '') && String(team.captainDiscordId) === String(user.discordId || '')) return true;
-  return false;
-}
 async function safeSessionUser(req) { try { return await getSessionUser(req); } catch { return null; } }
 async function viewerIsAdmin(viewer = null) { if (!viewer) return false; try { return await isAdminRecord(viewer); } catch { return isOwnerRecord(viewer); } }
 

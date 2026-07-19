@@ -1,6 +1,7 @@
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { normalizeBracketForResponse, sanitizeTeam } = require('../services/bracket.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
@@ -29,17 +30,6 @@ async function permissionsForUser(user = {}) {
   const matchedRoleIds = [];
   normalizeRoleIds(roles).forEach((roleId) => { const config = rolePermissions[String(roleId || '').trim()]; if (!config) return; matchedRoleIds.push(roleId); applyPermissionConfig(permissions, config); });
   return { isOwner: false, permissions, roles, matchedRoleIds };
-}
-
-function canManageTeam(user = null, team = {}) {
-  if (!user) return false;
-  if (isOwnerRecord(user)) return true;
-  if (String(team.ownerUserId || '') === String(user.id || '')) return true;
-  if (String(team.directorUserId || '') && String(team.directorUserId) === String(user.id || '')) return true;
-  if (String(team.directorDiscordId || '') && String(team.directorDiscordId) === String(user.discordId || '')) return true;
-  if (String(team.captainUserId || '') && String(team.captainUserId) === String(user.id || '')) return true;
-  if (String(team.captainDiscordId || '') && String(team.captainDiscordId) === String(user.discordId || '')) return true;
-  return false;
 }
 
 function enrichTeam(team = {}, users = [], viewer = null) {

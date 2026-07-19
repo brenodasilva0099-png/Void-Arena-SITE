@@ -1,6 +1,7 @@
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
-const { getSessionUser, isAdminRecord, isOwnerRecord } = require('../services/access.service');
+const { getSessionUser, isAdminRecord } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 const CALENDAR_CHANNEL = 'league-calendar-settings';
@@ -51,15 +52,6 @@ function publicUser(user = {}) {
 
 function teamLogo(team = {}) {
   return clean(team.logo || team.logoUrl || team.logoURL || team.teamLogo || team.badge || team.escudo || team.image || team.avatar || '', 4000);
-}
-
-function canManageTeam(user = null, team = {}) {
-  if (!user) return false;
-  if (isOwnerRecord(user)) return true;
-  const userId = String(user.id || '');
-  const discordId = String(user.discordId || '');
-  return [team.ownerUserId, team.directorUserId, team.captainUserId].some((value) => value && String(value) === userId)
-    || [team.ownerDiscordId, team.directorDiscordId, team.captainDiscordId].some((value) => value && String(value) === discordId);
 }
 
 function teamIdentityValues(team = {}) {

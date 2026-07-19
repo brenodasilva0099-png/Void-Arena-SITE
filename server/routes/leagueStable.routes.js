@@ -1,5 +1,6 @@
 const storage = require('../storage');
-const { getSessionUser, isOwnerRecord } = require('../services/access.service');
+const { getSessionUser } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { callBot } = require('../services/botApi.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 const { normalizeBracketForResponse } = require('../services/bracket.service');
@@ -88,20 +89,6 @@ function userIdentityValues(user = {}) {
 
 function teamIdentityValues(team = {}) {
   return [team.id, team.name, team.tag].map(normalizeKey).filter(Boolean);
-}
-
-function canManageTeam(user = null, team = {}) {
-  if (!user) return false;
-  if (isOwnerRecord(user)) return true;
-  const userId = String(user.id || '').trim();
-  const discordId = String(user.discordId || '').trim();
-  const storedUserIds = [team.ownerUserId, team.directorUserId, team.captainUserId].map((value) => String(value || '').trim()).filter(Boolean);
-  const storedDiscordIds = [team.ownerDiscordId, team.directorDiscordId, team.captainDiscordId].map((value) => String(value || '').trim()).filter(Boolean);
-  if (userId && storedUserIds.includes(userId)) return true;
-  if (discordId && storedDiscordIds.includes(discordId)) return true;
-  if (storedUserIds.length || storedDiscordIds.length) return false;
-  const names = new Set([user.name, user.discordTag, user.profile?.username, user.profile?.displayName].map(normalizeKey).filter(Boolean));
-  return [team.ownerName, team.directorName, team.captainName].map(normalizeKey).filter(Boolean).some((name) => names.has(name));
 }
 
 function currentTeamForUser(user = {}, teams = []) {

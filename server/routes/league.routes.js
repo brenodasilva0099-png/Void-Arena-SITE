@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 const RANKING_CHANNEL = 'league-ranking-settings';
@@ -79,16 +80,6 @@ function playerInTeam(team = {}, player = {}) {
     ...(Array.isArray(team.reserves) ? team.reserves : [])
   ];
   return raw.some((entry) => ids.includes(String(entry?.id || entry?.userId || entry?.discordId || entry?.name || entry || '').trim().toLowerCase()));
-}
-
-async function canManageTeam(user = {}, team = {}) {
-  if (!user) return false;
-  if (await isAdminRecord(user)) return true;
-  return String(team.ownerUserId || '') === String(user.id || '')
-    || String(team.captainUserId || '') === String(user.id || '')
-    || String(team.captainDiscordId || '') === String(user.discordId || '')
-    || String(team.directorUserId || '') === String(user.id || '')
-    || String(team.directorDiscordId || '') === String(user.discordId || '');
 }
 
 function addUserToTeam(team = {}, user = {}, invite = {}) {
@@ -265,6 +256,15 @@ function registerLeagueRoutes(app) {
         ownerUserId: viewer.id || '', ownerName: nameOf(viewer), ownerDiscordId: viewer.discordId || '', ownerAvatar: viewer.avatar || '',
         captainUserId: viewer.id || '', captainName: nameOf(viewer), captainDiscordId: viewer.discordId || '',
         directorUserId: viewer.id || '', directorName: nameOf(viewer), directorDiscordId: viewer.discordId || '',
+        socials: {
+          discord: clean(req.body?.socials?.discord ?? req.body?.socialDiscord, 180),
+          instagram: clean(req.body?.socials?.instagram ?? req.body?.socialInstagram, 160),
+          twitter: clean(req.body?.socials?.twitter ?? req.body?.socialTwitter, 160),
+          tiktok: clean(req.body?.socials?.tiktok ?? req.body?.socialTikTok ?? req.body?.socialTiktok, 160),
+          youtube: clean(req.body?.socials?.youtube ?? req.body?.socialYoutube, 180),
+          twitch: clean(req.body?.socials?.twitch ?? req.body?.socialTwitch, 160),
+          website: clean(req.body?.socials?.website ?? req.body?.socialWebsite, 180)
+        },
         players: [nameOf(viewer)], playerDetails: [{ id: viewer.id || '', userId: viewer.id || '', name: nameOf(viewer), discordId: viewer.discordId || '', avatar: viewer.avatar || '', type: 'player', isCaptain: true, acceptedAt: now }],
         reserves: [], reserveDetails: [], playerAccounts: { players: viewer.discordId ? [viewer.discordId] : [], reserves: [] },
         status: 'participating', createdAt: now, updatedAt: now
@@ -282,7 +282,7 @@ function registerLeagueRoutes(app) {
       const team = teams.find((item) => String(item.id || '') === String(req.body?.teamId || ''));
       const target = users.find((user) => String(user.id || '') === String(req.body?.playerId || '') || String(user.discordId || '') === String(req.body?.playerId || ''));
       if (!team || !target) return res.status(404).json({ success: false, message: 'Clube ou jogador não encontrado.' });
-      if (!(await canManageTeam(viewer, team))) return res.status(403).json({ success: false, message: 'Apenas capitão/diretor/admin do clube pode convidar jogadores.' });
+      if (!(await canManageTeam(viewer, team))) return res.status(403).json({ success: false, message: 'Apenas capitão ou diretor do clube pode convidar jogadores.' });
       const payload = {
         type: 'recruitment_invite', status: 'pending', teamId: team.id || '', team: { id: team.id || '', name: teamName(team), tag: team.tag || '' },
         targetUserId: target.id || '', targetDiscordId: target.discordId || '', targetName: nameOf(target), targetAvatar: target.avatar || '',
@@ -343,7 +343,7 @@ function registerLeagueRoutes(app) {
       const toTeam = teams.find((team) => String(team.id || '') === String(req.body?.toTeamId || ''));
       const player = users.find((user) => String(user.id || '') === String(req.body?.playerId || '') || String(user.discordId || '') === String(req.body?.playerId || ''));
       if (!fromTeam || !toTeam || !player) return res.status(404).json({ success: false, message: 'Clube ou jogador não encontrado.' });
-      if (!(await canManageTeam(viewer, toTeam)) && !(await isAdminRecord(viewer))) return res.status(403).json({ success: false, message: 'Apenas capitão/diretor/admin do clube de destino pode solicitar transferência.' });
+      if (!(await canManageTeam(viewer, toTeam))) return res.status(403).json({ success: false, message: 'Apenas capitão ou diretor do clube de destino pode solicitar transferência.' });
       const payload = { type: 'transfer_request', status: 'pending', fromTeam: { id: fromTeam.id, name: teamName(fromTeam) }, toTeam: { id: toTeam.id, name: teamName(toTeam) }, player: { id: player.id || '', name: nameOf(player), discordId: player.discordId || '', avatar: player.avatar || '' }, requestedBy: { id: viewer.id || '', name: nameOf(viewer) }, createdAt: new Date().toISOString(), note: clean(req.body?.note, 400) };
       const saved = await storage.saveChatMessage({ channelId: 'league-transfer-requests', source: 'system', authorId: viewer.id || '', authorName: nameOf(viewer), content: JSON.stringify(payload), attachments: [], createdAt: payload.createdAt });
       return res.json({ success: true, transfer: { id: saved.id, ...payload } });

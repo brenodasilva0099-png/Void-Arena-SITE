@@ -7,7 +7,7 @@ const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const BASE_REQUIRED = [
   '/css/league-critical.css',
   '/css/league-polish.css',
-  '/css/league-auth-ui.css',
+  '/js/core/league-navigation.js',
   '/js/core/league-page-integrity.js',
   '/js/core/league-auth-ui.js'
 ];
@@ -66,6 +66,10 @@ for (const file of files) {
     failures.push(`${relative}: asset transitório antigo ainda referenciado`);
   }
 
+  if (/league-auth-ui\.css/i.test(html)) {
+    failures.push(`${relative}: stylesheet de autenticação não consolidado ainda referenciado`);
+  }
+
   if (isExperiencePage && /federation-(?:polish|no-mock)\.js|league-polish\.js/i.test(html)) {
     failures.push(`${relative}: runtime legado carregado junto com a experiência nova`);
   }
@@ -77,6 +81,23 @@ for (const file of files) {
     if (!html.includes('/css/bracket-desktop.css')) {
       failures.push(`${relative}: stylesheet do chaveamento ausente`);
     }
+  }
+
+
+  if (relative === 'public/pages/competicoes.html') {
+    if (!html.includes('id="competitionTabs"') || !html.includes('data-competition-filter="active"')) {
+      failures.push(`${relative}: abas da vitrine de competições ausentes`);
+    }
+  }
+
+  if (relative === 'public/pages/cadastrar-clube.html') {
+    if (!html.includes('name="socialInstagram"') || !html.includes('name="socialWebsite"')) {
+      failures.push(`${relative}: campos de redes sociais do clube ausentes`);
+    }
+  }
+
+  if (relative === 'public/pages/clubes.html' && />\s*Administrar\s*</i.test(html)) {
+    failures.push(`${relative}: botão global Administrar ainda presente`);
   }
 
   for (const ref of refs(html)) {

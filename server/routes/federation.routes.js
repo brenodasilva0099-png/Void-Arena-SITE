@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 
 const NOTIFICATION_CHANNEL = 'user-notifications';
 const ANNOUNCEMENT_CHANNEL = 'site-announcements';
@@ -31,15 +32,6 @@ function parseStoredJson(message = {}) {
 
 function isVisibleStatus(item = {}) {
   return !['deleted', 'hidden', 'archived'].includes(String(item.status || '').toLowerCase());
-}
-
-function canManageTeam(user = {}, team = {}) {
-  if (!user) return false;
-  return String(team.ownerUserId || '') === String(user.id || '')
-    || String(team.captainUserId || '') === String(user.id || '')
-    || String(team.captainDiscordId || '') === String(user.discordId || '')
-    || String(team.directorUserId || '') === String(user.id || '')
-    || String(team.directorDiscordId || '') === String(user.discordId || '');
 }
 
 function playerIdentityValues(player = {}) {
@@ -252,8 +244,7 @@ function registerFederationRoutes(app) {
       const [teams, users] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => [])]);
       const team = teams.find((item) => String(item.id || '') === String(req.body?.teamId || ''));
       if (!team) return res.status(404).json({ success: false, message: 'Clube não encontrado.' });
-      const viewerIsAdmin = await isAdminRecord(viewer).catch(() => false);
-      if (!viewerIsAdmin && !canManageTeam(viewer, team)) return res.status(403).json({ success: false, message: 'Apenas capitão/diretor/admin pode convidar jogadores.' });
+      if (!canManageTeam(viewer, team)) return res.status(403).json({ success: false, message: 'Apenas capitão ou diretor pode convidar jogadores.' });
       const targetId = clean(req.body?.playerId || req.body?.targetUserId || req.body?.discordId, 80);
       const target = users.find((user) => String(user.id || '') === targetId || String(user.discordId || '') === targetId);
       if (!target) return res.status(404).json({ success: false, message: 'Jogador alvo não encontrado no site.' });

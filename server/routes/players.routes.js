@@ -1,5 +1,6 @@
 const storage = require('../storage');
 const { getSessionUser, isOwnerRecord, isAdminRecord } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { callBot } = require('../services/botApi.service');
 const { resolveTeamLogo } = require('../services/bracket.service');
 const { createRecruitmentNotification } = require('./notifications.routes');
@@ -51,14 +52,6 @@ async function attachDiscordRoles(players = []) {
 
 async function safeSessionUser(req) { try { return await getSessionUser(req); } catch { return null; } }
 async function viewerIsAdmin(viewer = null) { if (!viewer) return false; try { return await isAdminRecord(viewer); } catch { return isOwnerRecord(viewer); } }
-
-function canManageTeam(user = null, team = {}) {
-  if (!user) return false;
-  if (isOwnerRecord(user)) return true;
-  if (String(team.ownerUserId || '') === String(user.id || '')) return true;
-  if (String(team.captainDiscordId || '') && String(team.captainDiscordId) === String(user.discordId || '')) return true;
-  return false;
-}
 
 function publicTeam(team = {}) {
   return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: resolveTeamLogo(team), logoOriginal: team.logo || '', ownerUserId: team.ownerUserId || '', captainName: team.captainName || team.ownerName || '', captainDiscordId: team.captainDiscordId || '' };
@@ -227,7 +220,7 @@ function registerPlayersRoutes(app) {
       const team = teams.find((item) => String(item.id || '') === teamId);
       if (!team) throw new Error('Time não encontrado.');
       let title = '';
-      if (type === 'recruitment') { if (!canManageTeam(viewer, team)) throw new Error('Só capitão/dono desse time pode solicitar recrutamento.'); if (!playerId && !playerName) throw new Error('Selecione o jogador que deseja recrutar.'); title = `Convite de recrutamento enviado por ${team.name}`; }
+      if (type === 'recruitment') { if (!canManageTeam(viewer, team)) throw new Error('Só capitão ou diretor desse time pode solicitar recrutamento.'); if (!playerId && !playerName) throw new Error('Selecione o jogador que deseja recrutar.'); title = `Convite de recrutamento enviado por ${team.name}`; }
       else if (type === 'trial') title = `Peneira solicitada para ${team.name}`;
       else throw new Error('Tipo de solicitação inválido.');
       const payload = { type, title, status: 'pending', team: publicTeam(team), playerId, playerName, requester: publicUser(viewer), note, createdAt: new Date().toISOString() };
