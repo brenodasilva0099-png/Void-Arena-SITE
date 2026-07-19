@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PAGES = path.join(ROOT, 'public', 'pages');
 const VERSION = path.join(ROOT, 'public', 'league-stable-final.json');
 const UPDATES = path.join(PAGES, 'atualizacoes.html');
-const BUILD = '2026-07-19-league-stable-v3';
+const BUILD = '2026-07-19-league-stable-v4';
 const LOGO = '/assets/hollow-nexus-official.svg';
 let changed = false;
 
@@ -71,7 +71,7 @@ function hero(title, text, icon, kicker = 'Hollow Nexus League') {
 }
 
 function shell({ title, tab = '', href = '', module = '', heroHtml = '', body = '' }) {
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Hollow Nexus League</title><link rel="icon" href="${LOGO}"><script src="/js/core/league-navigation.js?v=${BUILD}"></script><link rel="stylesheet" href="/css/league-critical.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-polish.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-experience.css?v=${BUILD}"></head><body class="frm-polish-page" data-hnl-module="${module}" data-frm-module="${module}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav">${sideNav(href)}</nav></aside><main class="frm-main"><header class="frm-header">${topNav(tab)}<div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${heroHtml}<div id="pageStatus"></div>${body}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/league-experience.js?v=${BUILD}"></script><script src="/js/core/league-auth-ui.js?v=${BUILD}"></script><script src="/js/core/league-page-integrity.js?v=${BUILD}"></script></body></html>`;
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Hollow Nexus League</title><link rel="icon" href="${LOGO}"><script src="/js/core/league-navigation.js?v=${BUILD}"></script><link rel="stylesheet" href="/css/league-critical.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-polish.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-experience.css?v=${BUILD}"></head><body class="frm-polish-page" data-hnl-module="${module}" data-frm-module="${module}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav">${sideNav(href)}</nav></aside><main class="frm-main"><header class="frm-header">${topNav(tab)}<div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${heroHtml}<div id="pageStatus"></div>${body}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=${BUILD}"></script><script src="/js/core/league-experience.js?v=${BUILD}"></script><script src="/js/core/league-auth-ui.js?v=${BUILD}"></script><script src="/js/core/league-page-integrity.js?v=${BUILD}"></script></body></html>`;
 }
 
 const pageState = {
@@ -94,6 +94,7 @@ const pageState = {
   'atletas.html': ['jogadores', ''],
   'jogadores.html': ['jogadores', ''],
   'perfil-jogador.html': ['jogadores', ''],
+  'perfil.html': ['jogadores', ''],
   'mercado.html': ['jogadores', '/pages/mercado.html'],
   'recrutamento.html': ['jogadores', '/pages/mercado.html'],
   'cafe-com-leite.html': ['cafe', ''],
@@ -160,7 +161,12 @@ const staticPages = {
   'correio.html': shell({ title: 'Correio', tab: '', href: '', module: 'mail', heroHtml: hero('Correio da Liga', 'Convites de clubes e mensagens importantes da plataforma.', '✉'), body: '<section class="hnl-grid" id="mailPage"></section>' })
 };
 staticPages['federacao.html'] = staticPages['sobre-a-liga.html'];
-Object.entries(staticPages).forEach(([name, html]) => write(path.join(PAGES, name), html));
+const staticHeroEmojis = { 'sobre-a-liga.html': '🌀', 'federacao.html': '🌀', 'regulamento.html': '📜', 'notificacoes.html': '🔔', 'correio.html': '✉️' };
+Object.entries(staticPages).forEach(([name, html]) => {
+  const emoji = staticHeroEmojis[name];
+  const output = emoji ? html.replace(/(<div class="hnl-hero-icon"[^>]*>)[\s\S]*?(<\/div>)/i, `$1${emoji}$2`) : html;
+  write(path.join(PAGES, name), output);
+});
 
 let cafe = read(path.join(PAGES, 'cafe-com-leite.html'));
 if (cafe && !cafe.includes('id="cafeMetricButtons"')) {

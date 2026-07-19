@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'page-integrity.json');
-const BUILD = '2026-07-19-page-integrity-v4';
+const BUILD = '2026-07-19-page-integrity-v5';
 
 let changed = false;
 const report = {
@@ -83,6 +83,7 @@ function normalizePage(file) {
   if (!html) return;
   const before = html;
   const experience = isExperiencePage(html);
+  const hasSocialIcons = /\/js\/core\/social-icons\.js/i.test(html);
   report.scannedPages += 1;
   if (experience) report.experiencePages += 1;
   else report.legacyPages += 1;
@@ -105,6 +106,7 @@ function normalizePage(file) {
     ...(experience ? [`/css/league-experience.css?v=${BUILD}`] : [])
   ];
   const scripts = [
+    ...(experience && !hasSocialIcons ? [`/js/core/social-icons.js?v=${BUILD}`] : []),
     ...(experience ? [`/js/core/league-experience.js?v=${BUILD}`] : [`/js/core/league-polish.js?v=${BUILD}`]),
     `/js/core/league-auth-ui.js?v=${BUILD}`,
     `/js/core/league-page-integrity.js?v=${BUILD}`

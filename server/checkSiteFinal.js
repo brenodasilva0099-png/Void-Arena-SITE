@@ -37,13 +37,16 @@ const files = [
   ...walk(path.join(ROOT, 'server')),
   ...walk(path.join(ROOT, 'site')),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'social-icons.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'profile-api.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-navigation.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-page-integrity.js'),
   path.join(ROOT, 'public', 'js', 'core', 'api.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'grupos.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento.js'),
-  path.join(ROOT, 'public', 'js', 'pages', 'chaveamento-autosync-fix.js')
+  path.join(ROOT, 'public', 'js', 'pages', 'chaveamento-autosync-fix.js'),
+  path.join(ROOT, 'public', 'js', 'pages', 'perfil.js')
 ].filter((file, index, list) => fs.existsSync(file) && !file.endsWith('checkSiteFinal.js') && list.indexOf(file) === index);
 
 const failures = [];

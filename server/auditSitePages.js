@@ -13,6 +13,7 @@ const BASE_REQUIRED = [
 ];
 const EXPERIENCE_REQUIRED = [
   '/css/league-experience.css',
+  '/js/core/social-icons.js',
   '/js/core/league-experience.js'
 ];
 const LEGACY_REQUIRED = [
@@ -98,6 +99,15 @@ for (const file of files) {
 
   if (relative === 'public/pages/clubes.html' && />\s*Administrar\s*</i.test(html)) {
     failures.push(`${relative}: botão global Administrar ainda presente`);
+  }
+
+  if (relative === 'public/pages/perfil.html') {
+    if (!html.includes('class="frm-shell"') || html.includes('class="va-shell"')) {
+      failures.push(`${relative}: perfil ainda usa a estrutura visual antiga`);
+    }
+    for (const marker of ['id="profilePageForm"', 'id="profileConnectionsPreview"', '/css/profile-v2.css', '/js/core/profile-api.js', '/js/pages/perfil.js']) {
+      if (!html.includes(marker)) failures.push(`${relative}: conteúdo obrigatório do perfil ausente ${marker}`);
+    }
   }
 
   for (const ref of refs(html)) {

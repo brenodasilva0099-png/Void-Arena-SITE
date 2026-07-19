@@ -56,12 +56,24 @@
 
   function socials(raw = {}) {
     const labels = { site: 'Site', discord: 'Discord', instagram: 'Instagram', twitch: 'Twitch', tiktok: 'TikTok', youtube: 'YouTube', twitter: 'X/Twitter', steam: 'Steam', xbox: 'Xbox', spotify: 'Spotify', riot: 'Riot', ea: 'EA', psn: 'PSN', website: 'Site' };
+    const hrefFor = (key, value) => {
+      const text = String(value || '').trim();
+      if (/^https?:\/\//i.test(text)) return text;
+      if (/^discord\.gg\//i.test(text)) return `https://${text}`;
+      if (key === 'tiktok') return `https://www.tiktok.com/@${text.replace(/^@/, '')}`;
+      if (key === 'twitter') return `https://x.com/${text.replace(/^@/, '')}`;
+      if (key === 'steam' && /^\d{16,20}$/.test(text)) return `https://steamcommunity.com/profiles/${text}`;
+      return '';
+    };
     const links = Object.entries(raw || {}).filter(([, value]) => String(value || '').trim()).map(([key, value]) => {
       const rawValue = String(value || '').trim();
-      const href = /^https?:\/\//i.test(rawValue) ? rawValue : '#';
-      return `<a href="${esc(href)}" ${href === '#' ? 'data-copy="' + esc(rawValue) + '"' : 'target="_blank" rel="noopener noreferrer"'}>${esc(labels[key] || key)}</a>`;
+      const href = hrefFor(key, rawValue);
+      const icon = window.VoidArenaSocial?.iconHtml?.(key) || '<span aria-hidden="true">🔗</span>';
+      const valueLine = href ? '' : `<small>${esc(rawValue)}</small>`;
+      const content = `<span class="va-social-card-icon">${icon}</span><span class="va-social-card-body"><strong>${esc(labels[key] || key)}</strong>${valueLine}</span><span class="va-social-card-arrow" aria-hidden="true">${href ? '↗' : '•'}</span>`;
+      return href ? `<a class="va-social-card" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${content}</a>` : `<div class="va-social-card">${content}</div>`;
     });
-    return links.length ? `<div class="hnl-socials">${links.join('')}</div>` : '<span class="frm-muted">Nenhuma conexão pública cadastrada.</span>';
+    return links.length ? `<div class="hnl-socials va-social-card-grid">${links.join('')}</div>` : '<span class="frm-muted">Nenhuma conexão pública cadastrada.</span>';
   }
 
   let viewerPromise;
