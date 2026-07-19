@@ -1,13 +1,16 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const file = path.join(__dirname, 'services', 'bracket.service.js');
-if (!fs.existsSync(file)) process.exit(0);
-let source = fs.readFileSync(file, 'utf8');
-const before = source;
+const serviceFile = path.join(__dirname, 'services', 'bracket.service.js');
+const routeFile = path.join(__dirname, 'routes', 'bracketV2.routes.js');
+let changed = false;
 
-if (!source.includes('function normalizeGroupStandings(')) {
-  const helper = `
+if (fs.existsSync(serviceFile)) {
+  let source = fs.readFileSync(serviceFile, 'utf8');
+  const before = source;
+
+  if (!source.includes('function normalizeGroupStandings(')) {
+    const helper = `
 function normalizeGroupStandings(value = {}) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   const result = {};
@@ -25,11 +28,11 @@ function normalizeGroupStandings(value = {}) {
   return result;
 }
 `;
-  source = source.replace('\nfunction normalizeBracketData(data = {}) {', `${helper}\nfunction normalizeBracketData(data = {}) {`);
-}
+    source = source.replace('\nfunction normalizeBracketData(data = {}) {', `${helper}\nfunction normalizeBracketData(data = {}) {`);
+  }
 
-if (!source.includes('function generateGroups(')) {
-  const helper = `
+  if (!source.includes('function generateGroups(')) {
+    const helper = `
 function generateGroups(teams = [], settings = {}) {
   const requested = Number(settings.groupCount || 4) || 4;
   const groupCount = Math.max(1, Math.min(Math.max(1, teams.length), requested));
@@ -42,24 +45,38 @@ function generateGroups(teams = [], settings = {}) {
   return groups.filter((group) => group.teams.length);
 }
 `;
-  source = source.replace('\nfunction generateBracketSlots(teams = [], limit = 16) {', `${helper}\nfunction generateBracketSlots(teams = [], limit = 16) {`);
+    source = source.replace('\nfunction generateBracketSlots(teams = [], limit = 16) {', `${helper}\nfunction generateBracketSlots(teams = [], limit = 16) {`);
+  }
+
+  source = source.replace(
+    '    groups: normalizeGroups(data.groups || []),\n    matchProgress:',
+    '    groups: normalizeGroups(data.groups || []),\n    groupStandings: normalizeGroupStandings(data.groupStandings || data.standings || {}),\n    matchProgress:'
+  );
+
+  if (!source.includes('\n  generateGroups\n')) {
+    source = source.replace(
+      '  generateBracketSlots,\n  generateAdaptiveBracket\n};',
+      '  generateBracketSlots,\n  generateAdaptiveBracket,\n  generateGroups\n};'
+    );
+  }
+
+  if (source !== before) {
+    fs.writeFileSync(serviceFile, source, 'utf8');
+    changed = true;
+  }
 }
 
-source = source.replace(
-  '    groups: normalizeGroups(data.groups || []),\n    matchProgress:',
-  '    groups: normalizeGroups(data.groups || []),\n    groupStandings: normalizeGroupStandings(data.groupStandings || data.standings || {}),\n    matchProgress:'
-);
-
-if (!source.includes('    generateGroups,')) {
+if (fs.existsSync(routeFile)) {
+  let source = fs.readFileSync(routeFile, 'utf8');
+  const before = source;
   source = source.replace(
-    '    generateBracketSlots,\n    generateAdaptiveBracket',
-    '    generateBracketSlots,\n    generateAdaptiveBracket,\n    generateGroups'
+    "const bracket = await storage.writeBracket({ slotSize: generated.slotSize, teamLimit: limit, eventId: settings.activeEventId || '', teamSource: safeTeamSource(settings.teamSource), slots: generated.slots, round16: generated.round16, quarters: [], semis: [], finals: [], matchProgress: {}, generatedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });",
+    "const bracket = await storage.writeBracket({ slotSize: generated.slotSize, teamLimit: limit, eventId: settings.activeEventId || '', teamSource: safeTeamSource(settings.teamSource), slots: generated.slots, round16: generated.round16, quarters: [], semis: [], finals: [], groups: groups.map((group) => ({ name: group.name, teams: (group.teams || []).map((team) => team.id).filter(Boolean) })), groupStandings: {}, matchProgress: {}, generatedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });"
   );
-  source = source.replace(
-    '  generateBracketSlots,\n  generateAdaptiveBracket',
-    '  generateBracketSlots,\n  generateAdaptiveBracket,\n  generateGroups'
-  );
+  if (source !== before) {
+    fs.writeFileSync(routeFile, source, 'utf8');
+    changed = true;
+  }
 }
 
-if (source !== before) fs.writeFileSync(file, source, 'utf8');
-console.log(source !== before ? '[Bracket] Sorteio e pontuação dos grupos garantidos no serviço.' : '[Bracket] Sorteio e pontuação dos grupos já estão disponíveis.');
+console.log(changed ? '[Bracket] Sorteio, grupos persistidos e pontuação garantidos.' : '[Bracket] Sorteio e pontuação dos grupos já estão disponíveis.');
