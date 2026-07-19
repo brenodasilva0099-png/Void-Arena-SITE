@@ -54,7 +54,8 @@ if (failures.length) {
 }
 
 require('./patchSiteIntegrityRuntime');
+require('./patchNavigationIntegrityRuntime');
 require('./auditSitePages');
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe, páginas e assets aprovados.');
+console.log('[Check] Sintaxe, páginas, assets e navegação aprovados.');
