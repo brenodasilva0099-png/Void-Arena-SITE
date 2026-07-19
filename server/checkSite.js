@@ -5,8 +5,13 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.join(__dirname, '..');
 const CHECK_DIRS = [
   path.join(ROOT, 'server'),
-  path.join(ROOT, 'site'),
-  path.join(ROOT, 'public', 'js')
+  path.join(ROOT, 'site')
+];
+const EXTRA_FILES = [
+  path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-page-integrity.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-polish.js'),
+  path.join(ROOT, 'public', 'js', 'pages', 'grupos.js')
 ];
 const SKIP = new Set([
   path.join(ROOT, 'server', 'checkSite.js')
@@ -21,7 +26,10 @@ function walkJs(dir) {
   });
 }
 
-const files = CHECK_DIRS.flatMap(walkJs).filter((file) => !SKIP.has(file));
+const files = Array.from(new Set([
+  ...CHECK_DIRS.flatMap(walkJs),
+  ...EXTRA_FILES.filter(fs.existsSync)
+])).filter((file) => !SKIP.has(file));
 const failures = [];
 
 for (const file of files) {
@@ -37,7 +45,7 @@ for (const file of files) {
   }
 }
 
-console.log(`[Check] Sintaxe verificada em ${files.length} arquivo(s) JavaScript.`);
+console.log(`[Check] Sintaxe verificada em ${files.length} arquivo(s) críticos.`);
 if (failures.length) {
   failures.forEach((failure) => {
     console.error(`\n[Check] ${failure.file}\n${failure.output}`);
