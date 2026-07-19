@@ -1,19 +1,19 @@
 {
   "name": "void-arena-site",
   "version": "5.1.3",
-  "description": "Void Arena 5.1.3: placar Rematch, banco de jogadores e recrutamento.",
+  "description": "Hollow Nexus League: competições, clubes, jogadores, recrutamento e eventos Rematch.",
   "main": "site/index.js",
   "scripts": {
-    "start": "node server/bootSite.js",
-    "dev": "node server/bootSite.js",
+    "start": "node server/checkSite.js && node server/bootSite.js",
+    "dev": "node server/checkSite.js && node server/bootSite.js",
     "check": "node server/checkSite.js"
   },
   "keywords": [
-    "void-arena",
-    "site",
-    "api",
+    "hollow-nexus-league",
+    "rematch",
+    "discord",
     "tournament",
-    "rematch"
+    "community-league"
   ],
   "author": "Projeto Abyss",
   "license": "MIT",
