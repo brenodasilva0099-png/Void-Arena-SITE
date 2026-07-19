@@ -56,7 +56,8 @@ const patches = [
   './patchLeagueExperienceCssRuntime',
   './patchLeagueExperienceFinalChangelogRuntime',
   './patchSiteIntegrityRuntime',
-  './patchNavigationIntegrityRuntime'
+  './patchNavigationIntegrityRuntime',
+  './patchLeagueProfilesCompetitionsHomeRuntime'
 ];
 
 for (const patch of patches) {
