@@ -82,6 +82,56 @@
     return viewerPromise;
   }
 
+  function closeModal() {
+    $('#frmModal')?.classList.remove('open');
+  }
+
+  async function openTeamRegistration(event = {}) {
+    const modal = $('#frmModal');
+    const panel = $('#frmModalPanel');
+    if (!modal || !panel) return;
+    modal.classList.add('open');
+    panel.innerHTML = `<div class="hnl-modal-head"><div><span class="hnl-section-kicker">Validação pelo Discord</span><h2>Inscrever meu time</h2></div><button class="hnl-modal-close" id="registrationClose" type="button" aria-label="Fechar">×</button></div><div id="registrationBody">${notice('Carregando seus times...', '')}</div>`;
+    $('#registrationClose')?.addEventListener('click', closeModal);
+    const viewerData = await viewer();
+    const body = $('#registrationBody');
+    if (!body) return;
+    if (!viewerData.authenticated) {
+      const next = encodeURIComponent(`${location.pathname}${location.search}`);
+      body.innerHTML = `<p>Entre com o Discord para confirmar sua identidade e selecionar o time.</p><a class="hnl-btn primary" href="/auth/discord?next=${next}">Entrar com Discord</a>`;
+      return;
+    }
+    const teams = viewerData.viewerTeams || [];
+    if (!teams.length) {
+      body.innerHTML = `${notice('Você precisa estar vinculado como capitão ou diretor de um time para solicitar a inscrição.', 'error')}<div class="hnl-actions"><a class="hnl-btn" href="/pages/clubes.html">Ver clubes</a><a class="hnl-btn" href="/pages/cadastrar-clube.html">Cadastrar time</a></div>`;
+      return;
+    }
+    body.innerHTML = `<p>A solicitação de <strong>${esc(competitionTitle(event))}</strong> será enviada à staff e só será confirmada depois da validação no Discord.</p><div class="hnl-field"><label for="registrationTeam">Time representado</label><select class="hnl-select" id="registrationTeam">${teams.map((team) => `<option value="${esc(team.id || '')}">${esc(team.name || 'Time')} ${team.tag ? `— ${esc(team.tag)}` : ''}</option>`).join('')}</select></div><div id="registrationStatus"></div><div class="hnl-actions" style="margin-top:14px"><button class="hnl-btn primary" id="registrationSubmit" type="button">Enviar para validação</button><button class="hnl-btn" id="registrationCancel" type="button">Cancelar</button></div>`;
+    $('#registrationCancel')?.addEventListener('click', closeModal);
+    $('#registrationSubmit')?.addEventListener('click', async () => {
+      const button = $('#registrationSubmit');
+      const status = $('#registrationStatus');
+      if (!event.id || !button || !status) return;
+      button.disabled = true;
+      status.innerHTML = notice('Enviando a solicitação ao Discord...', '');
+      try {
+        const result = await api(`/api/events/${encodeURIComponent(event.id)}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamId: $('#registrationTeam')?.value || '' })
+        });
+        const rawDiscordUrl = String(result.discordUrl || '/api/discord/server/open');
+        const parsedDiscordUrl = new URL(rawDiscordUrl, location.origin);
+        const discordUrl = ['http:', 'https:'].includes(parsedDiscordUrl.protocol) ? parsedDiscordUrl.href : '/api/discord/server/open';
+        status.innerHTML = `${notice(result.message || 'Solicitação enviada para validação.', 'success')}<p class="frm-muted">Abrindo o canal de validação no Discord...</p><a class="hnl-btn discord" href="${esc(discordUrl)}">Abrir validação agora</a>`;
+        setTimeout(() => location.assign(discordUrl), 900);
+      } catch (error) {
+        status.innerHTML = notice(error.message, 'error');
+        button.disabled = false;
+      }
+    });
+  }
+
   function teamCard(team = {}) {
     return `<article class="hnl-card hnl-club-card">
       <div class="hnl-profile-row">
@@ -365,13 +415,18 @@
       const progress = Math.min(100, Math.round((registered / limit) * 100));
       const fee = event.feeLabel || event.entryFee || event.registrationFee || 'Gratuita';
       const reward = event.reward || event.prize || 'Premiação conforme regulamento';
-      return `<article class="hnl-card hnl-competition-feature"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">Edição oficial</span></div><h2 class="hnl-competition-title">${esc(competitionTitle(event))}</h2><p class="hnl-competition-description">${esc(event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.')}</p></div><div class="hnl-competition-mark" aria-hidden="true">♕</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>Início</small><strong>${esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p><div class="hnl-actions"><a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
+      const canRegister = Boolean(event.id) && activeStatuses.has(String(event.status || 'open').toLowerCase()) && registered < limit;
+      return `<article class="hnl-card hnl-competition-feature"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">Edição oficial</span></div><h2 class="hnl-competition-title">${esc(competitionTitle(event))}</h2><p class="hnl-competition-description">${esc(event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.')}</p></div><div class="hnl-competition-mark" aria-hidden="true">♕</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>Início</small><strong>${esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p><div class="hnl-actions">${canRegister ? `<button class="hnl-btn primary" type="button" data-register-event="${esc(event.id)}">Inscrever meu time</button>` : ''}<a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
     }
 
     function render(filter = 'active') {
       const filtered = events.filter((event) => category(event) === filter);
       box.innerHTML = filtered.length ? filtered.map(competitionCard).join('') : empty(filter === 'active' ? 'Nenhuma competição ativa no momento.' : filter === 'finished' ? 'Nenhuma competição encerrada.' : 'Nenhuma próxima competição anunciada.');
       $$('[data-competition-filter]').forEach((button) => button.classList.toggle('active', button.dataset.competitionFilter === filter));
+      $$('[data-register-event]', box).forEach((button) => button.addEventListener('click', () => {
+        const selected = events.find((event) => String(event.id || '') === String(button.dataset.registerEvent || ''));
+        if (selected) openTeamRegistration(selected);
+      }));
     }
 
     $$('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => render(button.dataset.competitionFilter || 'active')));
@@ -385,7 +440,10 @@
     if (!id) { box.innerHTML = empty('Competição não informada.'); return; }
     const [data, viewerData] = await Promise.all([api(`/api/league/competitions/${encodeURIComponent(id)}`), viewer()]);
     const event = data.competition || {};
-    box.innerHTML = `<section class="hnl-card"><span class="hnl-section-kicker">♕ Competição oficial</span><h1>${esc(competitionTitle(event))}</h1><p>${esc(event.description || 'Sem descrição cadastrada.')}</p><div class="hnl-grid cols-4"><div class="hnl-stat"><strong>${esc(event.matchFormat || 'MD1')}</strong><span>Formato</span></div><div class="hnl-stat"><strong>${event.teamLimit || 16}</strong><span>Limite</span></div><div class="hnl-stat"><strong>${(event.registrations || []).length}</strong><span>Inscritos</span></div><div class="hnl-stat"><strong>${esc(event.status || 'open')}</strong><span>Status</span></div></div><p><strong>Início:</strong> ${fmt(event.startAt)}</p></section>${viewerData.isAdmin ? `<section class="hnl-card" style="margin-top:14px"><h2>Editar competição</h2><div id="competitionEditStatus"></div><form id="competitionEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(event.name || event.title || '')}"></div><div class="hnl-field"><label>Início</label><input class="hnl-input" type="datetime-local" name="startAt" value="${esc(String(event.startAt || '').slice(0, 16))}"></div><div class="hnl-field"><label>Formato</label><select class="hnl-select" name="matchFormat">${['MD1','MD2','MD3','MD5'].map((value) => `<option ${value === event.matchFormat ? 'selected' : ''}>${value}</option>`).join('')}</select></div><div class="hnl-field"><label>Limite de clubes</label><input class="hnl-input" type="number" min="2" max="64" name="teamLimit" value="${event.teamLimit || 16}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(event.description || '')}</textarea></div><div class="hnl-actions full"><button class="hnl-btn primary">Salvar competição</button></div></form></section>` : ''}`;
+    const registered = (event.registrations || []).length;
+    const canRegister = ['open', 'active'].includes(String(event.status || 'open').toLowerCase()) && registered < Number(event.teamLimit || 16);
+    box.innerHTML = `<section class="hnl-card"><span class="hnl-section-kicker">♕ Competição oficial</span><h1>${esc(competitionTitle(event))}</h1><p>${esc(event.description || 'Sem descrição cadastrada.')}</p><div class="hnl-grid cols-4"><div class="hnl-stat"><strong>${esc(event.matchFormat || 'MD1')}</strong><span>Formato</span></div><div class="hnl-stat"><strong>${event.teamLimit || 16}</strong><span>Limite</span></div><div class="hnl-stat"><strong>${registered}</strong><span>Inscritos</span></div><div class="hnl-stat"><strong>${esc(event.status || 'open')}</strong><span>Status</span></div></div><p><strong>Início:</strong> ${fmt(event.startAt)}</p>${canRegister ? '<button class="hnl-btn primary" id="detailRegisterTeam" type="button">Inscrever meu time</button>' : ''}</section>${viewerData.isAdmin ? `<section class="hnl-card" style="margin-top:14px"><h2>Editar competição</h2><div id="competitionEditStatus"></div><form id="competitionEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(event.name || event.title || '')}"></div><div class="hnl-field"><label>Início</label><input class="hnl-input" type="datetime-local" name="startAt" value="${esc(String(event.startAt || '').slice(0, 16))}"></div><div class="hnl-field"><label>Formato</label><select class="hnl-select" name="matchFormat">${['MD1','MD2','MD3','MD5'].map((value) => `<option ${value === event.matchFormat ? 'selected' : ''}>${value}</option>`).join('')}</select></div><div class="hnl-field"><label>Limite de clubes</label><input class="hnl-input" type="number" min="2" max="64" name="teamLimit" value="${event.teamLimit || 16}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(event.description || '')}</textarea></div><div class="hnl-actions full"><button class="hnl-btn primary">Salvar competição</button></div></form></section>` : ''}`;
+    $('#detailRegisterTeam')?.addEventListener('click', () => openTeamRegistration(event));
     $('#competitionEditForm')?.addEventListener('submit', async (eventSubmit) => {
       eventSubmit.preventDefault();
       const payload = Object.fromEntries(new FormData(eventSubmit.currentTarget).entries());
@@ -416,13 +474,42 @@
     box.innerHTML = transfers.length ? transfers.map((item) => `<div class="hnl-profile-row"><div class="hnl-rank">↔</div><div><strong>${esc(item.player?.name || 'Jogador')}</strong><p>${esc(item.fromTeam?.name || '?')} → ${esc(item.toTeam?.name || '?')}</p></div><span class="hnl-chip">${esc(item.status || 'pending')}</span></div>`).join('') : empty('Nenhuma solicitação de transferência registrada.');
   }
 
-  function tactics() {
+  async function tactics() {
     const board = $('#tacticBoard');
     if (!board) return;
     const list = $('#tacticTokenList');
-    const key = 'hnl:tactic-board:v2';
+    const status = $('#tacticStatus');
+    const key = 'hnl:tactic-board:v3';
+    const [playersData, cafeData, viewerData] = await Promise.all([
+      api('/api/league/players').catch(() => ({ players: [] })),
+      api('/api/league/cafe-ranking').catch(() => ({ ranking: [] })),
+      viewer()
+    ]);
+    const person = (entry = {}, source = 'site', teamName = '') => ({
+      id: String(entry.id || entry.userId || entry.discordId || `${source}:${entry.name || ''}`),
+      name: entry.name || entry.profile?.username || 'Jogador',
+      avatar: entry.avatar || '',
+      role: entry.profile?.primaryPosition || entry.rosterRole || entry.roles?.[0]?.name || 'POS',
+      source,
+      teamName
+    });
+    const unique = (items = []) => {
+      const seen = new Set();
+      return items.filter((item) => {
+        const id = String(item.id || item.name || '').trim().toLowerCase();
+        if (!id || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      }).sort((a, b) => String(a.name).localeCompare(String(b.name), 'pt-BR'));
+    };
+    const directories = {
+      team: unique((viewerData.viewerTeams || []).flatMap((team) => (team.roster || []).map((entry) => person(entry, 'team', team.name || 'Meu time')))),
+      site: unique((playersData.players || []).map((entry) => person(entry, 'site', entry.team?.name || ''))),
+      server: unique((cafeData.ranking || []).map((entry) => person(entry, 'server', 'Servidor Hollow Nexus')))
+    };
     let tokens = [];
-    try { tokens = JSON.parse(localStorage.getItem(key) || '[]'); } catch { tokens = []; }
+    let simulating = false;
+    try { tokens = JSON.parse(localStorage.getItem(key) || localStorage.getItem('hnl:tactic-board:v2') || '[]'); } catch { tokens = []; }
     if (!Array.isArray(tokens) || !tokens.length) tokens = [
       { id: 'a1', team: 'ally', name: 'Goleiro', role: 'GOL', x: 12, y: 50 },
       { id: 'a2', team: 'ally', name: 'Defensor', role: 'DEF', x: 28, y: 38 },
@@ -437,16 +524,69 @@
       { id: 'ball', team: 'ball', name: 'Bola', role: '', x: 50, y: 50 }
     ];
 
+    function fallbackAvatar(token) {
+      return esc(String(token.role || token.name || '?').slice(0, 3).toUpperCase());
+    }
+
+    function tokenVisual(token) {
+      if (token.team === 'ball') return '<span class="hnl-ball-symbol">⚽</span>';
+      const avatar = token.avatar ? `<img src="${esc(token.avatar)}" alt="Avatar de ${esc(token.name)}">` : `<span>${fallbackAvatar(token)}</span>`;
+      return `<span class="hnl-token-avatar">${avatar}</span><span class="hnl-token-caption"><b>${esc(token.name)}</b><small>${esc(token.role)}</small></span>`;
+    }
+
+    function openPlayerSelector(token) {
+      if (!token || token.team === 'ball' || simulating) return;
+      const modal = $('#frmModal');
+      const panel = $('#frmModalPanel');
+      if (!modal || !panel) return;
+      const preferredSource = token.source && directories[token.source]?.length ? token.source : directories.team.length ? 'team' : directories.site.length ? 'site' : 'server';
+      panel.innerHTML = `<div class="hnl-modal-head"><div><span class="hnl-section-kicker">Prancheta 5v5</span><h2>Selecionar jogador</h2></div><button class="hnl-modal-close" id="tacticPlayerClose" type="button" aria-label="Fechar">×</button></div><div class="hnl-form-grid"><div class="hnl-field"><label for="tacticPlayerSource">Origem</label><select class="hnl-select" id="tacticPlayerSource"><option value="team">Meu time</option><option value="site">Jogadores do site</option><option value="server">Membros do servidor</option></select></div><div class="hnl-field"><label for="tacticPlayerSearch">Buscar</label><input class="hnl-input" id="tacticPlayerSearch" placeholder="Nome do jogador"></div><div class="hnl-field full"><label for="tacticPlayerSelect">Jogador</label><select class="hnl-select" id="tacticPlayerSelect"></select></div><div class="hnl-field full"><label for="tacticPlayerRole">Posição na jogada</label><input class="hnl-input" id="tacticPlayerRole" maxlength="16" value="${esc(token.role || 'POS')}"></div></div><div id="tacticPlayerStatus"></div><div class="hnl-actions" style="margin-top:14px"><button class="hnl-btn primary" id="tacticPlayerApply" type="button">Usar este jogador</button><button class="hnl-btn danger" id="tacticPlayerRemove" type="button">Remover posição</button><button class="hnl-btn" id="tacticPlayerCancel" type="button">Cancelar</button></div>`;
+      modal.classList.add('open');
+      const source = $('#tacticPlayerSource');
+      const search = $('#tacticPlayerSearch');
+      const select = $('#tacticPlayerSelect');
+      source.value = preferredSource;
+      let visible = [];
+      const fill = () => {
+        const term = String(search?.value || '').trim().toLocaleLowerCase('pt-BR');
+        visible = (directories[source?.value] || []).filter((entry) => `${entry.name} ${entry.teamName}`.toLocaleLowerCase('pt-BR').includes(term));
+        if (select) select.innerHTML = visible.length ? visible.map((entry, index) => `<option value="${index}">${esc(entry.name)}${entry.teamName ? ` — ${esc(entry.teamName)}` : ''}</option>`).join('') : '<option value="">Nenhum jogador disponível</option>';
+      };
+      fill();
+      source?.addEventListener('change', () => { if (search) search.value = ''; fill(); });
+      search?.addEventListener('input', fill);
+      $('#tacticPlayerClose')?.addEventListener('click', closeModal);
+      $('#tacticPlayerCancel')?.addEventListener('click', closeModal);
+      $('#tacticPlayerApply')?.addEventListener('click', () => {
+        const selected = visible[Number(select?.value || 0)];
+        if (!selected) { $('#tacticPlayerStatus').innerHTML = notice('Selecione um jogador disponível.', 'error'); return; }
+        token.playerId = selected.id;
+        token.name = selected.name;
+        token.avatar = selected.avatar;
+        token.source = selected.source;
+        token.role = String($('#tacticPlayerRole')?.value || selected.role || 'POS').trim().slice(0, 16).toUpperCase();
+        render();
+        closeModal();
+        if (status) status.innerHTML = notice(`${selected.name} foi adicionado à formação.`, 'success');
+      });
+      $('#tacticPlayerRemove')?.addEventListener('click', () => {
+        tokens = tokens.filter((entry) => entry.id !== token.id);
+        render();
+        closeModal();
+      });
+    }
+
     function render() {
       board.querySelectorAll('.hnl-token').forEach((node) => node.remove());
       tokens.forEach((token) => {
         const node = document.createElement('div');
-        node.className = `hnl-token ${token.team === 'enemy' ? 'enemy' : ''} ${token.team === 'ball' ? 'ball' : ''}`;
+        node.className = `hnl-token ${token.team === 'enemy' ? 'enemy' : ''} ${token.team === 'ball' ? 'ball' : ''} ${token.avatar ? 'has-avatar' : ''}`;
         node.dataset.id = token.id;
         node.style.left = `${token.x}%`;
         node.style.top = `${token.y}%`;
-        node.innerHTML = token.team === 'ball' ? '⚽' : `${esc(token.name)}<small>${esc(token.role)}</small>`;
+        node.innerHTML = tokenVisual(token);
         node.addEventListener('pointerdown', (event) => {
+          if (simulating) return;
           node.setPointerCapture(event.pointerId);
           const move = (moveEvent) => {
             const rect = board.getBoundingClientRect();
@@ -457,37 +597,98 @@
           node.addEventListener('pointermove', move);
           node.addEventListener('pointerup', () => node.removeEventListener('pointermove', move), { once: true });
         });
-        node.addEventListener('dblclick', () => {
-          if (token.team === 'ball') return;
-          const next = prompt('Nome do jogador', token.name);
-          if (next) token.name = next.slice(0, 24);
-          const role = prompt('Posição/função', token.role);
-          if (role) token.role = role.slice(0, 12).toUpperCase();
-          render();
-        });
+        node.addEventListener('dblclick', () => openPlayerSelector(token));
         board.appendChild(node);
       });
-      if (list) list.innerHTML = tokens.filter((token) => token.team !== 'ball').map((token) => `<button class="hnl-btn ghost" data-edit-token="${esc(token.id)}">${token.team === 'enemy' ? '🔴' : '🔵'} ${esc(token.name)} · ${esc(token.role)}</button>`).join('');
+      if (list) list.innerHTML = tokens.filter((token) => token.team !== 'ball').map((token) => `<button class="hnl-tactic-player-button ${token.team === 'enemy' ? 'enemy' : ''}" type="button" data-edit-token="${esc(token.id)}"><span class="hnl-mini-avatar">${token.avatar ? `<img src="${esc(token.avatar)}" alt="">` : fallbackAvatar(token)}</span><span><strong>${esc(token.name)}</strong><small>${token.team === 'enemy' ? 'Adversário' : 'Aliado'} · ${esc(token.role)}</small></span><b>Trocar</b></button>`).join('');
       $$('[data-edit-token]').forEach((button) => button.addEventListener('click', () => {
         const token = tokens.find((item) => item.id === button.dataset.editToken);
-        if (!token) return;
-        const next = prompt('Nome do jogador', token.name); if (next) token.name = next.slice(0, 24);
-        const role = prompt('Posição/função', token.role); if (role) token.role = role.slice(0, 12).toUpperCase();
-        render();
+        openPlayerSelector(token);
       }));
     }
 
     function add(team) {
       const count = tokens.filter((token) => token.team === team).length;
-      if (count >= 5) return alert('Limite de 5 jogadores por lado.');
-      tokens.push({ id: `${team}_${Date.now()}`, team, name: `Jogador ${count + 1}`, role: 'POS', x: team === 'enemy' ? 70 : 30, y: 18 + count * 14 });
+      if (count >= 5) { if (status) status.innerHTML = notice('Limite de 5 jogadores por lado.', 'error'); return; }
+      const token = { id: `${team}_${Date.now()}`, team, name: `Jogador ${count + 1}`, role: 'POS', x: team === 'enemy' ? 70 : 30, y: 18 + count * 14 };
+      tokens.push(token);
       render();
+      openPlayerSelector(token);
+    }
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    function updateTokenPosition(token) {
+      const node = $$('.hnl-token', board).find((entry) => entry.dataset.id === token.id);
+      if (!node) return;
+      node.classList.add('is-simulating');
+      node.style.left = `${token.x}%`;
+      node.style.top = `${token.y}%`;
+    }
+
+    async function simulateAttack() {
+      if (simulating) return;
+      const allies = tokens.filter((token) => token.team === 'ally');
+      if (allies.length < 2) { if (status) status.innerHTML = notice('Adicione pelo menos dois jogadores aliados para simular.', 'error'); return; }
+      let ball = tokens.find((token) => token.team === 'ball');
+      if (!ball) {
+        ball = { id: 'ball', team: 'ball', name: 'Bola', role: '', x: 50, y: 50 };
+        tokens.push(ball);
+        render();
+      }
+      simulating = true;
+      const button = $('#simulateAttack');
+      if (button) button.disabled = true;
+      const original = new Map(tokens.map((token) => [token.id, { x: token.x, y: token.y }]));
+      const plan = $('#attackPlan')?.value || 'formation';
+      const targetY = plan === 'upper' ? 28 : plan === 'lower' ? 72 : 50;
+      const route = allies.filter((token) => !/GOL|GOLEIRO/i.test(`${token.role} ${token.name}`)).sort((a, b) => a.x - b.x);
+      const carriers = (plan === 'direct' ? route.slice(-2) : route).slice(0, 4);
+      if (!carriers.length) carriers.push(...allies.slice(0, 2));
+      const reduced = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+      const stepTime = reduced ? 120 : 650;
+      if (status) status.innerHTML = notice('Simulação em andamento: os jogadores avançam e a bola percorre a formação.', '');
+      ball.x = Math.max(10, Math.min(88, carriers[0].x));
+      ball.y = carriers[0].y;
+      updateTokenPosition(ball);
+      await delay(stepTime);
+      for (let index = 0; index < carriers.length; index += 1) {
+        allies.forEach((token, playerIndex) => {
+          const base = original.get(token.id) || token;
+          const advance = /GOL|GOLEIRO/i.test(`${token.role} ${token.name}`) ? 2 + index : 7 + (index * 6) + (playerIndex % 2) * 2;
+          token.x = Math.min(90, base.x + advance);
+          if (plan !== 'formation') token.y = Math.max(8, Math.min(92, base.y * 0.58 + targetY * 0.42));
+          updateTokenPosition(token);
+        });
+        const carrier = carriers[index];
+        ball.x = Math.min(91, carrier.x + 1.5);
+        ball.y = plan === 'formation' ? carrier.y : Math.max(10, Math.min(90, carrier.y * 0.7 + targetY * 0.3));
+        updateTokenPosition(ball);
+        await delay(stepTime);
+      }
+      ball.x = 96;
+      ball.y = plan === 'formation' ? Math.max(40, Math.min(60, carriers.at(-1)?.y || 50)) : Math.max(42, Math.min(58, targetY));
+      updateTokenPosition(ball);
+      if (status) status.innerHTML = notice('Finalização concluída. A formação original será restaurada.', 'success');
+      await delay(reduced ? 220 : 1000);
+      tokens.forEach((token) => {
+        const saved = original.get(token.id);
+        if (!saved) return;
+        token.x = saved.x;
+        token.y = saved.y;
+        updateTokenPosition(token);
+      });
+      await delay(stepTime);
+      simulating = false;
+      if (button) button.disabled = false;
+      render();
+      if (status) status.innerHTML = notice('Simulação concluída sem alterar a formação salva.', 'success');
     }
     $('#addAlly')?.addEventListener('click', () => add('ally'));
     $('#addEnemy')?.addEventListener('click', () => add('enemy'));
     $('#addBall')?.addEventListener('click', () => { if (!tokens.some((token) => token.team === 'ball')) tokens.push({ id: 'ball', team: 'ball', name: 'Bola', role: '', x: 50, y: 50 }); render(); });
-    $('#saveTactic')?.addEventListener('click', () => { localStorage.setItem(key, JSON.stringify(tokens)); $('#tacticStatus').innerHTML = notice('Prancheta salva neste navegador.', 'success'); });
-    $('#resetTactic')?.addEventListener('click', () => { localStorage.removeItem(key); location.reload(); });
+    $('#simulateAttack')?.addEventListener('click', simulateAttack);
+    $('#saveTactic')?.addEventListener('click', () => { localStorage.setItem(key, JSON.stringify(tokens)); if (status) status.innerHTML = notice('Prancheta salva neste navegador.', 'success'); });
+    $('#resetTactic')?.addEventListener('click', () => { localStorage.removeItem(key); localStorage.removeItem('hnl:tactic-board:v2'); location.reload(); });
     render();
   }
 

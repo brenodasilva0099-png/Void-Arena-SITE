@@ -91,6 +91,24 @@ for (const file of files) {
     }
   }
 
+  if (relative === 'public/pages/eventos.html') {
+    for (const marker of ['hnl-cafe-event-card', '☕', 'R$ 35', 'R$ 15', 'Patente elevada']) {
+      if (!html.includes(marker)) failures.push(`${relative}: instrução ou premiação do Café com Leite ausente ${marker}`);
+    }
+  }
+
+  if (relative === 'public/pages/cafe-com-leite.html') {
+    for (const marker of ['id="como-funciona"', 'hnl-event-steps', 'hnl-prize-grid', 'R$ 35', 'R$ 15']) {
+      if (!html.includes(marker)) failures.push(`${relative}: guia do evento ausente ${marker}`);
+    }
+  }
+
+  if (relative === 'public/pages/prancheta-tatica.html') {
+    for (const marker of ['hnl-field-goal', 'hnl-penalty-area', 'id="attackPlan"', 'id="simulateAttack"', 'id="tacticTokenList"']) {
+      if (!html.includes(marker)) failures.push(`${relative}: recurso da prancheta ausente ${marker}`);
+    }
+  }
+
   if (relative === 'public/pages/cadastrar-clube.html') {
     if (!html.includes('name="socialInstagram"') || !html.includes('name="socialWebsite"')) {
       failures.push(`${relative}: campos de redes sociais do clube ausentes`);
@@ -115,6 +133,11 @@ for (const file of files) {
     const full = path.join(PUBLIC_DIR, ref.replace(/^\/+/, ''));
     if (!fs.existsSync(full)) warnings.push(`${relative}: asset local não encontrado ${ref}`);
   }
+}
+
+const experienceScript = read(path.join(PUBLIC_DIR, 'js', 'core', 'league-experience.js'));
+for (const marker of ['openTeamRegistration', '/api/events/${encodeURIComponent(event.id)}/register', 'data-register-event', 'openPlayerSelector', "api('/api/league/cafe-ranking')", 'simulateAttack']) {
+  if (!experienceScript.includes(marker)) failures.push(`public/js/core/league-experience.js: fluxo obrigatório ausente ${marker}`);
 }
 
 console.log(`[Page Audit] ${files.length} página(s) verificadas.`);

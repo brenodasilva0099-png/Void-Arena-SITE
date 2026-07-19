@@ -4,6 +4,7 @@ const path = require('node:path');
 const appFile = path.join(__dirname, 'app.js');
 const packageFile = path.join(__dirname, '..', 'package.json');
 const source = fs.readFileSync(appFile, 'utf8');
+const eventRouteSource = fs.readFileSync(path.join(__dirname, 'routes', 'publicEvent.routes.js'), 'utf8');
 const packageJson = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
 const { canManageTeam } = require('./services/teamAccess.service');
 const checks = [
@@ -25,6 +26,8 @@ if (!canManageTeam({ discordId: 'captain-discord' }, leadershipTeam)) missing.pu
 if (canManageTeam({ id: 'site-admin', roles: ['admin'] }, leadershipTeam)) missing.push('isolamento entre admin global e gestão do clube');
 if (canManageTeam({ id: 'owner' }, leadershipTeam)) missing.push('proprietário sem cargo não deve gerir clube com liderança definida');
 if (!canManageTeam({ id: 'legacy-owner' }, { ownerUserId: 'legacy-owner' })) missing.push('compatibilidade com clube antigo sem liderança');
+if (!eventRouteSource.includes("callBot('/internal/event-registration-requests/create'")) missing.push('ponte de inscrição com validação do Discord');
+if (!eventRouteSource.includes('if (!canManageTeam(user, team))')) missing.push('inscrição restrita ao capitão/diretor');
 if (missing.length) {
   console.error(`[Runtime Safety] Proteções ausentes: ${missing.join(', ')}.`);
   process.exitCode = 1;

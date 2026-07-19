@@ -3,6 +3,7 @@ const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { getSessionUser, requireOwner } = require('../services/access.service');
 const { sanitizeTeam } = require('../services/bracket.service');
+const { canManageTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 function requireLogin(req, res, next) {
@@ -26,8 +27,6 @@ function normalizeEvent(body = {}, existing = {}) {
   const reward = cleanText(body.reward ?? body.prize ?? existing.reward ?? existing.prize ?? '', 180);
   return { ...existing, id: existing.id || body.id || crypto.randomUUID(), title: cleanText(body.title || body.name || existing.title || existing.name || 'Novo evento', 80), name: cleanText(body.title || body.name || existing.title || existing.name || 'Novo evento', 80), mode: cleanText(body.mode || existing.mode || 'Mata-mata', 60), matchFormat: allowedFormats.has(String(body.matchFormat || existing.matchFormat || 'MD1')) ? String(body.matchFormat || existing.matchFormat || 'MD1') : 'MD1', structure: cleanText(body.structure || existing.structure || 'single_elimination', 60), teamLimit, minimumTeams: Math.max(2, Math.min(teamLimit, Number(body.minimumTeams || existing.minimumTeams || 4) || 4)), startAt: cleanText(body.startAt || existing.startAt || '', 40), status: allowed.has(String(body.status || existing.status || 'open')) ? String(body.status || existing.status || 'open') : 'open', description: cleanText(body.description || existing.description || '', 320), reward, prize: reward, entryFee, registrationFee: entryFee, isFree: body.isFree === true || !entryFee, paymentInstructions: cleanText(body.paymentInstructions || existing.paymentInstructions || '', 420), captainNoticeMessages: Array.isArray(existing.captainNoticeMessages) ? existing.captainNoticeMessages : [], registrations: Array.isArray(existing.registrations) ? existing.registrations : [], updatedAt: new Date().toISOString(), createdAt: existing.createdAt || new Date().toISOString() };
 }
-function identity(user = {}) { return [user.id, user.discordId, user.name, user.profile?.username].map((v) => String(v || '').trim().toLowerCase()).filter(Boolean); }
-function canRepresent(user = {}, team = {}) { const ids = new Set(identity(user)); if (String(team.ownerUserId || '') === String(user.id || '')) return true; const values = [...(Array.isArray(team.players) ? team.players : []), ...(Array.isArray(team.reserves) ? team.reserves : []), ...(Array.isArray(team.playerAccounts?.players) ? team.playerAccounts.players : []), ...(Array.isArray(team.playerAccounts?.reserves) ? team.playerAccounts.reserves : [])].map((v) => String(v || '').trim().toLowerCase()); return values.some((value) => ids.has(value)); }
 async function notifyCaptains(event, reason, options = {}) { return callBot('/internal/events/notify-captains', { method: 'POST', body: JSON.stringify({ event, reason, ...options }) }).catch((error) => ({ success: false, message: error.message, skipped: true })); }
 function registrationTeamId(registration = {}) { return String(registration.teamId || registration.id || '').trim(); }
 
@@ -39,6 +38,48 @@ function registerPublicEventRoutes(app) {
   app.delete('/api/events/:eventId/registrations/:teamId', requireOwner, async (req, res) => { try { const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]); const existing = events.find((item) => String(item.id || '') === String(req.params.eventId || '')); if (!existing) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' }); const teamId = cleanText(req.params.teamId || '', 100); const before = Array.isArray(existing.registrations) ? existing.registrations : []; const after = before.filter((registration) => registrationTeamId(registration) !== teamId); if (after.length === before.length) return res.status(404).json({ success: false, message: 'Time nao estava inscrito nesse evento.' }); const event = await storage.saveTournamentEvent({ ...existing, registrations: after, updatedAt: new Date().toISOString() }); const team = teams.find((item) => String(item.id || '') === teamId) || null; return res.json({ success: true, event: safeEvent(event, teams), removedTeamId: teamId, message: team ? `Time ${team.name || team.tag || teamId} removido do evento.` : 'Time removido do evento.' }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
   app.post('/api/events/:eventId/announce', requireOwner, async (req, res) => { try { const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]); const event = events.find((item) => String(item.id || '') === String(req.params.eventId || '')); if (!event) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' }); const message = cleanText(req.body?.message || '', 320); const notice = await notifyCaptains(safeEvent({ ...event, description: message || event.description }, teams), 'announcement', { forceNew: true }); return res.json({ success: true, event: safeEvent(event, teams), notice }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
   app.post('/api/events/:eventId/manual-dm', requireOwner, async (req, res) => { try { const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]); const existing = events.find((item) => String(item.id || '') === String(req.params.eventId || '')); if (!existing) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' }); const event = await storage.saveTournamentEvent({ ...existing, updatedAt: new Date().toISOString(), manualDmRequestedAt: new Date().toISOString() }); const notice = await notifyCaptains(safeEvent(event, teams), 'manual-resend', { forceNew: true, manual: true }); const queued = notice.success === false || notice.skipped; return res.json({ success: true, event: safeEvent(event, teams), notice: { ...notice, queued, message: queued ? 'Reenvio solicitado. O bot vai processar pelo sincronizador em até 30 segundos.' : `DM reenviada para ${Number(notice.sent || 0)} capitão(ães), ${Number(notice.edited || 0)} atualizada(s).` } }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
-  app.post('/api/events/:eventId/register', requireLogin, async (req, res) => { const [teams, user, events] = await Promise.all([storage.readTeams().catch(() => []), getSessionUser(req), storage.readEvents().catch(() => [])]); const teamId = cleanText(req.body?.teamId || '', 80); const team = teams.find((item) => String(item.id || '') === teamId); const event = events.find((item) => String(item.id || '') === String(req.params.eventId || '')); if (!event) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' }); if (!team) return res.status(404).json({ success: false, message: 'Time nao encontrado para inscricao.' }); if (!canRepresent(user, team)) return res.status(403).json({ success: false, message: 'Voce so pode inscrever um time que voce criou ou esta vinculado.' }); try { const result = await callBot('/internal/event-registration-requests/create', { method: 'POST', body: JSON.stringify({ eventId: event.id, eventName: event.title || event.name || event.id, eventTitle: event.title || event.name || event.id, teamId, teamName: team.name || '', teamTag: team.tag || '', userId: req.session.userId, responsibleDiscordId: user?.discordId || team.captainDiscordId || '', responsibleName: user?.profile?.username || user?.name || team.captainName || team.ownerName || '', validationChannelId: req.body?.validationChannelId || undefined }) }); return res.status(result.alreadyPending || result.alreadyRegistered ? 200 : 201).json({ success: true, pendingValidation: Boolean(result.request), alreadyPending: Boolean(result.alreadyPending), alreadyRegistered: Boolean(result.alreadyRegistered), request: result.request || null, validationChannelId: result.validationChannelId || '', discordUrl: result.discordUrl || '', event: safeEvent(event, teams), message: result.alreadyRegistered ? 'Esse time ja esta inscrito no evento.' : result.alreadyPending ? 'Esse time ja tem uma solicitacao aguardando validacao.' : 'Solicitacao enviada para validacao no Discord. O time so entra no evento depois da staff aprovar.' }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
+  app.post('/api/events/:eventId/register', requireLogin, async (req, res) => {
+    const [teams, user, events] = await Promise.all([storage.readTeams().catch(() => []), getSessionUser(req), storage.readEvents().catch(() => [])]);
+    const teamId = cleanText(req.body?.teamId || '', 80);
+    const team = teams.find((item) => String(item.id || '') === teamId);
+    const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
+    if (!event) return res.status(404).json({ success: false, message: 'Evento não encontrado.' });
+    if (!team) return res.status(404).json({ success: false, message: 'Time não encontrado para inscrição.' });
+    if (!canManageTeam(user, team)) return res.status(403).json({ success: false, message: 'Apenas o capitão ou o diretor vinculado pode solicitar a inscrição deste time.' });
+    const registrations = Array.isArray(event.registrations) ? event.registrations : [];
+    if (registrations.some((registration) => registrationTeamId(registration) === teamId)) {
+      return res.json({ success: true, alreadyRegistered: true, event: safeEvent(event, teams), discordUrl: '/api/discord/server/open', message: 'Esse time já está inscrito no evento.' });
+    }
+    if (!['open', 'active'].includes(String(event.status || 'open').toLowerCase())) return res.status(409).json({ success: false, message: 'As inscrições deste evento estão encerradas.' });
+    if (registrations.length >= Math.max(1, Number(event.teamLimit || 16))) return res.status(409).json({ success: false, message: 'O evento já atingiu o limite de times.' });
+    try {
+      const result = await callBot('/internal/event-registration-requests/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          eventId: event.id,
+          eventName: event.title || event.name || event.id,
+          eventTitle: event.title || event.name || event.id,
+          teamId,
+          teamName: team.name || '',
+          teamTag: team.tag || '',
+          userId: req.session.userId,
+          responsibleDiscordId: user?.discordId || team.captainDiscordId || '',
+          responsibleName: user?.profile?.username || user?.name || team.captainName || team.directorName || '',
+          validationChannelId: req.body?.validationChannelId || undefined
+        })
+      });
+      return res.status(result.alreadyPending || result.alreadyRegistered ? 200 : 201).json({
+        success: true,
+        pendingValidation: Boolean(result.request),
+        alreadyPending: Boolean(result.alreadyPending),
+        alreadyRegistered: Boolean(result.alreadyRegistered),
+        request: result.request || null,
+        validationChannelId: result.validationChannelId || '',
+        discordUrl: result.discordUrl || '/api/discord/server/open',
+        event: safeEvent(event, teams),
+        message: result.alreadyRegistered ? 'Esse time já está inscrito no evento.' : result.alreadyPending ? 'Esse time já tem uma solicitação aguardando validação.' : 'Solicitação enviada para validação no Discord. O time entra no evento depois da aprovação da staff.'
+      });
+    } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+  });
 }
 module.exports = { registerPublicEventRoutes };
