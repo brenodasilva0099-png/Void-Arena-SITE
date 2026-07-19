@@ -27,39 +27,49 @@ function walkJs(dir) {
   });
 }
 
-const files = Array.from(new Set([
-  ...CHECK_DIRS.flatMap(walkJs),
-  ...EXTRA_FILES.filter(fs.existsSync)
-])).filter((file) => !SKIP.has(file));
-const failures = [];
-
-for (const file of files) {
-  const result = spawnSync(process.execPath, ['--check', file], {
-    cwd: ROOT,
-    encoding: 'utf8'
-  });
-  if (result.status !== 0) {
-    failures.push({
-      file: path.relative(ROOT, file).replace(/\\/g, '/'),
-      output: String(result.stderr || result.stdout || '').trim()
+function checkFiles(files, label) {
+  const failures = [];
+  for (const file of files) {
+    const result = spawnSync(process.execPath, ['--check', file], {
+      cwd: ROOT,
+      encoding: 'utf8'
     });
+    if (result.status !== 0) {
+      failures.push({
+        file: path.relative(ROOT, file).replace(/\\/g, '/'),
+        output: String(result.stderr || result.stdout || '').trim()
+      });
+    }
+  }
+  console.log(`[Check] ${label}: ${files.length} arquivo(s).`);
+  if (failures.length) {
+    failures.forEach((failure) => console.error(`\n[Check] ${failure.file}\n${failure.output}`));
+    process.exit(1);
   }
 }
 
-console.log(`[Check] Sintaxe verificada em ${files.length} arquivo(s) críticos.`);
-if (failures.length) {
-  failures.forEach((failure) => {
-    console.error(`\n[Check] ${failure.file}\n${failure.output}`);
-  });
-  process.exit(1);
-}
+const initialFiles = Array.from(new Set([
+  ...CHECK_DIRS.flatMap(walkJs),
+  ...EXTRA_FILES.filter(fs.existsSync)
+])).filter((file) => !SKIP.has(file));
+checkFiles(initialFiles, 'sintaxe inicial');
 
 require('./patchLeagueExperienceRouteRegistrationRuntime');
 require('./patchLeagueExperienceRuntime');
+require('./patchLegacyTeamOwnershipRuntime');
 require('./patchLeagueNavStateRuntime');
 require('./patchSiteIntegrityRuntime');
 require('./patchNavigationIntegrityRuntime');
+
+const patchedFiles = [
+  path.join(ROOT, 'site', 'index.js'),
+  path.join(ROOT, 'server', 'routes', 'publicTeam.routes.js'),
+  path.join(ROOT, 'server', 'routes', 'leagueExperience.routes.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-experience.js')
+].filter(fs.existsSync);
+checkFiles(patchedFiles, 'sintaxe após patches');
+
 require('./auditSitePages');
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe, experiência, estado dos menus, páginas, assets e navegação aprovados.');
+console.log('[Check] Sintaxe antes/depois dos patches, experiência, gestão de clubes, menus, páginas, assets e navegação aprovados.');
