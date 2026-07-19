@@ -56,9 +56,10 @@ if (failures.length) {
 
 require('./patchLeagueExperienceRouteRegistrationRuntime');
 require('./patchLeagueExperienceRuntime');
+require('./patchLeagueNavStateRuntime');
 require('./patchSiteIntegrityRuntime');
 require('./patchNavigationIntegrityRuntime');
 require('./auditSitePages');
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe, experiência, páginas, assets e navegação aprovados.');
+console.log('[Check] Sintaxe, experiência, estado dos menus, páginas, assets e navegação aprovados.');
