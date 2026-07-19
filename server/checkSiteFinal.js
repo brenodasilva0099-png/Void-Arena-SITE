@@ -15,6 +15,7 @@ const patches = [
   './patchLeagueNavStateRuntime',
   './patchLeagueFinalRuntime',
   './patchLeagueClientStabilityRuntime',
+  './patchLeagueExperienceCssRuntime',
   './patchLeagueExperienceFinalChangelogRuntime',
   './patchSiteIntegrityRuntime',
   './patchNavigationIntegrityRuntime'
