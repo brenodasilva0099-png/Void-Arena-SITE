@@ -43,6 +43,7 @@ const patches = [
   './patchSupportRoutesRuntime',
   './patchSupportNavEverywhereRuntime',
   './patchLeagueExperienceRouteRegistrationRuntime',
+  './patchCafeRankingRouteRegistrationRuntime',
   './patchLeagueExperienceRuntime',
   './patchLegacyTeamOwnershipRuntime',
   './patchLeagueNavStateRuntime',
@@ -61,5 +62,5 @@ for (const patch of patches) {
   }
 }
 
-console.log(`[Boot] ${patches.length} patches carregados; experiência League, gestão legada, changelog, navegação e integridade aplicados por último.`);
+console.log(`[Boot] ${patches.length} patches carregados; experiência League, ranking do Discord, gestão legada, changelog, navegação e integridade aplicados por último.`);
 require('../site/index');
