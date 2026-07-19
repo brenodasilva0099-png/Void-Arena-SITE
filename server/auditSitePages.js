@@ -4,13 +4,19 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
-const REQUIRED = [
+const BASE_REQUIRED = [
   '/css/league-critical.css',
   '/css/league-polish.css',
   '/css/league-auth-ui.css',
-  '/js/core/league-polish.js',
   '/js/core/league-page-integrity.js',
   '/js/core/league-auth-ui.js'
+];
+const EXPERIENCE_REQUIRED = [
+  '/css/league-experience.css',
+  '/js/core/league-experience.js'
+];
+const LEGACY_REQUIRED = [
+  '/js/core/league-polish.js'
 ];
 
 function read(file) {
@@ -46,9 +52,11 @@ for (const file of files) {
   const html = read(file);
   const relative = path.relative(ROOT, file).replace(/\\/g, '/');
   const isLeaguePage = /(?:frm-shell|data-frm-module|frm-polish-page)/i.test(html);
+  const isExperiencePage = /(?:data-hnl-module|league-experience\.js)/i.test(html);
 
   if (isLeaguePage) {
-    for (const required of REQUIRED) {
+    const requiredAssets = [...BASE_REQUIRED, ...(isExperiencePage ? EXPERIENCE_REQUIRED : LEGACY_REQUIRED)];
+    for (const required of requiredAssets) {
       if (!html.includes(required)) failures.push(`${relative}: referência obrigatória ausente ${required}`);
       if (count(html, required) > 1) failures.push(`${relative}: referência duplicada ${required}`);
     }
@@ -56,6 +64,10 @@ for (const file of files) {
 
   if (/discord-brand-sync\.js|discord-auth-avatar\.(?:js|css)/i.test(html)) {
     failures.push(`${relative}: asset transitório antigo ainda referenciado`);
+  }
+
+  if (isExperiencePage && /federation-(?:polish|no-mock)\.js|league-polish\.js/i.test(html)) {
+    failures.push(`${relative}: runtime legado carregado junto com a experiência nova`);
   }
 
   for (const ref of refs(html)) {
@@ -75,5 +87,5 @@ if (failures.length) {
   failures.forEach((item) => console.error(`- ${item}`));
   process.exitCode = 1;
 } else {
-  console.log('[Page Audit] CSS/JS canônicos, duplicidade e referências antigas: OK.');
+  console.log('[Page Audit] Experiência nova e páginas legadas isoladas, assets e duplicidade: OK.');
 }
