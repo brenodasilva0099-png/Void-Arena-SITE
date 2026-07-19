@@ -16,6 +16,16 @@ const EXPECTED_ROUTES = [
   ['get', '/api/players'],
   ['get', '/api/league/overview'],
   ['get', '/api/league/news'],
+  ['get', '/api/league/viewer'],
+  ['get', '/api/league/players'],
+  ['get', '/api/league/players/:playerId'],
+  ['get', '/api/league/clubs/:teamId'],
+  ['get', '/api/league/cafe-ranking'],
+  ['get', '/api/league/calendar'],
+  ['put', '/api/league/calendar'],
+  ['get', '/api/league/competitions/:eventId'],
+  ['put', '/api/league/competitions/:eventId'],
+  ['get', '/api/league/transfers'],
   ['get', '/api/notifications'],
   ['get', '/api/health/routes'],
   ['get', '/api/health/pages']
@@ -73,19 +83,26 @@ function readNavigationManifest() {
   return readJson(NAVIGATION_INTEGRITY_FILE);
 }
 
+function experienceAssets() {
+  return [
+    assetStatus('css/league-critical.css'),
+    assetStatus('css/league-polish.css'),
+    assetStatus('css/league-experience.css'),
+    assetStatus('css/league-auth-ui.css'),
+    assetStatus('js/core/league-page-integrity.js'),
+    assetStatus('js/core/league-experience.js'),
+    assetStatus('js/core/league-auth-ui.js'),
+    assetStatus('js/core/league-polish.js'),
+    assetStatus('assets/hollow-nexus-official.svg')
+  ];
+}
+
 function registerRouteAuditRoutes(app) {
   app.get('/api/health/pages', (_req, res) => {
     const pages = [...walkHtml(PAGES_DIR), path.join(PUBLIC_DIR, 'index.html')].filter(fs.existsSync);
     const manifest = readIntegrityManifest();
     const navigation = readNavigationManifest();
-    const requiredAssets = [
-      assetStatus('css/league-critical.css'),
-      assetStatus('css/league-polish.css'),
-      assetStatus('css/league-auth-ui.css'),
-      assetStatus('js/core/league-page-integrity.js'),
-      assetStatus('js/core/league-auth-ui.js'),
-      assetStatus('js/core/league-polish.js')
-    ];
+    const requiredAssets = experienceAssets();
     const missingAssets = requiredAssets.filter((item) => !item.exists);
     const missingLocalAssets = Array.isArray(manifest?.missingLocalAssets) ? manifest.missingLocalAssets : [];
     const missingTargets = Array.isArray(navigation?.missingTargets) ? navigation.missingTargets : [];
@@ -117,16 +134,7 @@ function registerRouteAuditRoutes(app) {
       path: routePath,
       registered: routeExists(app, method, routePath)
     }));
-
-    const assets = [
-      assetStatus('js/core/league-auth-ui.js'),
-      assetStatus('js/core/league-page-integrity.js'),
-      assetStatus('js/core/league-polish.js'),
-      assetStatus('css/league-auth-ui.css'),
-      assetStatus('css/league-critical.css'),
-      assetStatus('css/league-polish.css'),
-      assetStatus('assets/hollow-nexus-official.svg')
-    ];
+    const assets = experienceAssets();
 
     let botStorage = { available: false, target: botTarget(), database: null, message: '' };
     try {
@@ -163,7 +171,7 @@ function registerRouteAuditRoutes(app) {
     });
   });
 
-  console.log('[Routes] Auditoria de rotas, páginas, navegação, assets e storage registrada.');
+  console.log('[Routes] Auditoria de rotas, experiência, páginas, navegação, assets e storage registrada.');
 }
 
 module.exports = { registerRouteAuditRoutes, routeExists };
