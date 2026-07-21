@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PAGES = path.join(ROOT, 'public', 'pages');
 const UPDATES = path.join(PAGES, 'atualizacoes.html');
 const VERSION = path.join(ROOT, 'public', 'league-experience.json');
-const BUILD = '2026-07-19-league-experience-v5';
+const BUILD = '2026-07-21-league-experience-v6';
 const LOGO = '/assets/hollow-nexus-official.svg';
 let changed = false;
 
@@ -46,10 +46,14 @@ const sideGroups = [
 ];
 
 function topNav(active = '') {
-  return `<nav class="frm-tabs">${topItems.map(([key, label, href]) => `<a class="${key === active ? 'active' : ''}" href="${href}">${label}</a>`).join('')}</nav>`;
+  return `<nav class="frm-tabs">${topItems.map(([key, label, href]) => `<a class="${key === active ? 'active' : ''}" href="${href}"${key === 'admin' ? ' data-admin-only hidden' : ''}>${label}</a>`).join('')}</nav>`;
 }
 function sideNav(activeHref = '') {
-  return sideGroups.map(([title, links]) => `<div class="frm-nav-title">${title}</div>${links.map(([icon, label, href]) => `<a class="${href === activeHref ? 'active' : ''}" href="${href}"><i>${icon}</i><b>${label}</b></a>`).join('')}`).join('');
+  return sideGroups.map(([title, links]) => {
+    const adminAttrs = title === 'Administração' ? ' data-admin-section hidden' : '';
+    const linkAttrs = title === 'Administração' ? ' data-admin-only hidden' : '';
+    return `<div class="frm-nav-title"${adminAttrs}>${title}</div>${links.map(([icon, label, href]) => `<a class="${href === activeHref ? 'active' : ''}" href="${href}"${linkAttrs}><i>${icon}</i><b>${label}</b></a>`).join('')}`;
+  }).join('');
 }
 function footer() {
   return `<footer class="frm-footer"><div><div class="frm-footer-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><strong>the HOLLOW NEXUS <span class="frm-accent">LEAGUE</span></strong><p>Liga Comunitária de Rematch</p></div></div><p>Competições, clubes, jogadores e eventos em uma plataforma comunitária independente.</p></div><div><h4>Liga</h4><div class="hnl-footer-links"><a href="/pages/federacao.html">Sobre a Liga</a><a href="/pages/regulamento.html">Regulamento</a><a href="/pages/atualizacoes.html">Atualizações</a><a href="/pages/suporte.html">Suporte</a></div></div><div><h4>Links rápidos</h4><div class="hnl-footer-links"><a href="/pages/competicoes.html">Competições</a><a href="/pages/clubes.html">Clubes</a><a href="/pages/atletas.html">Jogadores</a><a href="/pages/cafe-com-leite.html">Café com Leite</a></div></div><div><h4>Contato</h4><div class="hnl-footer-links"><a href="/api/discord/server/open" target="_blank" rel="noopener">Discord Oficial</a><a href="/pages/suporte.html">Abrir suporte</a></div></div><div><h4>Legal</h4><p>Liga comunitária independente. Não afiliada, patrocinada ou endossada por Rematch, Sloclap ou Kepler Interactive.</p><p>© 2026 The Hollow Nexus League.</p></div></footer>`;
@@ -185,6 +189,42 @@ const configBody = `<section class="hnl-config-overview" id="config-system">
   </div>
 </section>`;
 
+const permissionsHead = '<link rel="stylesheet" href="/css/organization.css">';
+const permissionsScripts = `<script src="/js/core/api.js?v=${BUILD}"></script><script src="/js/permissoes.js?v=${BUILD}"></script>`;
+const permissionsBody = `<section class="hnl-permission-intro">
+  <article class="hnl-card">
+    <span class="hnl-config-number">Como funciona</span>
+    <h2>Acesso vinculado aos cargos do Discord</h2>
+    <p>O site lê os cargos pelo BOT e aplica as permissões aos usuários vinculados. Donos e administradores continuam protegidos pelo controle interno.</p>
+    <div class="hnl-permission-flow"><span><b>1</b>Carregar cargos</span><i>→</i><span><b>2</b>Definir acessos</span><i>→</i><span><b>3</b>Salvar no BOT</span></div>
+  </article>
+  <article class="hnl-card hnl-permission-safety">
+    <span class="hnl-config-number">Proteção</span>
+    <h2>Salvamento seguro</h2>
+    <p>Cargos que não forem retornados temporariamente pelo Discord serão preservados. Nada é confirmado antes da resposta do BOT.</p>
+    <a class="hnl-btn" href="/pages/configuracoes.html">Abrir configurações</a>
+  </article>
+</section>
+
+<section class="hnl-card hnl-permission-console">
+  <header class="hnl-permission-console-head">
+    <div><span class="hnl-section-kicker">Controle de acesso</span><h2>Cargos e áreas do site</h2><p>Busque um cargo, abra o card e marque somente as áreas necessárias.</p></div>
+    <div class="hnl-actions"><button id="reloadBtn" class="hnl-btn" type="button">Recarregar cargos</button><button id="saveBtn" class="hnl-btn primary" type="button" disabled>Salvar alterações</button></div>
+  </header>
+  <div class="hnl-permission-stats" aria-live="polite">
+    <div><strong id="roleCount">0</strong><span>Cargos carregados</span></div>
+    <div><strong id="ruleCount">0</strong><span>Acessos ativos</span></div>
+    <div><strong id="changeCount">0</strong><span>Alterações pendentes</span></div>
+  </div>
+  <div id="status" class="va-status hnl-permission-status">Carregando permissões...</div>
+  <div class="hnl-permission-tools">
+    <label><span>Buscar cargo</span><input id="roleSearch" class="hnl-input" placeholder="Nome do cargo ou servidor" autocomplete="off"></label>
+    <label><span>Mostrar</span><select id="roleFilter" class="hnl-select"><option value="all">Todos os cargos</option><option value="configured">Com acessos ativos</option><option value="empty">Sem acessos</option></select></label>
+    <div class="hnl-actions"><button id="expandRolesBtn" class="hnl-btn ghost" type="button">Expandir todos</button><button id="collapseRolesBtn" class="hnl-btn ghost" type="button">Recolher todos</button></div>
+  </div>
+  <div id="permissionRows" class="hnl-permission-roles"></div>
+</section>`;
+
 const pages = {
   'dashboard.html': shell({ title: 'Início', tab: 'inicio', href: '', module: 'dashboard', heroHtml: hero('the HOLLOW NEXUS <span class="frm-accent">LEAGUE</span>', 'Liga comunitária de Rematch para clubes, jogadores, competições, calendário e eventos.', '✨', 'Bem-vindo à'), body: `<section class="hnl-grid cols-4"><div class="hnl-stat"><strong data-hnl-stat="clubes">0</strong><span>Clubes participantes</span></div><div class="hnl-stat"><strong data-hnl-stat="jogadores">0</strong><span>Jogadores registrados</span></div><div class="hnl-stat"><strong data-hnl-stat="competicoes">0</strong><span>Competições ativas</span></div><div class="hnl-stat"><strong data-hnl-stat="partidas">0</strong><span>Partidas disputadas</span></div></section><section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Competições em destaque</h2><div class="hnl-grid" id="homeCompetitions"></div></article><article class="hnl-card"><h2>Ranking de clubes</h2><div class="hnl-grid" id="homeClubRanking"></div></article></section>` }),
   'perfil.html': shell({ title: 'Meu Perfil', tab: 'jogadores', href: '', module: 'profile-settings', heroHtml: hero('Meu perfil', 'Seu perfil público, conexões, time atual e configurações em um só lugar.', '👤', 'Área do jogador'), body: profileBody, extraHead: profileHead, extraScripts: profileScripts }),
@@ -209,6 +249,7 @@ const pages = {
   'chaveamento.html': shell({ title: 'Chaveamento', tab: 'competitivo', href: '/pages/chaveamento.html', module: 'bracket', heroHtml: hero('Chaveamento', 'Estrutura competitiva dentro do visual atual da liga.', '⌘'), body: '<section id="competitiveData"></section>' }),
   'grupos.html': shell({ title: 'Grupos', tab: 'competitivo', href: '/pages/grupos.html', module: 'groups', heroHtml: hero('Fase de Grupos', 'Clubes, competições e estrutura de grupos sem retornar ao site antigo.', '☷'), body: '<section id="competitiveData"></section>' }),
   'resultados.html': shell({ title: 'Resultados', tab: 'competitivo', href: '/pages/resultados.html', module: 'results', heroHtml: hero('Resultados', 'Resultados e competições no mesmo shell visual da liga.', '◉'), body: '<section id="competitiveData"></section>' }),
+  'permissoes.html': shell({ title: 'Permissões', tab: 'admin', href: '/pages/permissoes.html', module: 'permissions', heroHtml: hero('Permissões de Acesso', 'Controle quais cargos do Discord podem usar cada área da Hollow Nexus League.', '🔐'), body: permissionsBody, extraHead: permissionsHead, extraScripts: permissionsScripts }),
   'configuracoes.html': shell({ title: 'Configurações', tab: 'admin', href: '/pages/configuracoes.html', module: 'config', heroHtml: hero('Central de Configurações', 'Saúde do sistema, backups e comunicação organizados em uma única central administrativa.', '⚙'), body: configBody, extraHead: configHead, extraScripts: configScripts }),
   'administracao.html': shell({ title: 'Administração', tab: 'admin', href: '', module: '', heroHtml: hero('Administração', 'Acesso central às áreas administrativas do site e do bot.', '⚙'), body: `<section class="hnl-grid cols-2"><a class="hnl-card" href="/pages/formularios.html"><h2>▤ Formulários</h2><p>Inscrições e solicitações enviadas.</p></a><a class="hnl-card" href="/pages/permissoes.html"><h2>ⓘ Permissões</h2><p>Cargos e acessos do site.</p></a><a class="hnl-card" href="/pages/configuracoes.html"><h2>⚙ Configurações</h2><p>Integrações, canais e ajustes.</p></a><a class="hnl-card" href="/pages/analise-partidas.html"><h2>◉ Análise de Partidas</h2><p>Submissões e revisão da equipe.</p></a></section>` })
 };
@@ -221,7 +262,7 @@ const heroEmojis = {
   'times.html': '🛡️', 'cadastrar-clube.html': '🏗️', 'elencos.html': '👥', 'perfil-clube.html': '🛡️',
   'atletas.html': '👥', 'jogadores.html': '👥', 'perfil-jogador.html': '👤', 'mercado.html': '🤝',
   'recrutamento.html': '🤝', 'transferencias.html': '🔄', 'rankings.html': '📊', 'prancheta-tatica.html': '⚽',
-  'chaveamento.html': '🧩', 'grupos.html': '🗂️', 'resultados.html': '📌', 'configuracoes.html': '⚙️', 'administracao.html': '🛠️'
+  'chaveamento.html': '🧩', 'grupos.html': '🗂️', 'resultados.html': '📌', 'permissoes.html': '🔐', 'configuracoes.html': '⚙️', 'administracao.html': '🛠️'
 };
 function applyHeroEmoji(name, html) {
   const emoji = heroEmojis[name];

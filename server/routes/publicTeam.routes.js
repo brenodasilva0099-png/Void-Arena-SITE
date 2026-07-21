@@ -1,6 +1,6 @@
 const crypto = require('node:crypto');
 const storage = require('../storage');
-const { getSessionUser } = require('../services/access.service');
+const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { canManageTeam } = require('../services/teamAccess.service');
 const { createRecruitmentNotification } = require('./notifications.routes');
 const { removeRoutes } = require('../utils/expressRoutes');
@@ -214,7 +214,14 @@ function registerPublicTeamRoutes(app) {
   });
 
   app.delete('/api/teams/:teamId', requireLogin, async (req, res) => {
-    try { const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]); const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || '')); if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' }); if (!canManageTeam(user, existing)) return res.status(403).json({ success: false, message: 'Apenas diretor ou capitão pode excluir esse time.' }); const deleted = await storage.deleteTeam(existing.id); return res.json({ success: true, deleted: Boolean(deleted), teamId: existing.id }); }
+    try {
+      const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
+      const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
+      if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
+      if (!await isAdminRecord(user)) return res.status(403).json({ success: false, message: 'Apenas administrador pode excluir times.' });
+      const deleted = await storage.deleteTeam(existing.id);
+      return res.json({ success: true, deleted: Boolean(deleted), teamId: existing.id });
+    }
     catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 

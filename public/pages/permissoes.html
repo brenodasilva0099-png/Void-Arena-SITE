@@ -1,68 +1,41 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Permissões | Void Arena</title>
-  <link rel="icon" href="/assets/hollow-nexus.png" />
-  <link rel="stylesheet" href="/css/style.css" />
-  <link rel="stylesheet" href="/css/organization.css" />
-</head>
-<body class="va-organized-body" data-page="permissoes">
-  <div class="va-shell">
-<aside class="va-sidebar">
-  <div class="va-brand">
-    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Permissões | Hollow Nexus League</title><link rel="icon" href="/assets/hollow-nexus-official.svg"><link rel="stylesheet" href="/css/organization.css">  <script src="/js/core/league-navigation.js?v=2026-07-19-page-integrity-v5"></script>
+  <link rel="stylesheet" href="/css/league-critical.css?v=2026-07-19-page-integrity-v5">
+  <link rel="stylesheet" href="/css/league-polish.css?v=2026-07-19-page-integrity-v5">
+  <link rel="stylesheet" href="/css/league-experience.css?v=2026-07-19-page-integrity-v5">
+  <meta name="page-integrity-build" content="2026-07-19-page-integrity-v5">
+</head><body class="frm-polish-page" data-page="permissions" data-hnl-module="permissions" data-frm-module="permissions"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav"><div class="frm-nav-title">Competitivo</div><a class="" href="/pages/eventos.html"><i>◇</i><b>Eventos</b></a><a class="" href="/pages/chaveamento.html"><i>⌘</i><b>Chaveamento</b></a><a class="" href="/pages/grupos.html"><i>≡</i><b>Grupos</b></a><a class="" href="/pages/resultados.html"><i>◎</i><b>Resultados</b></a><a class="" href="/pages/rankings.html"><i>▥</i><b>Rankings</b></a><a class="" href="/pages/calendario.html"><i>□</i><b>Calendário</b></a><div class="frm-nav-title">Clubes</div><a class="" href="/pages/cadastrar-clube.html"><i>+</i><b>Cadastrar Clube</b></a><a class="" href="/pages/elencos.html"><i>▱</i><b>Elencos</b></a><a class="" href="/pages/prancheta-tatica.html"><i>▣</i><b>Prancheta Tática</b></a><a class="" href="/pages/transferencias.html"><i>↔</i><b>Transferências</b></a><div class="frm-nav-title">Jogadores</div><a class="" href="/pages/mercado.html"><i>✦</i><b>Mercado / Recrutamento</b></a><a class="" href="/pages/rankings.html"><i>▥</i><b>Ranking de Jogadores</b></a><div class="frm-nav-title" data-admin-section hidden>Administração</div><a class="" href="/pages/formularios.html" data-admin-only hidden><i>▤</i><b>Formulários</b></a><a class="active" href="/pages/permissoes.html" data-admin-only hidden><i>ⓘ</i><b>Permissões</b></a><a class="" href="/pages/configuracoes.html" data-admin-only hidden><i>⚙</i><b>Configurações</b></a><a class="" href="/pages/analise-partidas.html" data-admin-only hidden><i>◉</i><b>Análise de Partidas</b></a></nav></aside><main class="frm-main"><header class="frm-header"><nav class="frm-tabs"><a class="" href="/pages/dashboard.html">Início</a><a class="" href="/pages/competicoes.html">Competitivo</a><a class="" href="/pages/clubes.html">Clubes</a><a class="" href="/pages/atletas.html">Jogadores</a><a class="" href="/pages/cafe-com-leite.html">Café com Leite</a><a class="active" href="/pages/administracao.html" data-admin-only hidden>Administração</a></nav><div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header><section class="frm-page-hero"><div><span class="hnl-section-kicker">Hollow Nexus League</span><h1>Permissões de Acesso</h1><p>Controle quais cargos do Discord podem usar cada área da Hollow Nexus League.</p></div><div class="hnl-hero-icon" aria-hidden="true">🔐</div></section><div id="pageStatus"></div><section class="hnl-permission-intro">
+  <article class="hnl-card">
+    <span class="hnl-config-number">Como funciona</span>
+    <h2>Acesso vinculado aos cargos do Discord</h2>
+    <p>O site lê os cargos pelo BOT e aplica as permissões aos usuários vinculados. Donos e administradores continuam protegidos pelo controle interno.</p>
+    <div class="hnl-permission-flow"><span><b>1</b>Carregar cargos</span><i>→</i><span><b>2</b>Definir acessos</span><i>→</i><span><b>3</b>Salvar no BOT</span></div>
+  </article>
+  <article class="hnl-card hnl-permission-safety">
+    <span class="hnl-config-number">Proteção</span>
+    <h2>Salvamento seguro</h2>
+    <p>Cargos que não forem retornados temporariamente pelo Discord serão preservados. Nada é confirmado antes da resposta do BOT.</p>
+    <a class="hnl-btn" href="/pages/configuracoes.html">Abrir configurações</a>
+  </article>
+</section>
+
+<section class="hnl-card hnl-permission-console">
+  <header class="hnl-permission-console-head">
+    <div><span class="hnl-section-kicker">Controle de acesso</span><h2>Cargos e áreas do site</h2><p>Busque um cargo, abra o card e marque somente as áreas necessárias.</p></div>
+    <div class="hnl-actions"><button id="reloadBtn" class="hnl-btn" type="button">Recarregar cargos</button><button id="saveBtn" class="hnl-btn primary" type="button" disabled>Salvar alterações</button></div>
+  </header>
+  <div class="hnl-permission-stats" aria-live="polite">
+    <div><strong id="roleCount">0</strong><span>Cargos carregados</span></div>
+    <div><strong id="ruleCount">0</strong><span>Acessos ativos</span></div>
+    <div><strong id="changeCount">0</strong><span>Alterações pendentes</span></div>
   </div>
-  <nav class="va-nav">
-    <div class="va-nav-title">Principal</div>
-    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-    <div class="va-nav-title">Comunicação</div>
-    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-    <div class="va-nav-title">Admin</div>
-    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
-  </nav>
-</aside>
-    <main class="va-main">
-      <header class="va-topbar">
-        <div>
-          <p class="va-eyebrow">Void Arena 5.1.2.2</p>
-          <h1 class="va-title">Permissões</h1>
-          <p class="va-subtitle">Configure quais cargos do Discord podem acessar cada área do site.</p>
-        </div>
-        <div class="va-user-pill"><span data-user-name>...</span></div>
-      </header>
-      <section class="va-grid">
-        <article class="va-card full">
-          <div class="va-section-head">
-            <div>
-              <h2>Cargos do Discord</h2>
-              <p>O site busca os cargos direto no BOT. Se aparecer vazio, clique em recarregar depois que o BOT estiver Live.</p>
-            </div>
-            <div class="va-actions va-actions-right">
-              <button id="reloadBtn" class="va-btn" type="button">Recarregar cargos</button>
-              <button id="saveBtn" class="va-btn primary" type="button">Salvar permissões</button>
-            </div>
-          </div>
-          <div id="permissionRows" class="va-permission-grid"></div>
-          <div id="status" class="va-status">Carregando...</div>
-        </article>
-      </section>
-    </main>
+  <div id="status" class="va-status hnl-permission-status">Carregando permissões...</div>
+  <div class="hnl-permission-tools">
+    <label><span>Buscar cargo</span><input id="roleSearch" class="hnl-input" placeholder="Nome do cargo ou servidor" autocomplete="off"></label>
+    <label><span>Mostrar</span><select id="roleFilter" class="hnl-select"><option value="all">Todos os cargos</option><option value="configured">Com acessos ativos</option><option value="empty">Sem acessos</option></select></label>
+    <div class="hnl-actions"><button id="expandRolesBtn" class="hnl-btn ghost" type="button">Expandir todos</button><button id="collapseRolesBtn" class="hnl-btn ghost" type="button">Recolher todos</button></div>
   </div>
-  <script src="/js/core/api.js"></script>
-  <script src="/js/permissoes.js"></script>
-</body>
-</html>
+  <div id="permissionRows" class="hnl-permission-roles"></div>
+</section><footer class="frm-footer"><div><div class="frm-footer-brand"><img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus League"><div><strong>the HOLLOW NEXUS <span class="frm-accent">LEAGUE</span></strong><p>Liga Comunitária de Rematch</p></div></div><p>Competições, clubes, jogadores e eventos em uma plataforma comunitária independente.</p></div><div><h4>Liga</h4><div class="hnl-footer-links"><a href="/pages/federacao.html">Sobre a Liga</a><a href="/pages/regulamento.html">Regulamento</a><a href="/pages/atualizacoes.html">Atualizações</a><a href="/pages/suporte.html">Suporte</a></div></div><div><h4>Links rápidos</h4><div class="hnl-footer-links"><a href="/pages/competicoes.html">Competições</a><a href="/pages/clubes.html">Clubes</a><a href="/pages/atletas.html">Jogadores</a><a href="/pages/cafe-com-leite.html">Café com Leite</a></div></div><div><h4>Contato</h4><div class="hnl-footer-links"><a href="/api/discord/server/open" target="_blank" rel="noopener">Discord Oficial</a><a href="/pages/suporte.html">Abrir suporte</a></div></div><div><h4>Legal</h4><p>Liga comunitária independente. Não afiliada, patrocinada ou endossada por Rematch, Sloclap ou Kepler Interactive.</p><p>© 2026 The Hollow Nexus League.</p></div></footer></main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=2026-07-21-league-experience-v6"></script><script src="/js/core/api.js?v=2026-07-21-league-experience-v6"></script><script src="/js/permissoes.js?v=2026-07-21-league-experience-v6"></script>  <script src="/js/core/league-experience.js?v=2026-07-19-page-integrity-v5"></script>
+  <script src="/js/core/league-auth-ui.js?v=2026-07-19-page-integrity-v5"></script>
+  <script src="/js/core/league-page-integrity.js?v=2026-07-19-page-integrity-v5"></script>
+</body></html>

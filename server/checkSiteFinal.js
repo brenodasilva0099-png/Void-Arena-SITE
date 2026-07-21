@@ -53,6 +53,7 @@ const files = [
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento-autosync-fix.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'configuracoes.js'),
+  path.join(ROOT, 'public', 'js', 'permissoes.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'perfil.js')
 ].filter((file, index, list) => fs.existsSync(file) && !file.endsWith('checkSiteFinal.js') && list.indexOf(file) === index);
 

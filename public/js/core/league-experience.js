@@ -77,8 +77,17 @@
   }
 
   let viewerPromise;
+  function applyAdminVisibility(viewerData = {}) {
+    const isAdmin = viewerData.isAdmin === true;
+    $$('[data-admin-only], [data-admin-section]').forEach((element) => { element.hidden = !isAdmin; });
+    document.documentElement.dataset.hnlAdmin = isAdmin ? '1' : '0';
+    return viewerData;
+  }
+
   function viewer() {
-    if (!viewerPromise) viewerPromise = api('/api/league/viewer').catch(() => ({ authenticated: false, viewer: null, viewerTeams: [], isAdmin: false }));
+    if (!viewerPromise) viewerPromise = api('/api/league/viewer')
+      .catch(() => ({ authenticated: false, viewer: null, viewerTeams: [], isAdmin: false }))
+      .then(applyAdminVisibility);
     return viewerPromise;
   }
 
@@ -132,24 +141,24 @@
     });
   }
 
-  function teamCard(team = {}) {
+  function teamCard(team = {}, adminHtml = '') {
     return `<article class="hnl-card hnl-club-card">
       <div class="hnl-profile-row">
         <img class="hnl-club-logo" src="${esc(image(team.logo))}" alt="Logo de ${esc(team.name || 'clube')}">
         <div class="hnl-club-card-copy"><h3><a href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">${esc(team.name || 'Clube')}</a></h3><div class="hnl-actions"><span class="hnl-chip">${esc(team.tag || 'Sem tag')}</span>${team.region ? `<span class="hnl-chip">${esc(team.region)}</span>` : ''}</div><p>${esc(team.description || 'Clube participante da Hollow Nexus League.')}</p><small>Diretor: ${esc(team.directorName || team.ownerName || 'Não definido')} · Capitão: ${esc(team.captainName || 'Não definido')}</small>${socials(team.socials || {})}</div>
-        <div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Perfil público</a></div>
+        <div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-clube.html?id=${encodeURIComponent(team.id || '')}">Perfil público</a>${adminHtml}</div>
       </div>
     </article>`;
   }
 
-  function playerCard(player = {}, inviteHtml = '') {
+  function playerCard(player = {}, inviteHtml = '', adminHtml = '') {
     const team = player.team ? `<a href="/pages/perfil-clube.html?id=${encodeURIComponent(player.team.id || '')}">${esc(player.team.name || '')}</a>` : 'Livre no mercado';
     const roles = (player.roles || []).slice(0, 2).map((role) => `<span class="hnl-chip">${esc(role.name)}</span>`).join('');
     return `<article class="hnl-card">
       <div class="hnl-profile-row">
         <img class="hnl-avatar round" src="${esc(image(player.avatar))}" alt="Avatar de ${esc(player.name || 'jogador')}">
         <div><h3><a href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">${esc(player.name || 'Jogador')}</a></h3><p>${team} · ${esc(player.profile?.primaryPosition || 'Posição não informada')}</p><div class="hnl-actions">${roles}</div></div>
-        <div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">Ver perfil</a>${inviteHtml}</div>
+        <div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">Ver perfil</a>${inviteHtml}${adminHtml}</div>
       </div>
     </article>`;
   }
@@ -168,13 +177,26 @@
   async function clubs() {
     const box = $('#clubsList');
     if (!box) return;
-    const data = await api('/api/league/clubs');
-    const teams = data.clubs || [];
+    const [data, viewerData] = await Promise.all([api('/api/league/clubs'), viewer()]);
+    let teams = data.clubs || [];
     const input = $('#clubSearch');
     const render = () => {
       const term = String(input?.value || '').trim().toLowerCase();
       const filtered = teams.filter((team) => `${team.name || ''} ${team.tag || ''}`.toLowerCase().includes(term));
-      box.innerHTML = filtered.length ? filtered.map(teamCard).join('') : empty('Nenhum clube encontrado.');
+      box.innerHTML = filtered.length ? filtered.map((team) => teamCard(team, viewerData.isAdmin ? `<button class="hnl-btn danger" type="button" data-admin-delete-club="${esc(team.id || '')}">Excluir</button>` : '')).join('') : empty('Nenhum clube encontrado.');
+      $$('[data-admin-delete-club]', box).forEach((button) => button.addEventListener('click', async () => {
+        const selected = teams.find((team) => String(team.id || '') === String(button.dataset.adminDeleteClub || ''));
+        if (!selected || !viewerData.isAdmin || !window.confirm(`Excluir definitivamente o clube ${selected.name || ''}?`)) return;
+        button.disabled = true;
+        try {
+          await api(`/api/teams/${encodeURIComponent(selected.id || '')}`, { method: 'DELETE' });
+          teams = teams.filter((team) => String(team.id || '') !== String(selected.id || ''));
+          render();
+        } catch (error) {
+          button.disabled = false;
+          $('#pageStatus').innerHTML = notice(error.message, 'error');
+        }
+      }));
     };
     input?.addEventListener('input', render);
     render();
@@ -183,13 +205,26 @@
   async function players() {
     const box = $('#playersList');
     if (!box) return;
-    const data = await api('/api/league/players');
-    const players = data.players || [];
+    const [data, viewerData] = await Promise.all([api('/api/league/players'), viewer()]);
+    let players = data.players || [];
     const input = $('#playerSearch');
     const render = () => {
       const term = String(input?.value || '').trim().toLowerCase();
       const filtered = players.filter((player) => `${player.name || ''} ${player.profile?.primaryPosition || ''} ${player.team?.name || ''}`.toLowerCase().includes(term));
-      box.innerHTML = filtered.length ? filtered.map((player) => playerCard(player)).join('') : empty('Nenhum jogador encontrado.');
+      box.innerHTML = filtered.length ? filtered.map((player) => playerCard(player, '', viewerData.isAdmin ? `<button class="hnl-btn danger" type="button" data-admin-delete-player="${esc(player.id || player.discordId || '')}">Excluir</button>` : '')).join('') : empty('Nenhum jogador encontrado.');
+      $$('[data-admin-delete-player]', box).forEach((button) => button.addEventListener('click', async () => {
+        const selected = players.find((player) => String(player.id || player.discordId || '') === String(button.dataset.adminDeletePlayer || ''));
+        if (!selected || !viewerData.isAdmin || !window.confirm(`Remover ${selected.name || 'este jogador'} do diretório e dos elencos vinculados?`)) return;
+        button.disabled = true;
+        try {
+          await api(`/api/players/${encodeURIComponent(button.dataset.adminDeletePlayer || '')}`, { method: 'DELETE' });
+          players = players.filter((player) => player !== selected);
+          render();
+        } catch (error) {
+          button.disabled = false;
+          $('#pageStatus').innerHTML = notice(error.message, 'error');
+        }
+      }));
     };
     input?.addEventListener('input', render);
     render();
@@ -725,6 +760,7 @@
 
   async function run() {
     globalInteractions();
+    viewer().catch(() => applyAdminVisibility({ isAdmin: false }));
     const module = document.body?.dataset?.hnlModule || document.body?.dataset?.frmModule || '';
     const handlers = { dashboard, clubs, players, 'player-profile': playerProfile, 'club-profile': clubProfile, 'create-club': createClub, market, rankings, cafe, calendar, competitions, 'competition-detail': competitionDetail, transfers, tactics, results, notifications: notificationsPage, mail: notificationsPage };
     try { if (handlers[module]) await handlers[module](); }

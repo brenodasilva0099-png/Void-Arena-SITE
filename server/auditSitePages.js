@@ -137,6 +137,15 @@ for (const file of files) {
     }
   }
 
+  if (relative === 'public/pages/permissoes.html') {
+    if (!html.includes('class="frm-shell"') || html.includes('class="va-shell"') || html.includes('/css/style.css')) {
+      failures.push(`${relative}: permissões ainda usa a estrutura visual antiga`);
+    }
+    for (const marker of ['hnl-permission-console', 'id="roleSearch"', 'id="roleFilter"', 'id="permissionRows"', '/js/permissoes.js']) {
+      if (!html.includes(marker)) failures.push(`${relative}: central de permissões incompleta ${marker}`);
+    }
+  }
+
   for (const ref of refs(html)) {
     if (!ref.startsWith('/') || ref.startsWith('//') || ref.startsWith('/api/') || ref.startsWith('/auth/')) continue;
     const full = path.join(PUBLIC_DIR, ref.replace(/^\/+/, ''));
@@ -145,8 +154,13 @@ for (const file of files) {
 }
 
 const experienceScript = read(path.join(PUBLIC_DIR, 'js', 'core', 'league-experience.js'));
-for (const marker of ['openTeamRegistration', '/api/events/${encodeURIComponent(event.id)}/register', 'data-register-event', 'openPlayerSelector', "api('/api/league/cafe-ranking')", 'simulateAttack']) {
+for (const marker of ['openTeamRegistration', '/api/events/${encodeURIComponent(event.id)}/register', 'data-register-event', 'openPlayerSelector', "api('/api/league/cafe-ranking')", 'simulateAttack', 'applyAdminVisibility', 'data-admin-delete-club', 'data-admin-delete-player']) {
   if (!experienceScript.includes(marker)) failures.push(`public/js/core/league-experience.js: fluxo obrigatório ausente ${marker}`);
+}
+
+const permissionsScript = read(path.join(PUBLIC_DIR, 'js', 'permissoes.js'));
+for (const marker of ['preserveMissingRoles', 'data-permission-action', 'roleSearch', 'roleFilter', 'pendingChangeCount']) {
+  if (!permissionsScript.includes(marker)) failures.push(`public/js/permissoes.js: proteção ou organização ausente ${marker}`);
 }
 
 console.log(`[Page Audit] ${files.length} página(s) verificadas.`);
