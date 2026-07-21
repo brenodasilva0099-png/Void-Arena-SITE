@@ -21,7 +21,8 @@ const patches = [
   './patchNavigationIntegrityRuntime',
   './patchLeagueProfilesCompetitionsHomeRuntime',
   './patchProfileInlineCriticalExtrasRuntime',
-  './patchAuditInlineProfileRuntime'
+  './patchAuditInlineProfileRuntime',
+  './patchAdvancedTacticalSimulatorRuntime'
 ];
 
 require('./auditRuntimeSafety');
@@ -41,6 +42,7 @@ const files = [
   ...walk(path.join(ROOT, 'site')),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-home-competitions-upgrade.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'tactical-simulator-v2.js'),
   path.join(ROOT, 'public', 'js', 'core', 'social-icons.js'),
   path.join(ROOT, 'public', 'js', 'core', 'profile-api.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-navigation.js'),
@@ -66,11 +68,18 @@ if (failures.length) {
 }
 
 require('./auditSitePages');
-for (const name of ['league-stable-final.json', 'page-integrity.json', 'navigation-integrity.json', 'league-home-competition-profile.json']) {
+for (const name of ['league-stable-final.json', 'page-integrity.json', 'navigation-integrity.json', 'league-home-competition-profile.json', 'tactical-simulator-version.json']) {
   if (!fs.existsSync(path.join(ROOT, 'public', name))) {
     console.error(`[Check Final] Marcador ausente: ${name}`);
     process.exit(1);
   }
 }
+const tacticalPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'prancheta-tatica.html'), 'utf8');
+for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simulator-v2.js']) {
+  if (!tacticalPage.includes(marker)) {
+    console.error(`[Check Final] Prancheta sem recurso obrigatório: ${marker}`);
+    process.exit(1);
+  }
+}
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Perfis, inscrições de competição, home, rotas, assets, menus, chaveamento, grupos, rankings e navegação aprovados.');
+console.log('[Check Final] Prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
