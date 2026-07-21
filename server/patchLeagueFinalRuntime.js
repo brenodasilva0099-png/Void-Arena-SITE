@@ -52,14 +52,18 @@ const sideGroups = [
 ];
 
 function topNav(active = '') {
-  return `<nav class="frm-tabs">${topItems.map(([key, label, href]) => `<a class="${key === active ? 'active' : ''}" href="${href}">${label}</a>`).join('')}</nav>`;
+  return `<nav class="frm-tabs">${topItems.map(([key, label, href]) => `<a class="${key === active ? 'active' : ''}" href="${href}"${key === 'admin' ? ' data-admin-only hidden' : ''}>${label}</a>`).join('')}</nav>`;
 }
 
 function sideNav(activeHref = '') {
-  return sideGroups.map(([title, links]) => `<div class="frm-nav-title">${title}</div>${links.map(([icon, label, href]) => {
+  return sideGroups.map(([title, links]) => {
+    const adminAttrs = title === 'Administração' ? ' data-admin-section hidden' : '';
+    const linkAttrs = title === 'Administração' ? ' data-admin-only hidden' : '';
+    return `<div class="frm-nav-title"${adminAttrs}>${title}</div>${links.map(([icon, label, href]) => {
     const compare = href.split('#')[0];
-    return `<a class="${compare === activeHref ? 'active' : ''}" href="${href}"><i>${icon}</i><b>${label}</b></a>`;
-  }).join('')}`).join('');
+    return `<a class="${compare === activeHref ? 'active' : ''}" href="${href}"${linkAttrs}><i>${icon}</i><b>${label}</b></a>`;
+  }).join('')}`;
+  }).join('');
 }
 
 function footer() {

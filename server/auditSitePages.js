@@ -75,6 +75,10 @@ for (const file of files) {
     failures.push(`${relative}: runtime legado carregado junto com a experiência nova`);
   }
 
+  if (isExperiencePage && (!html.includes('data-admin-only hidden') || !html.includes('data-admin-section hidden'))) {
+    failures.push(`${relative}: navegação administrativa não está oculta por padrão`);
+  }
+
   if (relative === 'public/pages/chaveamento.html') {
     if (!/<body\b[^>]*data-page=["']chaveamento["']/i.test(html)) {
       failures.push(`${relative}: marcador data-page="chaveamento" ausente; o layout visual não será ativado`);
