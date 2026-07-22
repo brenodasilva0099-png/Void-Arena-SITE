@@ -29,6 +29,7 @@ const { registerCafeRankingRoutes } = require('../server/routes/cafeRanking.rout
 const { registerRouteAuditRoutes } = require('../server/routes/routeAudit.routes');
 const { registerLeagueStableRoutes } = require('../server/routes/leagueStable.routes');
 const { registerNexusCupRulesPublicationRoutes } = require('../server/routes/nexusCupRulesPublication.routes');
+const { registerTeamRegistrationGuidancePublicationRoutes } = require('../server/routes/teamRegistrationGuidancePublication.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -58,6 +59,7 @@ registerCafeRankingRoutes(app);
 registerRouteAuditRoutes(app);
 registerLeagueStableRoutes(app);
 registerNexusCupRulesPublicationRoutes(app);
+registerTeamRegistrationGuidancePublicationRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
