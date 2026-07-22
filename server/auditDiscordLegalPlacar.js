@@ -54,10 +54,19 @@ requireMarkers('public/pages/placar.html', [
   'id="placarSearch"',
   'id="placarSort"',
   'id="placarRoleFilter"',
+  'aria-label="Ranking 3x3 rolável"',
+  'aria-label="Ranking 5x5 rolável"',
   'id="placar3v3Table"',
   'id="placar5v5Table"',
   '/js/pages/placar.js',
   'Placar Café com Leite</b>'
+]);
+
+requireMarkers('public/css/discord-legal-placar.css', [
+  '.hnl-placar-console .hnl-table-wrap',
+  'max-height:clamp(430px,65vh,720px)',
+  'overscroll-behavior:contain',
+  '.hnl-placar-login[hidden]{display:none!important}'
 ]);
 
 requireMarkers('public/pages/atualizacoes.html', [
