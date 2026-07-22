@@ -10,8 +10,29 @@
   let running = false;
   let refreshQueued = false;
 
+  const ROLE_GROUPS = [
+    { id: 'keeper', aliases: ['goleiro', 'gol', 'gk'] },
+    { id: 'defender', aliases: ['fixo', 'defensor', 'zagueiro', 'beque', 'def'] },
+    { id: 'wing', aliases: ['ala defensivo', 'ala ofensivo', 'ala direito', 'ala esquerdo', 'lateral', 'ala'] },
+    { id: 'midfielder', aliases: ['meio campo', 'meio', 'meia', 'armador', 'mei'] },
+    { id: 'attacker', aliases: ['centroavante', 'pivo', 'atacante', 'ata'] }
+  ];
+
+  const ACTION_HELP = {
+    pass: 'Passe move a bola entre dois aliados. Se você deixar alguém em branco, a prancheta escolhe uma opção válida e avisa o ajuste.',
+    run: 'Deslocamento move um jogador sem alterar a posse da bola.',
+    shot: 'Finalização leva a bola até uma das nove zonas do gol e compara o lado escolhido para o goleiro.',
+    keeper: 'Defesa move o goleiro adversário. Se não houver um GOL, o adversário mais próximo do próprio gol será usado.'
+  };
+
   function normalize(value = '') {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
+  }
+
+  function roleGroup(value = '') {
+    const key = normalize(value);
+    if (!key) return '';
+    return ROLE_GROUPS.find((group) => group.aliases.some((alias) => key === alias || key.includes(alias)))?.id || '';
   }
 
   function tokenNodes() {
@@ -44,20 +65,50 @@
     return tokens().find((item) => item.team === 'ball') || null;
   }
 
-  function findPlayer(reference = '', preferredTeam = '') {
+  function findPlayer(reference = '', preferredTeam = '', excluded = []) {
     const key = normalize(reference);
-    const list = players();
+    const blocked = new Set((Array.isArray(excluded) ? excluded : [excluded]).map((item) => normalize(item?.id || item?.name || item)).filter(Boolean));
+    const list = players().filter((item) => (!preferredTeam || item.team === preferredTeam) && !blocked.has(normalize(item.id)) && !blocked.has(normalize(item.name)));
     if (!key) return preferredTeam ? list.find((item) => item.team === preferredTeam) || null : list[0] || null;
-    return list.find((item) => normalize(item.name) === key && (!preferredTeam || item.team === preferredTeam))
-      || list.find((item) => normalize(item.name).includes(key) && (!preferredTeam || item.team === preferredTeam))
-      || list.find((item) => normalize(item.role) === key && (!preferredTeam || item.team === preferredTeam))
-      || list.find((item) => normalize(item.role).includes(key) && (!preferredTeam || item.team === preferredTeam))
+    const group = roleGroup(key);
+    return list.find((item) => normalize(item.name) === key)
+      || list.find((item) => normalize(item.name).includes(key) || key.includes(normalize(item.name)))
+      || list.find((item) => normalize(item.role) === key)
+      || list.find((item) => normalize(item.role).includes(key) || key.includes(normalize(item.role)))
+      || (group ? list.find((item) => roleGroup(`${item.name} ${item.role}`) === group) : null)
       || null;
   }
 
   function goalkeeper(team = 'enemy') {
     const list = players(team);
-    return list.find((item) => /gol|gk|goleiro/i.test(`${item.name} ${item.role}`)) || list[0] || null;
+    const explicit = list.find((item) => roleGroup(`${item.name} ${item.role}`) === 'keeper');
+    if (explicit) return explicit;
+    return list.sort((a, b) => team === 'enemy'
+      ? positionOf(b.node).x - positionOf(a.node).x
+      : positionOf(a.node).x - positionOf(b.node).x)[0] || null;
+  }
+
+  function sortedAllies() {
+    return players('ally').sort((a, b) => positionOf(a.node).x - positionOf(b.node).x || positionOf(a.node).y - positionOf(b.node).y);
+  }
+
+  function passReceiver(from, reference = '') {
+    const exact = findPlayer(reference, 'ally', from ? [from] : []);
+    if (exact) return exact;
+    const origin = from ? positionOf(from.node) : { x: 0, y: 50 };
+    return players('ally')
+      .filter((item) => !from || item.id !== from.id)
+      .sort((a, b) => {
+        const aPos = positionOf(a.node);
+        const bPos = positionOf(b.node);
+        const aScore = (aPos.x >= origin.x ? 0 : 80) + Math.abs(aPos.x - origin.x) + Math.abs(aPos.y - origin.y) * 0.35;
+        const bScore = (bPos.x >= origin.x ? 0 : 80) + Math.abs(bPos.x - origin.x) + Math.abs(bPos.y - origin.y) * 0.35;
+        return aScore - bScore;
+      })[0] || null;
+  }
+
+  function bestShooter(reference = '') {
+    return findPlayer(reference, 'ally') || players('ally').sort((a, b) => positionOf(b.node).x - positionOf(a.node).x)[0] || null;
   }
 
   function positionOf(node) {
@@ -158,55 +209,138 @@
       const allowed = String(field.dataset.actionField || '').split(' ');
       field.hidden = !allowed.includes(type);
     });
+    const help = $('#actionHelpText');
+    if (help) help.textContent = ACTION_HELP[type] || '';
+  }
+
+  function repairStep(rawStep = {}, index = 0) {
+    const type = ['pass', 'run', 'shot', 'keeper'].includes(rawStep.type) ? rawStep.type : 'run';
+    const notes = [];
+    const label = `Ação ${index + 1}`;
+
+    if (type === 'pass') {
+      const from = findPlayer(rawStep.from, 'ally') || sortedAllies()[0] || null;
+      if (!from) return { error: `${label}: adicione pelo menos um jogador aliado.` };
+      const to = passReceiver(from, rawStep.to);
+      if (!to) return { error: `${label}: um passe precisa de dois aliados diferentes no campo.` };
+      if (!rawStep.from || normalize(rawStep.from) !== normalize(from.name)) notes.push(`${label}: passador ajustado para ${from.name}`);
+      if (!rawStep.to || normalize(rawStep.to) !== normalize(to.name)) notes.push(`${label}: receptor ajustado para ${to.name}`);
+      return { step: { type, from: from.name, to: to.name, height: rawStep.height === 'high' ? 'high' : 'ground' }, notes };
+    }
+
+    if (type === 'run') {
+      const from = findPlayer(rawStep.from, 'ally') || sortedAllies()[0] || null;
+      if (!from) return { error: `${label}: adicione um aliado para fazer o deslocamento.` };
+      if (!rawStep.from || normalize(rawStep.from) !== normalize(from.name)) notes.push(`${label}: jogador ajustado para ${from.name}`);
+      return { step: { type, from: from.name, zone: rawStep.zone || 'ataque' }, notes };
+    }
+
+    if (type === 'shot') {
+      const shooter = bestShooter(rawStep.from);
+      if (!shooter) return { error: `${label}: adicione um aliado para finalizar.` };
+      if (!rawStep.from || normalize(rawStep.from) !== normalize(shooter.name)) notes.push(`${label}: finalizador ajustado para ${shooter.name}`);
+      return { step: { type, from: shooter.name, target: rawStep.target || 'centro', keeperTarget: rawStep.keeperTarget || 'centro' }, notes };
+    }
+
+    const keeper = goalkeeper('enemy');
+    if (!keeper) return { error: `${label}: adicione pelo menos um adversário para representar o goleiro.` };
+    if (roleGroup(`${keeper.name} ${keeper.role}`) !== 'keeper') notes.push(`${label}: ${keeper.name} será usado como goleiro adversário`);
+    return { step: { type: 'keeper', target: rawStep.target || 'centro' }, notes };
+  }
+
+  function prepareSequence(rawSteps = []) {
+    const prepared = [];
+    const notes = [];
+    const errors = [];
+    rawSteps.forEach((rawStep, index) => {
+      const result = repairStep(rawStep, index);
+      if (result.step) prepared.push(result.step);
+      if (result.notes?.length) notes.push(...result.notes);
+      if (result.error) errors.push(result.error);
+    });
+    return { steps: prepared, notes, errors };
   }
 
   function addStructuredStep() {
     const type = $('#actionType')?.value || 'pass';
     const from = $('#actionFrom')?.value || '';
-    if (type !== 'keeper' && !from) { setStatus('Selecione o jogador da ação.', 'error'); return; }
+    let rawStep;
     if (type === 'pass') {
-      const to = $('#actionTo')?.value || '';
-      if (!to) { setStatus('Selecione o destino do passe.', 'error'); return; }
-      if (to === from) { setStatus('Passador e receptor precisam ser jogadores diferentes.', 'error'); return; }
-      steps.push({ type, from, to, height: $('#passHeight')?.value || 'ground' });
+      rawStep = { type, from, to: $('#actionTo')?.value || '', height: $('#passHeight')?.value || 'ground' };
     } else if (type === 'run') {
-      steps.push({ type, from, zone: $('#runZone')?.value || 'ataque' });
+      rawStep = { type, from, zone: $('#runZone')?.value || 'ataque' };
     } else if (type === 'shot') {
-      const shooter = $('#shotPlayer')?.value || from;
-      if (!shooter) { setStatus('Selecione o finalizador.', 'error'); return; }
-      steps.push({ type, from: shooter, target: $('#shotTarget')?.value || 'centro', keeperTarget: $('#keeperDirection')?.value || 'centro' });
+      rawStep = { type, from: $('#shotPlayer')?.value || from, target: $('#shotTarget')?.value || 'centro', keeperTarget: $('#keeperDirection')?.value || 'centro' };
     } else {
-      if (!goalkeeper('enemy')) { setStatus('Adicione um goleiro ou adversário antes da defesa.', 'error'); return; }
-      steps.push({ type: 'keeper', target: $('#keeperDirection')?.value || 'centro' });
+      rawStep = { type: 'keeper', target: $('#keeperDirection')?.value || 'centro' };
     }
+    const prepared = prepareSequence([rawStep]);
+    if (!prepared.steps.length) { setStatus(prepared.errors[0] || 'Não foi possível montar essa ação.', 'error'); return; }
+    steps.push(...prepared.steps);
     save();
     renderSteps();
-    setStatus('Ação adicionada à linha do tempo.', 'success');
+    setStatus(prepared.notes.length ? `Ação adicionada. ${prepared.notes.join('; ')}.` : 'Ação adicionada à linha do tempo.', 'success');
+  }
+
+  function referencesInText(text = '', preferredTeam = 'ally') {
+    const plain = normalize(text);
+    const found = [];
+    players(preferredTeam).forEach((item) => {
+      const key = normalize(item.name);
+      const index = key ? plain.indexOf(key) : -1;
+      if (index >= 0) found.push({ index, value: item.name });
+    });
+    const rolePattern = /\b(goleiro|gol|gk|fixo|defensor|zagueiro|beque|ala(?:\s+(?:direito|esquerdo|defensivo|ofensivo))?|lateral|meio(?:\s+campo)?|meia|armador|piv[oô]|atacante|centroavante)\b/giu;
+    for (const match of String(text || '').matchAll(rolePattern)) found.push({ index: match.index || 0, value: match[0] });
+    const seen = new Set();
+    return found.sort((a, b) => a.index - b.index).map((item) => item.value).filter((value) => {
+      const key = normalize(value);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function splitScript(text = '') {
+    return String(text || '')
+      .replace(/\s+e\s+(?=(?:(?:o|a)\s+)?(?:(?:goleiro|fixo|defensor|zagueiro|beque|ala|lateral|meio|meia|armador|piv[oô]|atacante|centroavante)\s+)?(?:faz(?:\s+um)?\s+passe|passa|toca|lan[cç]a|sai|avan[cç]a|corre|se\s+desloca|desloca|vai|chuta|finaliza|defende|mergulha|pula)\b)/giu, '. ')
+      .split(/\n|\.|;|,|\bdepois\b|\bem seguida\b|\bent[aã]o\b/gi)
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
 
   function parseScript(text = '') {
-    const statements = String(text || '').split(/\n|\.|;|\bdepois\b|\bem seguida\b|\bent[aã]o\b/gi).map((item) => item.trim()).filter(Boolean);
+    const statements = splitScript(text);
     const parsed = [];
-    const names = players().map((item) => item.name).sort((a, b) => b.length - a.length);
+    let ignored = 0;
+    let activeActor = '';
     for (const sentence of statements) {
       const plain = normalize(sentence);
-      const mentioned = names.filter((name) => plain.includes(normalize(name)));
-      const role = sentence.match(/\b(goleiro|fixo|ala(?: defensivo| ofensivo)?|meio|piv[oô]|atacante|defensor)\b/i)?.[1] || '';
-      const actor = mentioned[0] || role;
+      const actionIndex = plain.search(/faz(?:\s+um)?\s+passe|passa|toca|lanca|sai|avanca|corre|desloca|vai|chuta|finaliza|defende|mergulha|pula/);
+      const beforeAction = actionIndex > 0 ? sentence.slice(0, actionIndex) : '';
+      const sentenceRefs = referencesInText(sentence, 'ally');
+      const actor = referencesInText(beforeAction, 'ally')[0] || sentenceRefs[0] || activeActor;
       if (/passe|passa|toca|lanca/.test(plain)) {
-        const to = mentioned[1] || sentence.match(/(?:para|pro|pra)\s+(?:o\s+|a\s+)?([\p{L}\d _-]{2,28})/iu)?.[1]?.trim() || '';
-        if (actor && to) parsed.push({ type: 'pass', from: actor, to, height: /alto|aereo|por cima/.test(plain) ? 'high' : 'ground' });
+        const targetText = sentence.match(/(?:para|pro|pra|ao)\s+(?:o\s+|a\s+)?(.+)$/iu)?.[1] || '';
+        const targetRefs = referencesInText(targetText, 'ally');
+        const to = targetRefs[0] || sentenceRefs.find((reference) => normalize(reference) !== normalize(actor)) || '';
+        parsed.push({ type: 'pass', from: actor, to, height: /alto|aereo|por cima/.test(plain) ? 'high' : 'ground' });
+        activeActor = to || actor;
       } else if (/chuta|chute|finaliza/.test(plain)) {
         const vertical = /alto/.test(plain) ? 'alto' : /baixo/.test(plain) ? 'baixo' : 'meio';
         const side = /esquer/.test(plain) ? 'esquerdo' : /direit/.test(plain) ? 'direito' : 'centro';
-        if (actor) parsed.push({ type: 'shot', from: actor, target: `${vertical} ${side}`.replace('meio centro', 'centro') });
+        parsed.push({ type: 'shot', from: actor, target: `${vertical} ${side}`.replace('meio centro', 'centro') });
+        activeActor = actor;
       } else if (/defende|mergulha|pula/.test(plain)) {
         parsed.push({ type: 'keeper', target: /esquer/.test(plain) ? 'meio esquerdo' : /direit/.test(plain) ? 'meio direito' : 'centro' });
-      } else if (/sai|avanca|corre|move|desloca|vai/.test(plain) && actor) {
+      } else if (/sai|avanca|corre|move|desloca|vai/.test(plain)) {
         parsed.push({ type: 'run', from: actor, zone: /direit/.test(plain) ? 'direita' : /esquer/.test(plain) ? 'esquerda' : /meio|centro/.test(plain) ? 'centro' : 'ataque' });
+        activeActor = actor;
+      } else {
+        ignored += 1;
       }
     }
-    return parsed;
+    return { steps: parsed, ignored };
   }
 
   function zoneCoordinates(zone = '', current = { x: 50, y: 50 }) {
@@ -222,19 +356,79 @@
     return { x: 97, y: /alto|esquer/.test(key) ? 40 : /baixo|direit/.test(key) ? 60 : 50 };
   }
 
+  function ensureBallOnField() {
+    let current = ball();
+    if (current) return current;
+    $('#addBall')?.click();
+    current = ball();
+    return current;
+  }
+
+  function playbackHud() {
+    const board = $('#tacticBoard');
+    if (!board) return null;
+    let hud = $('#tacticalPlaybackHud', board);
+    if (!hud) {
+      hud = document.createElement('div');
+      hud.className = 'hnl-playback-hud';
+      hud.id = 'tacticalPlaybackHud';
+      hud.setAttribute('role', 'status');
+      hud.setAttribute('aria-live', 'assertive');
+      hud.hidden = true;
+      board.appendChild(hud);
+    }
+    return hud;
+  }
+
+  function updatePlaybackHud(message, type = '') {
+    const hud = playbackHud();
+    if (!hud) return;
+    hud.hidden = false;
+    hud.className = `hnl-playback-hud${type ? ` ${type}` : ''}`;
+    hud.textContent = message;
+  }
+
+  async function focusBoardForPlayback() {
+    const board = $('#tacticBoard');
+    if (!board) return;
+    const reduced = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+    board.classList.add('is-playback-focus');
+    const shouldFocus = $('#focusBoardBeforeSimulation')?.checked !== false;
+    if (shouldFocus) {
+      board.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
+      await sleep(reduced ? 80 : 620);
+      for (const number of reduced ? [1] : [3, 2, 1]) {
+        updatePlaybackHud(`A jogada começa em ${number}`);
+        await sleep(reduced ? 120 : 480);
+      }
+    }
+    updatePlaybackHud('▶ Jogada em andamento');
+  }
+
+  function finishPlayback(message, type = 'success') {
+    const board = $('#tacticBoard');
+    updatePlaybackHud(message, type);
+    window.setTimeout(() => {
+      const hud = $('#tacticalPlaybackHud');
+      if (hud) hud.hidden = true;
+      board?.classList.remove('is-playback-focus');
+    }, 1800);
+  }
+
   async function executeStep(step) {
     if (step.type === 'run') {
-      const actor = findPlayer(step.from, 'ally');
-      if (!actor) throw new Error(`Jogador não encontrado: ${step.from}`);
+      const actor = findPlayer(step.from, 'ally') || sortedAllies()[0] || null;
+      if (!actor) throw new Error('Adicione um jogador aliado antes de executar o deslocamento.');
       const target = zoneCoordinates(step.zone, positionOf(actor.node));
       await moveNode(actor.node, target.x, target.y, 700);
       return;
     }
     if (step.type === 'pass') {
-      const from = findPlayer(step.from, 'ally');
-      const to = findPlayer(step.to, 'ally');
-      const ballToken = ball();
-      if (!from || !to || !ballToken) throw new Error('O passe exige passador, receptor e bola no campo.');
+      const from = findPlayer(step.from, 'ally') || sortedAllies()[0] || null;
+      const to = passReceiver(from, step.to);
+      const ballToken = ensureBallOnField();
+      if (!from || !to) throw new Error('Adicione dois aliados diferentes para executar o passe.');
+      if (!ballToken) throw new Error('Não foi possível posicionar a bola no campo.');
       const start = positionOf(from.node);
       const end = positionOf(to.node);
       await moveNode(ballToken.node, start.x, start.y, 180);
@@ -245,15 +439,16 @@
     }
     if (step.type === 'keeper') {
       const keeper = goalkeeper('enemy');
-      if (!keeper) throw new Error('Goleiro adversário não encontrado.');
+      if (!keeper) throw new Error('Adicione um adversário para representar o goleiro.');
       const target = targetCoordinates(step.target);
       await moveNode(keeper.node, 92, target.y, 520);
       return;
     }
     if (step.type === 'shot') {
-      const shooter = findPlayer(step.from, 'ally');
-      const ballToken = ball();
-      if (!shooter || !ballToken) throw new Error('A finalização exige jogador e bola no campo.');
+      const shooter = bestShooter(step.from);
+      const ballToken = ensureBallOnField();
+      if (!shooter) throw new Error('Adicione um aliado para executar a finalização.');
+      if (!ballToken) throw new Error('Não foi possível posicionar a bola no campo.');
       const start = positionOf(shooter.node);
       const target = targetCoordinates(step.target);
       await moveNode(ballToken.node, start.x, start.y, 180);
@@ -271,22 +466,38 @@
   async function execute() {
     if (running) return;
     if (!steps.length) { setStatus('Adicione pelo menos uma ação antes de executar.', 'error'); return; }
+    const prepared = prepareSequence(steps);
+    if (prepared.errors.length) {
+      setStatus(`Revise a formação antes de executar: ${prepared.errors.join(' ')}`, 'error');
+      return;
+    }
+    steps = prepared.steps;
+    save();
+    renderSteps();
+    ensureBallOnField();
     running = true;
     const button = $('#executeTacticalSequence');
-    if (button) button.disabled = true;
+    const originalButtonText = button?.textContent || '▶ Executar roteiro';
+    if (button) { button.disabled = true; button.textContent = 'Preparando o campo…'; }
     const original = new Map(tokenNodes().map((node) => [node.dataset.id, positionOf(node)]));
     if ($('#simulationResult')) $('#simulationResult').textContent = 'EM JOGO';
-    setStatus('Executando a sequência tática...');
+    const progress = $('#tacticalTimeline span');
+    if (progress) progress.style.width = '0%';
+    setStatus(prepared.notes.length ? `Formação revisada: ${prepared.notes.join('; ')}.` : 'Preparando a sequência tática...');
+    let completed = false;
     try {
+      await focusBoardForPlayback();
+      if (button) button.textContent = 'Jogada em andamento…';
       for (let index = 0; index < steps.length; index += 1) {
-        const progress = $('#tacticalTimeline span');
         if (progress) progress.style.width = `${Math.round(((index + 1) / steps.length) * 100)}%`;
         await executeStep(steps[index]);
         await sleep(220);
       }
+      completed = true;
       setStatus('Sequência executada com sucesso.', 'success');
     } catch (error) {
       setStatus(error.message || 'Não foi possível executar a jogada.', 'error');
+      finishPlayback(error.message || 'Falha na jogada', 'error');
     } finally {
       if ($('#restoreAfterSimulation')?.checked) {
         await sleep(350);
@@ -296,7 +507,8 @@
         }));
       }
       running = false;
-      if (button) button.disabled = false;
+      if (completed) finishPlayback('Jogada concluída', 'success');
+      if (button) { button.disabled = false; button.textContent = originalButtonText; }
     }
   }
 
@@ -320,11 +532,80 @@
     const layout = $('.hnl-board-layout');
     const board = $('#tacticBoard');
     if (!layout || !board || $('#advancedTacticalLab')) return;
+    board.setAttribute('tabindex', '-1');
     injectFieldDetails(board);
+    playbackHud();
+    const controlTitle = $('.hnl-board-panel .hnl-card h2');
+    if (controlTitle) controlTitle.textContent = '1. Monte a formação';
+    const automaticButton = $('#simulateAttack');
+    if (automaticButton) automaticButton.textContent = '▶ Simular plano automático';
+    const saveFormationButton = $('#saveTactic');
+    if (saveFormationButton) saveFormationButton.textContent = 'Salvar posições do campo';
+    const resetButton = $('#resetTactic');
+    if (resetButton) resetButton.textContent = 'Limpar prancheta';
     const section = document.createElement('section');
     section.className = 'hnl-tactical-lab';
     section.id = 'advancedTacticalLab';
-    section.innerHTML = `<div class="hnl-tactical-lab-grid"><article class="hnl-card"><span class="hnl-section-kicker">Sequência manual</span><h2>Construtor de jogada</h2><p>Escolha jogadores reais da formação e monte a jogada passo a passo.</p><div class="hnl-tactical-builder"><label>Tipo de ação<select class="hnl-select" id="actionType"><option value="pass">Passe</option><option value="run">Deslocamento</option><option value="shot">Finalização</option><option value="keeper">Defesa do goleiro</option></select></label><label data-action-field="pass run">Jogador da ação<select class="hnl-select" id="actionFrom"></select></label><label data-action-field="pass">Destino do passe<select class="hnl-select" id="actionTo"></select></label><label data-action-field="pass">Tipo do passe<select class="hnl-select" id="passHeight"><option value="ground">Rasteiro</option><option value="high">Alto / aéreo</option></select></label><label data-action-field="run">Zona do deslocamento<select class="hnl-select" id="runZone"><option value="centro">Meio / centro</option><option value="direita">Ala direita</option><option value="esquerda">Ala esquerda</option><option value="ataque">Avançar ao ataque</option></select></label><label data-action-field="shot">Finalizador<select class="hnl-select" id="shotPlayer"></select></label><label data-action-field="shot">Alvo do chute<select class="hnl-select" id="shotTarget"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select></label><label data-action-field="shot keeper">Lado do goleiro<select class="hnl-select" id="keeperDirection"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select><small id="keeperPlayerInfo"></small></label><div class="hnl-actions full"><button class="hnl-btn primary" id="addTacticalStep" type="button">Adicionar ação</button><button class="hnl-btn" id="refreshTacticalPlayers" type="button">Atualizar jogadores</button></div></div></article><article class="hnl-card"><span class="hnl-section-kicker">Roteiro em português</span><h2>Descreva a jogada</h2><p>Use o nome ou a posição: deslocamento, passe, passe alto, chute e defesa do goleiro.</p><textarea class="hnl-textarea hnl-tactical-script" id="tacticalScript" placeholder="Goleiro passa para o defensor. Defensor avança pelo meio. Atacante finaliza no baixo direito."></textarea><div class="hnl-tactical-presets"><button class="hnl-btn" type="button" data-script-preset="Goleiro sai pelo meio. Goleiro passa para o Fixo. Fixo passa alto para o Atacante. Atacante finaliza no alto direito.">Saída com goleiro</button><button class="hnl-btn" type="button" data-script-preset="Ala se desloca pela direita. Fixo passa para o Ala. Ala passa para o Atacante. Atacante finaliza no baixo esquerdo.">Triangulação pela ala</button><button class="hnl-btn" type="button" data-script-preset="Meio avança pelo centro. Goleiro passa para o Meio. Meio passa alto para o Atacante. Atacante finaliza no centro.">Passe alto no pivô</button></div><div class="hnl-actions" style="margin-top:12px"><button class="hnl-btn primary" id="parseTacticalScript" type="button">Interpretar e adicionar</button><button class="hnl-btn danger" id="clearTacticalSequence" type="button">Limpar sequência</button></div></article></div><article class="hnl-card"><div class="hnl-console-head"><div><span class="hnl-section-kicker">Simulação</span><h2>Linha do tempo da jogada</h2><p>Reordene, execute a animação e decida se o campo volta à posição inicial.</p></div><div class="hnl-actions"><label class="hnl-check"><input id="restoreAfterSimulation" type="checkbox" checked><span>Restaurar posições</span></label><button class="hnl-btn accent" id="executeTacticalSequence" type="button">▶ Executar jogada</button><button class="hnl-btn primary" id="saveTacticalSequence" type="button">Salvar roteiro</button></div></div><div class="hnl-tactical-timeline" id="tacticalTimeline"><span></span></div><div class="hnl-simulation-score" style="margin:12px 0"><div><strong id="simulationResult">PRONTO</strong><span>Resultado</span></div><div><strong id="simulationStepCount">0</strong><span>Ações</span></div><div><strong>9</strong><span>Zonas de finalização</span></div><div><strong>5v5</strong><span>Formato da prancheta</span></div></div><div id="advancedTacticStatus"></div><div class="hnl-tactical-sequence" id="tacticalSequence"></div></article>`;
+    section.innerHTML = `
+      <article class="hnl-card hnl-tactical-guide">
+        <div class="hnl-tactical-guide-head">
+          <div><span class="hnl-section-kicker">Guia rápido</span><h2>Como montar e assistir a uma jogada</h2><p>Use o plano automático para um teste rápido ou crie um roteiro personalizado. A prancheta corrige referências incompletas antes de executar.</p></div>
+          <span class="hnl-guide-time">Leitura: 1 min</span>
+        </div>
+        <ol class="hnl-tutorial-steps">
+          <li><b>1</b><span><strong>Monte o time</strong><small>Escolha os jogadores e arraste os avatares para as posições desejadas.</small></span></li>
+          <li><b>2</b><span><strong>Crie as ações</strong><small>Monte manualmente ou descreva passes, movimentos e chutes em português.</small></span></li>
+          <li><b>3</b><span><strong>Revise o roteiro</strong><small>Reordene ou remova ações. Campos ausentes recebem uma opção válida automaticamente.</small></span></li>
+          <li><b>4</b><span><strong>Assista no campo</strong><small>Ao executar, a página sobe até o campo e faz uma contagem antes da animação.</small></span></li>
+        </ol>
+        <details class="hnl-tactical-help">
+          <summary>O que cada função faz</summary>
+          <div class="hnl-help-grid">
+            <p><strong>Plano automático</strong><span>Usa a formação atual e o corredor escolhido para criar um ataque rápido.</span></p>
+            <p><strong>Salvar posições</strong><span>Guarda jogadores e posições atuais da prancheta neste navegador.</span></p>
+            <p><strong>Salvar roteiro</strong><span>Guarda a sequência personalizada de ações neste navegador.</span></p>
+            <p><strong>Restaurar posições</strong><span>Depois da execução, devolve os jogadores aos lugares onde começaram.</span></p>
+          </div>
+        </details>
+      </article>
+      <div class="hnl-tactical-lab-grid">
+        <article class="hnl-card">
+          <span class="hnl-section-kicker">2A · Sequência manual</span>
+          <h2>Criar uma ação</h2>
+          <p>Escolha o tipo de ação. Jogador ou receptor em branco será preenchido de forma segura com alguém da formação.</p>
+          <div class="hnl-tactical-builder">
+            <label>Tipo de ação<select class="hnl-select" id="actionType"><option value="pass">Passe</option><option value="run">Deslocamento</option><option value="shot">Finalização</option><option value="keeper">Defesa do goleiro</option></select></label>
+            <p class="hnl-inline-help full" id="actionHelpText"></p>
+            <label data-action-field="pass run">Jogador da ação<select class="hnl-select" id="actionFrom"></select></label>
+            <label data-action-field="pass">Receptor do passe<select class="hnl-select" id="actionTo"></select></label>
+            <label data-action-field="pass">Tipo do passe<select class="hnl-select" id="passHeight"><option value="ground">Rasteiro</option><option value="high">Alto / aéreo</option></select></label>
+            <label data-action-field="run">Zona do deslocamento<select class="hnl-select" id="runZone"><option value="centro">Meio / centro</option><option value="direita">Ala direita</option><option value="esquerda">Ala esquerda</option><option value="ataque">Avançar ao ataque</option></select></label>
+            <label data-action-field="shot">Finalizador<select class="hnl-select" id="shotPlayer"></select></label>
+            <label data-action-field="shot">Alvo do chute<select class="hnl-select" id="shotTarget"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select></label>
+            <label data-action-field="shot keeper">Lado do goleiro<select class="hnl-select" id="keeperDirection"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select><small id="keeperPlayerInfo"></small></label>
+            <div class="hnl-actions full"><button class="hnl-btn primary" id="addTacticalStep" type="button">+ Adicionar ao roteiro</button><button class="hnl-btn" id="refreshTacticalPlayers" type="button">Atualizar jogadores</button></div>
+          </div>
+        </article>
+        <article class="hnl-card">
+          <span class="hnl-section-kicker">2B · Roteiro em português</span>
+          <h2>Descrever a jogada</h2>
+          <p>Use nomes ou posições. Você pode omitir o receptor ou o goleiro: o sistema encontra uma opção válida e mostra o que ajustou.</p>
+          <textarea class="hnl-textarea hnl-tactical-script" id="tacticalScript" placeholder="Goleiro sai pelo meio e passa para o defensor. Depois o atacante finaliza no baixo direito."></textarea>
+          <div class="hnl-tactical-presets"><button class="hnl-btn" type="button" data-script-preset="Goleiro sai pelo meio. Goleiro passa para o Fixo. Fixo passa alto para o Atacante. Atacante finaliza no alto direito.">Saída com goleiro</button><button class="hnl-btn" type="button" data-script-preset="Ala se desloca pela direita. Fixo passa para o Ala. Ala passa para o Atacante. Atacante finaliza no baixo esquerdo.">Triangulação pela ala</button><button class="hnl-btn" type="button" data-script-preset="Meio avança pelo centro. Goleiro passa para o Meio. Meio passa alto para o Atacante. Atacante finaliza no centro.">Passe alto no pivô</button></div>
+          <div class="hnl-interpretation-feedback" id="tacticalInterpretationFeedback" aria-live="polite"></div>
+          <div class="hnl-actions hnl-script-actions"><button class="hnl-btn primary" id="parseTacticalScript" type="button">Interpretar e adicionar</button><button class="hnl-btn danger" id="clearTacticalSequence" type="button">Limpar roteiro</button></div>
+        </article>
+      </div>
+      <article class="hnl-card hnl-tactical-console">
+        <div class="hnl-console-head">
+          <div><span class="hnl-section-kicker">3 · Revisão e simulação</span><h2>Linha do tempo da jogada</h2><p>Confira a ordem abaixo. Antes de animar, o sistema valida jogadores, receptor, bola e goleiro.</p></div>
+          <div class="hnl-actions hnl-execution-actions"><label class="hnl-check"><input id="focusBoardBeforeSimulation" type="checkbox" checked><span>Levar até o campo</span></label><label class="hnl-check"><input id="restoreAfterSimulation" type="checkbox" checked><span>Restaurar posições</span></label><button class="hnl-btn accent" id="executeTacticalSequence" type="button">▶ Executar roteiro</button><button class="hnl-btn primary" id="saveTacticalSequence" type="button">Salvar roteiro</button></div>
+        </div>
+        <div class="hnl-tactical-timeline" id="tacticalTimeline"><span></span></div>
+        <div class="hnl-simulation-score"><div><strong id="simulationResult">PRONTO</strong><span>Resultado</span></div><div><strong id="simulationStepCount">0</strong><span>Ações</span></div><div><strong>9</strong><span>Zonas de finalização</span></div><div><strong>5v5</strong><span>Formato da prancheta</span></div></div>
+        <div id="advancedTacticStatus"></div>
+        <div class="hnl-tactical-sequence" id="tacticalSequence"></div>
+      </article>`;
     layout.insertAdjacentElement('afterend', section);
 
     refreshSelectors();
@@ -334,19 +615,49 @@
     $('#addTacticalStep')?.addEventListener('click', addStructuredStep);
     $('#refreshTacticalPlayers')?.addEventListener('click', () => { refreshSelectors(); setStatus('Lista de jogadores atualizada.', 'success'); });
     $('#parseTacticalScript')?.addEventListener('click', () => {
-      const parsed = parseScript($('#tacticalScript')?.value || '');
-      if (!parsed.length) { setStatus('Não identifiquei ações. Use frases curtas com jogador, passe, movimento ou chute.', 'error'); return; }
-      steps.push(...parsed);
+      const text = $('#tacticalScript')?.value || '';
+      const interpretation = parseScript(text);
+      const prepared = prepareSequence(interpretation.steps);
+      const feedback = $('#tacticalInterpretationFeedback');
+      if (!prepared.steps.length || prepared.errors.length) {
+        const message = prepared.errors.join(' ') || 'Não identifiquei ações. Use frases curtas com jogador, passe, movimento ou chute.';
+        if (feedback) feedback.innerHTML = `<div class="hnl-notice error"><strong>Não adicionei o roteiro.</strong><span>${esc(message)}</span></div>`;
+        setStatus(message, 'error');
+        return;
+      }
+      steps.push(...prepared.steps);
       save();
       renderSteps();
-      setStatus(`${parsed.length} ação(ões) interpretada(s).`, 'success');
+      const notes = prepared.notes.length ? `<small>Ajustes automáticos: ${esc(prepared.notes.join('; '))}.</small>` : '<small>Nomes e posições foram encontrados na formação atual.</small>';
+      const ignored = interpretation.ignored ? `<small>${interpretation.ignored} trecho(s) sem ação foram ignorados.</small>` : '';
+      if (feedback) feedback.innerHTML = `<div class="hnl-notice success"><strong>${prepared.steps.length} ação(ões) reconhecida(s).</strong>${notes}${ignored}</div>`;
+      setStatus(`${prepared.steps.length} ação(ões) interpretada(s) e adicionada(s).`, 'success');
     });
-    $('#clearTacticalSequence')?.addEventListener('click', () => { steps = []; save(); renderSteps(); if ($('#simulationResult')) $('#simulationResult').textContent = 'PRONTO'; });
+    $('#clearTacticalSequence')?.addEventListener('click', () => {
+      steps = [];
+      save();
+      renderSteps();
+      if ($('#simulationResult')) $('#simulationResult').textContent = 'PRONTO';
+      if ($('#tacticalInterpretationFeedback')) $('#tacticalInterpretationFeedback').innerHTML = '';
+      setStatus('Roteiro limpo. A formação no campo foi mantida.');
+    });
     $('#executeTacticalSequence')?.addEventListener('click', execute);
     $('#saveTacticalSequence')?.addEventListener('click', () => { save(); setStatus('Roteiro salvo neste navegador.', 'success'); });
-    $$('[data-script-preset]').forEach((button) => button.addEventListener('click', () => { if ($('#tacticalScript')) $('#tacticalScript').value = button.dataset.scriptPreset || ''; }));
+    $$('[data-script-preset]').forEach((button) => button.addEventListener('click', () => {
+      if ($('#tacticalScript')) $('#tacticalScript').value = button.dataset.scriptPreset || '';
+      if ($('#tacticalInterpretationFeedback')) $('#tacticalInterpretationFeedback').innerHTML = '<small>Exemplo carregado. Você pode editar o texto antes de interpretar.</small>';
+      $('#tacticalScript')?.focus();
+    }));
     new MutationObserver(scheduleRefresh).observe(board, { childList: true, subtree: true });
   }
+
+  window.HNLTacticalSimulator = Object.freeze({
+    interpret(text = '') {
+      const interpretation = parseScript(text);
+      const prepared = prepareSequence(interpretation.steps);
+      return { actions: prepared.steps, notes: prepared.notes, errors: prepared.errors, ignored: interpretation.ignored };
+    }
+  });
 
   async function boot() {
     if (!document.body?.dataset || (document.body.dataset.hnlModule !== 'tactics' && document.body.dataset.frmModule !== 'tactics')) return;
