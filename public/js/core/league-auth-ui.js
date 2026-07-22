@@ -1,24 +1,31 @@
 (function () {
   'use strict';
 
-  const BUILD = '2026-07-18-stable-auth-ui-v1';
-  const BUTTON_SELECTOR = '[data-frm-login],[data-discord-login],.frm-header-actions a[href*="/auth/discord"]';
+  const BUILD = '2026-07-21-discord-only-auth-v1';
+  const BUTTON_SELECTOR = [
+    '[data-frm-login]',
+    '[data-discord-login]',
+    '.frm-header-actions a[href*="/pages/login.html"]',
+    '.frm-header-actions a[href*="/auth/discord"]'
+  ].join(',');
 
-  function allButtons() {
-    const found = Array.from(document.querySelectorAll(BUTTON_SELECTOR));
-    document.querySelectorAll('.frm-header-actions a').forEach((link) => {
-      const text = String(link.textContent || '').toLowerCase();
-      if ((text.includes('entrar') || text.includes('painel')) && !found.includes(link)) found.push(link);
-    });
-    return found;
+  function safeNext(value = '') {
+    const next = String(value || '').trim();
+    return next.startsWith('/') && !next.startsWith('//') ? next : '/pages/perfil.html';
   }
 
   function currentReturnPath() {
-    const value = `${location.pathname || '/pages/dashboard.html'}${location.search || ''}${location.hash || ''}`;
-    return value.startsWith('/') && !value.startsWith('//') ? value : '/pages/perfil.html';
+    if (location.pathname === '/pages/login.html' || location.pathname === '/index.html' || location.pathname === '/') {
+      return safeNext(new URLSearchParams(location.search).get('next'));
+    }
+    return safeNext(`${location.pathname || '/pages/dashboard.html'}${location.search || ''}${location.hash || ''}`);
   }
 
-  function loginHref() {
+  function explainerHref() {
+    return `/pages/login.html?next=${encodeURIComponent(currentReturnPath())}`;
+  }
+
+  function oauthHref() {
     return `/auth/discord?next=${encodeURIComponent(currentReturnPath())}`;
   }
 
@@ -37,27 +44,35 @@
     }[char]));
   }
 
-  function preserveOriginal(button) {
-    if (!button.dataset.hnlAuthOriginalHtml) {
-      button.dataset.hnlAuthOriginalHtml = button.innerHTML || '♟ ENTRAR / PAINEL';
+  function allButtons() {
+    const found = Array.from(document.querySelectorAll(BUTTON_SELECTOR));
+    document.querySelectorAll('.frm-header-actions a').forEach((link) => {
+      const text = String(link.textContent || '').toLowerCase();
+      if (text.includes('entrar') && !found.includes(link)) found.push(link);
+    });
+    return found;
+  }
+
+  function preserveButtonClass(button) {
+    if (!button.dataset.hnlAuthOriginalClass) {
       button.dataset.hnlAuthOriginalClass = button.className || 'frm-btn';
     }
   }
 
   function renderLoggedOut(button) {
-    preserveOriginal(button);
+    preserveButtonClass(button);
     button.dataset.loggedIn = '0';
     button.dataset.hnlAuthState = 'logged-out';
-    button.href = loginHref();
-    button.title = 'Entrar com Discord';
+    button.href = explainerHref();
+    button.title = 'Entrar exclusivamente com Discord';
     button.setAttribute('aria-label', 'Entrar com Discord');
     button.className = button.dataset.hnlAuthOriginalClass || 'frm-btn';
     button.classList.remove('hnl-auth-avatar-button');
-    button.innerHTML = button.dataset.hnlAuthOriginalHtml || '♟ ENTRAR / PAINEL';
+    button.innerHTML = '<span aria-hidden="true">◉</span> Entrar com Discord';
   }
 
   function renderLoggedIn(button, user) {
-    preserveOriginal(button);
+    preserveButtonClass(button);
     const avatar = String(user.avatar || defaultDiscordAvatar(user.discordId));
     const name = String(user.profile?.username || user.name || user.discordTag || 'Abrir perfil');
 
@@ -68,6 +83,28 @@
     button.setAttribute('aria-label', `${name} — abrir perfil`);
     button.className = 'hnl-auth-avatar-button';
     button.innerHTML = `<img src="${escapeHtml(avatar)}" alt="Avatar de ${escapeHtml(name)}"><span class="hnl-auth-online-dot" aria-hidden="true"></span>`;
+  }
+
+  function setupDiscordCtas() {
+    document.querySelectorAll('[data-discord-oauth]').forEach((link) => {
+      link.href = oauthHref();
+      link.setAttribute('rel', 'nofollow');
+    });
+  }
+
+  function showAuthMessage() {
+    const status = document.querySelector('[data-discord-login-status]');
+    if (!status) return;
+    const code = new URLSearchParams(location.search).get('auth');
+    const messages = {
+      discord_only: 'Este site não usa mais Google, e-mail ou senha. Continue com sua conta do Discord.',
+      discord_not_configured: 'O login do Discord está temporariamente indisponível. A staff já pode verificar a configuração.',
+      discord_failed: 'Não foi possível concluir a autorização do Discord. Tente novamente.',
+      discord_state_error: 'A autorização expirou. Inicie o login novamente.'
+    };
+    if (!code || !messages[code]) return;
+    status.textContent = messages[code];
+    status.hidden = false;
   }
 
   async function readSession() {
@@ -85,6 +122,7 @@
   async function sync() {
     if (running) return;
     running = true;
+    setupDiscordCtas();
     try {
       const data = await readSession();
       const buttons = allButtons();
@@ -109,14 +147,15 @@
     if (!button || button.dataset.loggedIn === '1') return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    location.assign(loginHref());
+    location.assign(explainerHref());
   }, true);
 
   function start() {
+    setupDiscordCtas();
+    showAuthMessage();
     sync();
     setTimeout(sync, 350);
     setTimeout(sync, 1200);
-    setTimeout(sync, 3000);
     window.addEventListener('focus', sync);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
     window.setInterval(sync, 30000);
@@ -124,4 +163,4 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();
-})();
+}());
