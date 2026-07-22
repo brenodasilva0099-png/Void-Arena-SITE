@@ -282,7 +282,7 @@ function registerLeagueRoutes(app) {
       const team = teams.find((item) => String(item.id || '') === String(req.body?.teamId || ''));
       const target = users.find((user) => String(user.id || '') === String(req.body?.playerId || '') || String(user.discordId || '') === String(req.body?.playerId || ''));
       if (!team || !target) return res.status(404).json({ success: false, message: 'Clube ou jogador não encontrado.' });
-      if (!(await canManageTeam(viewer, team))) return res.status(403).json({ success: false, message: 'Apenas capitão ou diretor do clube pode convidar jogadores.' });
+      if (!(await isAdminRecord(viewer)) && !canManageTeam(viewer, team)) return res.status(403).json({ success: false, message: 'Apenas administrador, criador, capitão ou diretor do clube pode convidar jogadores.' });
       const payload = {
         type: 'recruitment_invite', status: 'pending', teamId: team.id || '', team: { id: team.id || '', name: teamName(team), tag: team.tag || '' },
         targetUserId: target.id || '', targetDiscordId: target.discordId || '', targetName: nameOf(target), targetAvatar: target.avatar || '',
@@ -343,7 +343,7 @@ function registerLeagueRoutes(app) {
       const toTeam = teams.find((team) => String(team.id || '') === String(req.body?.toTeamId || ''));
       const player = users.find((user) => String(user.id || '') === String(req.body?.playerId || '') || String(user.discordId || '') === String(req.body?.playerId || ''));
       if (!fromTeam || !toTeam || !player) return res.status(404).json({ success: false, message: 'Clube ou jogador não encontrado.' });
-      if (!(await canManageTeam(viewer, toTeam))) return res.status(403).json({ success: false, message: 'Apenas capitão ou diretor do clube de destino pode solicitar transferência.' });
+      if (!(await isAdminRecord(viewer)) && !canManageTeam(viewer, toTeam)) return res.status(403).json({ success: false, message: 'Apenas administrador, criador, capitão ou diretor do clube de destino pode solicitar transferência.' });
       const payload = { type: 'transfer_request', status: 'pending', fromTeam: { id: fromTeam.id, name: teamName(fromTeam) }, toTeam: { id: toTeam.id, name: teamName(toTeam) }, player: { id: player.id || '', name: nameOf(player), discordId: player.discordId || '', avatar: player.avatar || '' }, requestedBy: { id: viewer.id || '', name: nameOf(viewer) }, createdAt: new Date().toISOString(), note: clean(req.body?.note, 400) };
       const saved = await storage.saveChatMessage({ channelId: 'league-transfer-requests', source: 'system', authorId: viewer.id || '', authorName: nameOf(viewer), content: JSON.stringify(payload), attachments: [], createdAt: payload.createdAt });
       return res.json({ success: true, transfer: { id: saved.id, ...payload } });
