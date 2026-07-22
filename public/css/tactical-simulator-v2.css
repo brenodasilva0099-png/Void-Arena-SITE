@@ -11,6 +11,7 @@
 .hnl-penalty-arc{position:absolute;top:35%;width:12%;height:30%;border:2px solid rgba(244,255,249,.78);border-radius:50%;z-index:0;pointer-events:none}.hnl-penalty-arc.left{left:11.4%;clip-path:inset(0 0 0 48%)}.hnl-penalty-arc.right{right:11.4%;clip-path:inset(0 48% 0 0)}
 .hnl-corner-arc{position:absolute;width:34px;height:34px;border:2px solid rgba(244,255,249,.76);border-radius:50%;pointer-events:none}.hnl-corner-arc.tl{left:-18px;top:-18px}.hnl-corner-arc.bl{left:-18px;bottom:-18px}.hnl-corner-arc.tr{right:-18px;top:-18px}.hnl-corner-arc.br{right:-18px;bottom:-18px}
 .hnl-goal-target{position:absolute;right:-3.3%;top:34%;width:3.2%;height:32%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);z-index:3;pointer-events:none}.hnl-goal-target span{border:1px dashed rgba(255,255,255,.16)}.hnl-goal-target span.active{background:rgba(250,204,21,.52);box-shadow:0 0 20px rgba(250,204,21,.8)}
+.hnl-goal-target span.shot-active{background:rgba(251,113,133,.46);box-shadow:0 0 16px rgba(251,113,133,.72)}.hnl-goal-target span.keeper-active{outline:2px solid #67e8f9;outline-offset:-2px}.hnl-goal-target span.defended{background:rgba(74,222,128,.58);box-shadow:0 0 20px rgba(74,222,128,.78);outline-color:#dcfce7}
 .hnl-play-path{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}.hnl-play-path line,.hnl-play-path path{fill:none;stroke:#facc15;stroke-width:.7;stroke-dasharray:2 1;filter:drop-shadow(0 0 3px rgba(250,204,21,.9));vector-effect:non-scaling-stroke}.hnl-play-path .shot{stroke:#fb7185;stroke-width:1.05}.hnl-play-path .run{stroke:#67e8f9}.hnl-play-path marker path{fill:#facc15;stroke:none}
 .hnl-token.is-action-source{box-shadow:0 0 0 4px rgba(250,204,21,.62),0 0 28px rgba(250,204,21,.62)!important}.hnl-token.is-action-target{box-shadow:0 0 0 4px rgba(103,232,249,.62),0 0 28px rgba(103,232,249,.56)!important}.hnl-token.is-goalkeeper-dive{animation:hnl-keeper-pulse .55s ease-in-out infinite alternate}@keyframes hnl-keeper-pulse{to{filter:brightness(1.35);transform:translate(-50%,-50%) scale(1.08)}}
 
@@ -155,6 +156,171 @@
 
 .hnl-tactical-lab-grid > .hnl-card {
   height: 100%;
+}
+
+.hnl-keeper-panel {
+  border-color: rgba(96, 165, 250, .3) !important;
+  background:
+    radial-gradient(circle at 94% 10%, rgba(96, 165, 250, .15), transparent 26%),
+    linear-gradient(145deg, rgba(17, 31, 52, .98), rgba(13, 21, 38, .98)) !important;
+}
+
+.hnl-keeper-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.hnl-keeper-badge {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid rgba(96, 165, 250, .28);
+  border-radius: 999px;
+  background: rgba(96, 165, 250, .08);
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.hnl-keeper-control-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hnl-keeper-control-grid > label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: #bfdbfe;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.hnl-keeper-control-grid > label[hidden] {
+  display: none !important;
+}
+
+.hnl-keeper-control-grid .hnl-select:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+
+.hnl-keeper-test-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  align-self: end;
+}
+
+.hnl-keeper-test-action small {
+  max-width: 210px;
+  color: var(--hnl-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.hnl-keeper-metrics {
+  display: grid;
+  grid-template-columns: .65fr 1.15fr .65fr 1.55fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hnl-keeper-metrics > div {
+  min-width: 0;
+  min-height: 76px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  background: rgba(4, 10, 22, .36);
+}
+
+.hnl-keeper-metrics > div > span,
+.hnl-keeper-last > span {
+  color: var(--hnl-muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.hnl-keeper-metrics strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 16px;
+  text-overflow: ellipsis;
+}
+
+.hnl-keeper-strategy strong {
+  color: #bae6fd;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#keeperResultCard.success {
+  border-color: rgba(74, 222, 128, .38);
+  background: rgba(74, 222, 128, .09);
+}
+
+#keeperResultCard.success strong {
+  color: #86efac;
+}
+
+#keeperResultCard.danger {
+  border-color: rgba(251, 113, 133, .35);
+  background: rgba(251, 113, 133, .08);
+}
+
+#keeperResultCard.danger strong {
+  color: #fda4af;
+}
+
+.hnl-keeper-last p {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.hnl-keeper-last p strong,
+.hnl-keeper-last p span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hnl-keeper-last p strong {
+  color: #fff;
+  font-size: 12px;
+}
+
+.hnl-keeper-last p span {
+  color: var(--hnl-muted);
+  font-size: 10px;
+}
+
+.hnl-keeper-note {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid rgba(96, 165, 250, .16);
+  border-radius: 11px;
+  background: rgba(96, 165, 250, .055);
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hnl-keeper-note strong {
+  color: #dbeafe;
 }
 
 .hnl-tactical-builder {
@@ -452,6 +618,11 @@
     grid-template-columns: 1fr;
   }
 
+  .hnl-keeper-control-grid,
+  .hnl-keeper-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .hnl-console-head {
     flex-direction: column;
   }
@@ -470,6 +641,11 @@
     flex-direction: column;
   }
 
+  .hnl-keeper-panel-head,
+  .hnl-keeper-test-action {
+    flex-direction: column;
+  }
+
   .hnl-guide-time {
     display: none;
   }
@@ -477,8 +653,20 @@
   .hnl-tutorial-steps,
   .hnl-help-grid,
   .hnl-tactical-builder,
-  .hnl-simulation-score {
+  .hnl-simulation-score,
+  .hnl-keeper-control-grid,
+  .hnl-keeper-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .hnl-keeper-test-action {
+    align-items: stretch;
+  }
+
+  .hnl-keeper-test-action .hnl-btn,
+  .hnl-keeper-test-action small {
+    width: 100%;
+    max-width: none;
   }
 
   .hnl-tutorial-steps li {
