@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const BUILD = '2026-07-21-discord-legal-placar-v2';
+const BUILD = '2026-07-21-discord-legal-placar-v3';
 const LOGO = '/assets/hollow-nexus-official.svg';
 const RELEASE_ID = 'release-2026-07-21-discord-legal-placar';
 let changed = false;
@@ -191,8 +191,8 @@ const placarBody = `<section class="hnl-placar-overview">
     <label><span>Filtrar cargo</span><select id="placarRoleFilter"><option value="all">Todos os cargos</option></select></label>
     <strong id="placarResultCount" aria-live="polite">0 membros exibidos</strong>
   </div>
-  <section class="hnl-placar-panel" data-placar-panel="3v3"><div class="hnl-table-wrap"><table class="hnl-rank-table" id="placar3v3Table"></table></div></section>
-  <section class="hnl-placar-panel" data-placar-panel="5v5" hidden><div class="hnl-table-wrap"><table class="hnl-rank-table" id="placar5v5Table"></table></div></section>
+  <section class="hnl-placar-panel" data-placar-panel="3v3"><div class="hnl-table-wrap" tabindex="0" aria-label="Ranking 3x3 rolável"><table class="hnl-rank-table" id="placar3v3Table"></table></div></section>
+  <section class="hnl-placar-panel" data-placar-panel="5v5" hidden><div class="hnl-table-wrap" tabindex="0" aria-label="Ranking 5x5 rolável"><table class="hnl-rank-table" id="placar5v5Table"></table></div></section>
   <div id="placarStatus" class="hnl-placar-status">Sincronizando com o bot...</div>
 </section>`;
 
@@ -206,7 +206,7 @@ const placarPage = shell({
   extraScripts: `<script src="/js/pages/placar.js?v=${BUILD}"></script>`
 });
 
-const releaseCard = `<article class="hnl-card va-update-card" id="${RELEASE_ID}"><span class="va-update-dot"></span><div class="va-update-meta"><span>21/07/2026</span><span>Site + Bot</span><span>Discord / Legal / Placar</span></div><h3>Login único pelo Discord, termos revisados e Placar integrado ao visual atual</h3><p class="va-muted">O acesso público foi centralizado no Discord para reconhecer membros, cargos e clubes, enquanto as páginas legais e o ranking Café com Leite foram atualizados.</p><ul class="va-update-list"><li class="site">Google, cadastro local e login por e-mail/senha foram removidos da interface e bloqueados nas rotas públicas.</li><li class="site">A nova tela explica reconhecimento, permissões, clubes, inscrições, notificações e vantagens antes do OAuth.</li><li class="site">Termos e Privacidade agora cobrem login Discord, LGPD, clubes, inscrições, moderação, premiações e conteúdo enviado.</li><li class="bot">O Placar 3x3 e 5x5 agora reúne todos os membros do servidor, preserva as estatísticas reais do Café com Leite e permite organizar por pontos, cargo, atividade ou nome.</li><li class="bot">As regras oficiais da Nexus Cup foram publicadas uma única vez no canal 1524621308682436740 e o formato passou a indicar equipes e tamanho dos grupos como a definir.</li><li class="fix">Placar, Termos, Privacidade e Atualizações foram migrados para a estrutura visual atual e o Placar entrou no menu.</li></ul></article>`;
+const releaseCard = `<article class="hnl-card va-update-card" id="${RELEASE_ID}"><span class="va-update-dot"></span><div class="va-update-meta"><span>21/07/2026</span><span>Site + Bot</span><span>Discord / Legal / Placar</span></div><h3>Login único pelo Discord, termos revisados e Placar integrado ao visual atual</h3><p class="va-muted">O acesso público foi centralizado no Discord para reconhecer membros, cargos e clubes, enquanto as páginas legais e o ranking Café com Leite foram atualizados.</p><ul class="va-update-list"><li class="site">Google, cadastro local e login por e-mail/senha foram removidos da interface e bloqueados nas rotas públicas.</li><li class="site">A nova tela explica reconhecimento, permissões, clubes, inscrições, notificações e vantagens antes do OAuth.</li><li class="site">Termos e Privacidade agora cobrem login Discord, LGPD, clubes, inscrições, moderação, premiações e conteúdo enviado.</li><li class="bot">O Placar 3x3 e 5x5 agora reúne todos os membros do servidor, preserva as estatísticas reais do Café com Leite e permite organizar por pontos, cargo, atividade ou nome.</li><li class="bot">As regras oficiais da Nexus Cup foram publicadas uma única vez no canal 1524621308682436740 e o formato passou a indicar equipes e tamanho dos grupos como a definir.</li><li class="fix">A lista de jogadores ganhou rolagem vertical própria, cabeçalho fixo e limite de altura para não alongar a página nem afastar a navegação lateral.</li><li class="fix">Placar, Termos, Privacidade e Atualizações foram migrados para a estrutura visual atual e o Placar entrou no menu.</li></ul></article>`;
 
 function updateCards(html = '') {
   const cards = [];
