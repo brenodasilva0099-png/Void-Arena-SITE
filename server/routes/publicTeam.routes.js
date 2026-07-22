@@ -1,7 +1,7 @@
 const crypto = require('node:crypto');
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
-const { canManageTeam } = require('../services/teamAccess.service');
+const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service');
 const { createRecruitmentNotification } = require('./notifications.routes');
 const { removeRoutes } = require('../utils/expressRoutes');
 
@@ -74,7 +74,7 @@ function normalizeInvites(value = []) {
 
 function findUserByDiscord(usersByDiscord, discordId = '') { return usersByDiscord.get(String(splitDiscordId(discordId) || discordId || '').trim()) || null; }
 
-function enrichTeam(team = {}, users = [], viewer = null) {
+function enrichTeam(team = {}, users = [], viewer = null, { isAdmin = false } = {}) {
   const usersById = new Map(users.map((user) => [String(user.id || ''), user]));
   const usersByDiscord = new Map(users.map((user) => [String(user.discordId || ''), user]).filter(([id]) => id));
   const owner = usersById.get(String(team.ownerUserId || '')) || null;
@@ -100,10 +100,12 @@ function enrichTeam(team = {}, users = [], viewer = null) {
   const captainName = captainUser ? userDisplay(captainUser) : (team.captainName || fallbackCaptain?.name || directorName || 'nao definido');
   const captainDiscordId = captainUser?.discordId || team.captainDiscordId || fallbackCaptain?.discordId || '';
 
-  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: normalizedLogo, logoOriginal: team.logo || '', description: team.description || '', region: team.region || '', status: team.status || 'participating', ownerUserId: team.ownerUserId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || directorName), ownerAvatar: owner?.avatar || team.ownerAvatar || '', directorUserId: team.directorUserId || team.ownerUserId || '', directorName, directorDiscordId, captainUserId: team.captainUserId || '', captainName, captainDiscordId, players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: canManageTeam(viewer, team), createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
+  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: normalizedLogo, logoOriginal: team.logo || '', description: team.description || '', region: team.region || '', status: team.status || 'participating', ownerUserId: team.ownerUserId || '', ownerDiscordId: team.ownerDiscordId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || directorName), ownerAvatar: owner?.avatar || team.ownerAvatar || '', directorUserId: team.directorUserId || team.ownerUserId || '', directorName, directorDiscordId, captainUserId: team.captainUserId || '', captainName, captainDiscordId, players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: Boolean(isAdmin || canManageTeam(viewer, team)), canDelete: Boolean(isAdmin || canDeleteTeam(viewer, team)), createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
 }
 
 function buildTeamPayload(body = {}, user = {}, existing = null) {
+  const hasRosterPayload = ['playerDetails', 'playersDetailed', 'reserveDetails', 'reservesDetailed', 'players', 'reserves']
+    .some((key) => Object.prototype.hasOwnProperty.call(body || {}, key));
   const allPlayerDetails = normalizePlayers(body.playerDetails || body.playersDetailed || []);
   const allReserveDetails = normalizePlayers(body.reserveDetails || body.reservesDetailed || []);
   const inviteRequests = [
@@ -111,21 +113,33 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
     ...allPlayerDetails.filter((item) => item.inviteOnly).map((item) => ({ playerId: item.userId || item.id || item.discordId, playerName: item.name, rosterSlot: 'player' })),
     ...allReserveDetails.filter((item) => item.inviteOnly).map((item) => ({ playerId: item.userId || item.id || item.discordId, playerName: item.name, rosterSlot: 'reserve' }))
   ];
-  const playerDetails = allPlayerDetails.filter((item) => !item.inviteOnly).map(({ inviteOnly, ...item }) => item);
-  const reserveDetails = allReserveDetails.filter((item) => !item.inviteOnly).map(({ inviteOnly, ...item }) => item);
-  const players = playerDetails.length ? playerDetails.map((item) => item.name) : normalizePlayers((body.players || []).map((name) => ({ name }))).map((item) => item.name);
-  const reserves = reserveDetails.length ? reserveDetails.map((item) => item.name) : normalizePlayers((body.reserves || []).map((name) => ({ name }))).map((item) => item.name);
-  const playerIds = playerDetails.map((item) => clean(item.discordId, 40));
-  const reserveIds = reserveDetails.map((item) => clean(item.discordId, 40));
+  let playerDetails = allPlayerDetails.filter((item) => !item.inviteOnly).map(({ inviteOnly, ...item }) => item);
+  let reserveDetails = allReserveDetails.filter((item) => !item.inviteOnly).map(({ inviteOnly, ...item }) => item);
+  let players = playerDetails.length ? playerDetails.map((item) => item.name) : normalizePlayers((body.players || []).map((name) => ({ name }))).map((item) => item.name);
+  let reserves = reserveDetails.length ? reserveDetails.map((item) => item.name) : normalizePlayers((body.reserves || []).map((name) => ({ name }))).map((item) => item.name);
+  let playerIds = playerDetails.map((item) => clean(item.discordId, 40));
+  let reserveIds = reserveDetails.map((item) => clean(item.discordId, 40));
+
+  // O formulário do perfil público edita dados institucionais sem enviar o
+  // elenco. Nessa situação o elenco existente precisa permanecer intacto.
+  if (existing && !hasRosterPayload) {
+    players = Array.isArray(existing.players) ? [...existing.players] : [];
+    reserves = Array.isArray(existing.reserves) ? [...existing.reserves] : [];
+    playerDetails = Array.isArray(existing.playerDetails) ? [...existing.playerDetails] : [];
+    reserveDetails = Array.isArray(existing.reserveDetails) ? [...existing.reserveDetails] : [];
+    playerIds = Array.isArray(existing.playerAccounts?.players) ? [...existing.playerAccounts.players] : [];
+    reserveIds = Array.isArray(existing.playerAccounts?.reserves) ? [...existing.playerAccounts.reserves] : [];
+  }
 
   const name = clean(body.name, 80);
   const tag = clean(body.tag, 8).toUpperCase();
   if (!name) throw new Error('Informe o nome do time.');
   if (!tag) throw new Error('Informe a tag do time.');
-  if (players.length < 1 && inviteRequests.length < 1) throw new Error('Adicione pelo menos um titular ou selecione um jogador livre para convidar.');
+  if (!existing && players.length < 1 && inviteRequests.length < 1) throw new Error('Adicione pelo menos um titular ou selecione um jogador livre para convidar.');
 
   const now = new Date().toISOString();
   const ownerUserId = existing?.ownerUserId || user.id || '';
+  const ownerDiscordId = existing?.ownerDiscordId || user.discordId || '';
   const ownerName = existing?.ownerName || userDisplay(user);
   const incomingLogo = firstLogoValue(body.logo, body.logoUrl, body.logoURL, body.teamLogo, body.teamLogoUrl, body.badge, body.badgeUrl, body.escudo, body.image, body.imageUrl, body.avatar, body.icon);
   const logo = incomingLogo || resolveTeamLogo(existing || {}) || '';
@@ -143,7 +157,7 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
     max
   );
 
-  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo, description: clean(body.description !== undefined ? body.description : existing?.description || '', 600), region: clean(body.region !== undefined ? body.region : existing?.region || '', 80), status: existing?.status || 'participating', ownerUserId, ownerName, directorUserId, directorName, directorDiscordId, captainUserId, captainName, captainDiscordId, players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, inviteRequests, socials: { discord: socialValue('discord', 'socialDiscord'), instagram: socialValue('instagram', 'socialInstagram', 160), twitter: socialValue('twitter', 'socialTwitter', 160), youtube: socialValue('youtube', 'socialYoutube'), tiktok: socialValue('tiktok', 'socialTikTok', 160), twitch: socialValue('twitch', 'socialTwitch', 160), steam: socialValue('steam', 'socialSteam'), xbox: socialValue('xbox', 'socialXbox', 160), website: socialValue('website', 'socialWebsite') }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
+  return { id: existing?.id || clean(body.id, 80) || `team_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`, name, tag, logo, description: clean(body.description !== undefined ? body.description : existing?.description || '', 600), region: clean(body.region !== undefined ? body.region : existing?.region || '', 80), status: existing?.status || 'participating', ownerUserId, ownerDiscordId, ownerName, directorUserId, directorName, directorDiscordId, captainUserId, captainName, captainDiscordId, players, reserves, playerAccounts: { players: playerIds, reserves: reserveIds }, playerDetails, reserveDetails, inviteRequests, socials: { discord: socialValue('discord', 'socialDiscord'), instagram: socialValue('instagram', 'socialInstagram', 160), twitter: socialValue('twitter', 'socialTwitter', 160), youtube: socialValue('youtube', 'socialYoutube'), tiktok: socialValue('tiktok', 'socialTikTok', 160), twitch: socialValue('twitch', 'socialTwitch', 160), steam: socialValue('steam', 'socialSteam'), xbox: socialValue('xbox', 'socialXbox', 160), website: socialValue('website', 'socialWebsite') }, createdAt: existing?.createdAt || body.createdAt || now, updatedAt: now };
 }
 
 async function sendTeamInvites({ viewer, team, inviteRequests = [] }) {
@@ -168,7 +182,8 @@ function registerPublicTeamRoutes(app) {
 
   app.get('/api/teams', async (req, res) => {
     const [teams, users, bracket, viewer] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => []), storage.readBracket().catch(() => ({})), getSessionUser(req)]);
-    return res.json({ success: true, teams: teams.map((team) => enrichTeam(team, users, viewer)), bracket, viewer: publicUser(viewer || {}) });
+    const isAdmin = viewer ? await isAdminRecord(viewer).catch(() => false) : false;
+    return res.json({ success: true, teams: teams.map((team) => enrichTeam(team, users, viewer, { isAdmin })), bracket, viewer: publicUser(viewer || {}), isAdmin });
   });
 
   app.post('/api/teams', requireLogin, async (req, res) => {
@@ -189,14 +204,15 @@ function registerPublicTeamRoutes(app) {
       const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
       const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
       if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
-      if (!canManageTeam(user, existing)) return res.status(403).json({ success: false, message: 'Apenas diretor ou capitão pode editar esse time.' });
+      const isAdmin = await isAdminRecord(user).catch(() => false);
+      if (!isAdmin && !canManageTeam(user, existing)) return res.status(403).json({ success: false, message: 'Apenas administrador, criador, diretor ou capitão pode editar esse time.' });
       const payload = buildTeamPayload({ ...(req.body || {}), id: existing.id }, user || {}, existing);
       const inviteRequests = payload.inviteRequests || [];
       delete payload.inviteRequests;
       const saved = await storage.saveTeam(payload);
       const inviteResults = await sendTeamInvites({ viewer: user, team: saved, inviteRequests });
       const users = await storage.readUsers().catch(() => []);
-      return res.json({ success: true, team: enrichTeam(saved, users, user), inviteResults });
+      return res.json({ success: true, team: enrichTeam(saved, users, user, { isAdmin }), inviteResults });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 
@@ -205,7 +221,8 @@ function registerPublicTeamRoutes(app) {
       const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
       const team = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
       if (!team) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
-      if (!canManageTeam(user, team)) return res.status(403).json({ success: false, message: 'Apenas diretor ou capitão pode convidar jogador.' });
+      const isAdmin = await isAdminRecord(user).catch(() => false);
+      if (!isAdmin && !canManageTeam(user, team)) return res.status(403).json({ success: false, message: 'Apenas administrador, criador, diretor ou capitão pode convidar jogador.' });
       const invite = normalizeInvites([{ ...req.body, playerId: req.body?.playerId || req.body?.userId || req.body?.discordId }])[0];
       if (!invite) return res.status(400).json({ success: false, message: 'Selecione um jogador cadastrado.' });
       const [result] = await sendTeamInvites({ viewer: user, team, inviteRequests: [invite] });
@@ -218,7 +235,8 @@ function registerPublicTeamRoutes(app) {
       const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
       const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
       if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
-      if (!await isAdminRecord(user)) return res.status(403).json({ success: false, message: 'Apenas administrador pode excluir times.' });
+      const isAdmin = await isAdminRecord(user).catch(() => false);
+      if (!isAdmin && !canDeleteTeam(user, existing)) return res.status(403).json({ success: false, message: 'Apenas administrador ou o criador original pode excluir esse time.' });
       const deleted = await storage.deleteTeam(existing.id);
       return res.json({ success: true, deleted: Boolean(deleted), teamId: existing.id });
     }
@@ -229,7 +247,8 @@ function registerPublicTeamRoutes(app) {
     const [teams, users, viewer] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => []), getSessionUser(req)]);
     const team = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
     if (!team) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
-    return res.json({ success: true, team: enrichTeam(team, users, viewer) });
+    const isAdmin = viewer ? await isAdminRecord(viewer).catch(() => false) : false;
+    return res.json({ success: true, team: enrichTeam(team, users, viewer, { isAdmin }) });
   });
 
   app.get('/api/users/:userId/public', async (req, res) => {
@@ -240,4 +259,4 @@ function registerPublicTeamRoutes(app) {
   });
 }
 
-module.exports = { registerPublicTeamRoutes };
+module.exports = { registerPublicTeamRoutes, buildTeamPayload, enrichTeam };
