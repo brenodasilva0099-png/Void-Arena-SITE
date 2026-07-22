@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const pageFile = path.join(ROOT, 'public', 'pages', 'prancheta-tatica.html');
 const versionFile = path.join(ROOT, 'public', 'tactical-simulator-version.json');
-const BUILD = '2026-07-22-tactical-simulator-v5';
+const BUILD = '2026-07-22-tactical-simulator-v6';
 let changed = false;
 
 function read(file) { return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''; }
@@ -34,11 +34,11 @@ if (page) {
 
 write(versionFile, JSON.stringify({
   build: BUILD,
-  updatedAt: '2026-07-22T16:10:00-03:00',
+  updatedAt: '2026-07-22T17:20:00-03:00',
   fixes: ['automatic-pass-receiver', 'goalkeeper-role-fallback', 'missing-ball-recovery', 'preflight-sequence-validation', 'chained-sentence-parser'],
-  features: ['automatic-field-focus', 'playback-countdown', 'quick-tutorial', 'interpretation-feedback', 'manual-sequence-builder', 'natural-language-parser', 'local-playbook']
+  features: ['automatic-field-focus', 'playback-countdown', 'quick-tutorial', 'interpretation-feedback', 'manual-sequence-builder', 'natural-language-parser', 'local-playbook', 'goalkeeper-ai-levels', 'goalkeeper-side-priority', 'manual-goalkeeper-defense', 'isolated-goalkeeper-test']
 }, null, 2));
 
 console.log(changed
-  ? '[Tactical Simulator] Simulador v5 aplicado com validação, tutorial e continuidade entre ações.'
-  : '[Tactical Simulator] Simulador v5 já estava aplicado.');
+  ? '[Tactical Simulator] Simulador v6 aplicado com inteligência, direção e teste de defesa do goleiro.'
+  : '[Tactical Simulator] Simulador v6 já estava aplicado.');
