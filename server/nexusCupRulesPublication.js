@@ -109,7 +109,7 @@ async function publishOnce() {
   if (editable) {
     state.status = 'editing';
     await callBot('/internal/discord/edit-message', {
-      method: 'POST',
+      method: 'PATCH',
       body: JSON.stringify({
         discordChannelId: CHANNEL_ID,
         discordMessageId: editable.discordMessageId,
