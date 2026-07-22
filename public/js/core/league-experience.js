@@ -54,6 +54,13 @@
     return `<div class="hnl-empty">${esc(message)}</div>`;
   }
 
+  function socialIcon(key = '') {
+    const rendered = window.VoidArenaSocial?.iconHtml?.(key);
+    if (rendered) return rendered;
+    const marks = { discord: '◉', steam: '◌', xbox: 'X', tiktok: '♪', youtube: '▶', twitter: 'X', instagram: '◎', twitch: 'T', spotify: '≋', riot: 'R', ea: 'EA', psn: 'PS', website: '●', site: '●' };
+    return `<span class="va-social-logo-fallback hnl-social-${esc(key)}" aria-hidden="true">${esc(marks[key] || String(key || 'L').slice(0, 2).toUpperCase())}</span>`;
+  }
+
   function socials(raw = {}) {
     const labels = { site: 'Site', discord: 'Discord', instagram: 'Instagram', twitch: 'Twitch', tiktok: 'TikTok', youtube: 'YouTube', twitter: 'X/Twitter', steam: 'Steam', xbox: 'Xbox', spotify: 'Spotify', riot: 'Riot', ea: 'EA', psn: 'PSN', website: 'Site' };
     const hrefFor = (key, value) => {
@@ -68,7 +75,7 @@
     const links = Object.entries(raw || {}).filter(([, value]) => String(value || '').trim()).map(([key, value]) => {
       const rawValue = String(value || '').trim();
       const href = hrefFor(key, rawValue);
-      const icon = window.VoidArenaSocial?.iconHtml?.(key) || '<span aria-hidden="true">🔗</span>';
+      const icon = socialIcon(key);
       const valueLine = href ? '' : `<small>${esc(rawValue)}</small>`;
       const content = `<span class="va-social-card-icon">${icon}</span><span class="va-social-card-body"><strong>${esc(labels[key] || key)}</strong>${valueLine}</span><span class="va-social-card-arrow" aria-hidden="true">${href ? '↗' : '•'}</span>`;
       return href ? `<a class="va-social-card" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${content}</a>` : `<div class="va-social-card">${content}</div>`;
@@ -183,10 +190,10 @@
     const render = () => {
       const term = String(input?.value || '').trim().toLowerCase();
       const filtered = teams.filter((team) => `${team.name || ''} ${team.tag || ''}`.toLowerCase().includes(term));
-      box.innerHTML = filtered.length ? filtered.map((team) => teamCard(team, viewerData.isAdmin ? `<button class="hnl-btn danger" type="button" data-admin-delete-club="${esc(team.id || '')}">Excluir</button>` : '')).join('') : empty('Nenhum clube encontrado.');
-      $$('[data-admin-delete-club]', box).forEach((button) => button.addEventListener('click', async () => {
-        const selected = teams.find((team) => String(team.id || '') === String(button.dataset.adminDeleteClub || ''));
-        if (!selected || !viewerData.isAdmin || !window.confirm(`Excluir definitivamente o clube ${selected.name || ''}?`)) return;
+      box.innerHTML = filtered.length ? filtered.map((team) => teamCard(team, team.canDelete ? `<button class="hnl-btn danger" type="button" data-delete-club="${esc(team.id || '')}">Excluir</button>` : '')).join('') : empty('Nenhum clube encontrado.');
+      $$('[data-delete-club]', box).forEach((button) => button.addEventListener('click', async () => {
+        const selected = teams.find((team) => String(team.id || '') === String(button.dataset.deleteClub || ''));
+        if (!selected?.canDelete || !window.confirm(`Excluir definitivamente o clube ${selected.name || ''}?`)) return;
         button.disabled = true;
         try {
           await api(`/api/teams/${encodeURIComponent(selected.id || '')}`, { method: 'DELETE' });
@@ -273,9 +280,16 @@
     </section>
     <section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Direção</h2><p><strong>Diretor:</strong> ${esc(club.directorName || club.ownerName || 'Não definido')}</p><p><strong>Capitão:</strong> ${esc(club.captainName || 'Não definido')}</p></article><article class="hnl-card"><h2>Conexões oficiais</h2>${socials(club.socials || {})}</article></section>
     <section class="hnl-card" style="margin-top:14px"><h2>Elenco (${club.rosterCount || 0})</h2><div class="hnl-grid cols-2">${rosterHtml(club.roster || [])}</div></section>
-    ${club.canManage ? `<section class="hnl-card" id="editar-clube" style="margin-top:14px"><div class="hnl-console-head"><div><h2>Edição do clube</h2><p class="hnl-edit-lock">◌ Área exclusiva do diretor e do capitão vinculados.</p></div></div><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field"><label>Região</label><input class="hnl-input" name="region" value="${esc(club.region || '')}"></div><div class="hnl-field"><label>Logo (URL)</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}"></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-field full"><h3>Conexões públicas</h3><p class="frm-muted">Preencha somente os canais oficiais do clube.</p></div><div class="hnl-field"><label>Discord</label><input class="hnl-input" name="socialDiscord" value="${esc(club.socials?.discord || '')}"></div><div class="hnl-field"><label>Instagram</label><input class="hnl-input" name="socialInstagram" value="${esc(club.socials?.instagram || '')}"></div><div class="hnl-field"><label>X / Twitter</label><input class="hnl-input" name="socialTwitter" value="${esc(club.socials?.twitter || '')}"></div><div class="hnl-field"><label>TikTok</label><input class="hnl-input" name="socialTiktok" value="${esc(club.socials?.tiktok || '')}"></div><div class="hnl-field"><label>YouTube</label><input class="hnl-input" name="socialYoutube" value="${esc(club.socials?.youtube || '')}"></div><div class="hnl-field"><label>Twitch</label><input class="hnl-input" name="socialTwitch" value="${esc(club.socials?.twitch || '')}"></div><div class="hnl-field full"><label>Site</label><input class="hnl-input" name="socialWebsite" value="${esc(club.socials?.website || club.socials?.site || '')}"></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button></div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
+    ${club.canManage ? `<section class="hnl-card" id="editar-clube" style="margin-top:14px"><div class="hnl-console-head"><div><h2>Edição do clube</h2><p class="hnl-edit-lock">◌ Área exclusiva de administradores, criador original, diretor e capitão vinculados.</p></div></div><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field"><label>Região</label><input class="hnl-input" name="region" value="${esc(club.region || '')}"></div><div class="hnl-field"><label>Logo do clube</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}" placeholder="Cole uma URL, escolha, arraste ou cole uma imagem"><small class="frm-muted">Aceita URL direta, arquivo PNG/JPG/WEBP, arrastar e soltar ou Ctrl+V.</small></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-field full"><h3>Conexões públicas</h3><p class="frm-muted">Preencha somente os canais oficiais do clube. As logos dos aplicativos aparecem no perfil público.</p></div><div class="hnl-field"><label>Discord</label><input class="hnl-input" name="socialDiscord" value="${esc(club.socials?.discord || '')}"></div><div class="hnl-field"><label>Instagram</label><input class="hnl-input" name="socialInstagram" value="${esc(club.socials?.instagram || '')}"></div><div class="hnl-field"><label>X / Twitter</label><input class="hnl-input" name="socialTwitter" value="${esc(club.socials?.twitter || '')}"></div><div class="hnl-field"><label>TikTok</label><input class="hnl-input" name="socialTiktok" value="${esc(club.socials?.tiktok || '')}"></div><div class="hnl-field"><label>YouTube</label><input class="hnl-input" name="socialYoutube" value="${esc(club.socials?.youtube || '')}"></div><div class="hnl-field"><label>Twitch</label><input class="hnl-input" name="socialTwitch" value="${esc(club.socials?.twitch || '')}"></div><div class="hnl-field full"><label>Site</label><input class="hnl-input" name="socialWebsite" value="${esc(club.socials?.website || club.socials?.site || '')}"></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button>${club.canDelete ? '<button class="hnl-btn danger" id="deleteClub" type="button">Excluir clube</button>' : ''}</div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
 
     if (!club.canManage) return;
+    $('#deleteClub')?.addEventListener('click', async () => {
+      if (!window.confirm(`Excluir o clube ${club.name || ''}? Esta ação não pode ser desfeita.`)) return;
+      try {
+        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'DELETE' });
+        location.assign('/pages/clubes.html');
+      } catch (error) { $('#clubManageStatus').innerHTML = notice(error.message, 'error'); }
+    });
     const playersData = await api('/api/league/players').catch(() => ({ players: [] }));
     const select = $('#clubInvitePlayer');
     if (select) select.innerHTML = (playersData.players || []).map((player) => `<option value="${esc(player.id || player.discordId || '')}">${esc(player.name || 'Jogador')} ${player.team ? '— ' + esc(player.team.name) : '— Livre'}</option>`).join('');
@@ -283,7 +297,7 @@
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       try {
-        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.get('name'), tag: form.get('tag'), region: form.get('region'), logo: form.get('logo'), description: form.get('description'), socials: { discord: form.get('socialDiscord'), instagram: form.get('socialInstagram'), twitter: form.get('socialTwitter'), tiktok: form.get('socialTiktok'), youtube: form.get('socialYoutube'), twitch: form.get('socialTwitch'), website: form.get('socialWebsite') }, players: (club.playerDetails || []).map((item) => item.name), reserves: (club.reserveDetails || []).map((item) => item.name), playerDetails: club.playerDetails || [], reserveDetails: club.reserveDetails || [] }) });
+        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.get('name'), tag: form.get('tag'), region: form.get('region'), logo: form.get('logo'), description: form.get('description'), socials: { discord: form.get('socialDiscord'), instagram: form.get('socialInstagram'), twitter: form.get('socialTwitter'), tiktok: form.get('socialTiktok'), youtube: form.get('socialYoutube'), twitch: form.get('socialTwitch'), website: form.get('socialWebsite') } }) });
         $('#clubManageStatus').innerHTML = notice('Clube atualizado.', 'success');
       } catch (error) { $('#clubManageStatus').innerHTML = notice(error.message, 'error'); }
     });
@@ -617,6 +631,9 @@
         const node = document.createElement('div');
         node.className = `hnl-token ${token.team === 'enemy' ? 'enemy' : ''} ${token.team === 'ball' ? 'ball' : ''} ${token.avatar ? 'has-avatar' : ''}`;
         node.dataset.id = token.id;
+        node.dataset.name = token.name || '';
+        node.dataset.role = token.role || '';
+        node.dataset.team = token.team || '';
         node.style.left = `${token.x}%`;
         node.style.top = `${token.y}%`;
         node.innerHTML = tokenVisual(token);
