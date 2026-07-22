@@ -1,4 +1,4 @@
-/* Hollow Nexus League — simulador tático avançado v2 */
+/* Hollow Nexus League — campo e simulador tático avançado */
 .hnl-board{isolation:isolate;background:
   radial-gradient(circle at 50% 50%,rgba(255,255,255,.025),transparent 38%),
   repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 8.333%,rgba(0,0,0,.018) 8.333% 16.666%),
@@ -13,7 +13,495 @@
 .hnl-goal-target{position:absolute;right:-3.3%;top:34%;width:3.2%;height:32%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);z-index:3;pointer-events:none}.hnl-goal-target span{border:1px dashed rgba(255,255,255,.16)}.hnl-goal-target span.active{background:rgba(250,204,21,.52);box-shadow:0 0 20px rgba(250,204,21,.8)}
 .hnl-play-path{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}.hnl-play-path line,.hnl-play-path path{fill:none;stroke:#facc15;stroke-width:.7;stroke-dasharray:2 1;filter:drop-shadow(0 0 3px rgba(250,204,21,.9));vector-effect:non-scaling-stroke}.hnl-play-path .shot{stroke:#fb7185;stroke-width:1.05}.hnl-play-path .run{stroke:#67e8f9}.hnl-play-path marker path{fill:#facc15;stroke:none}
 .hnl-token.is-action-source{box-shadow:0 0 0 4px rgba(250,204,21,.62),0 0 28px rgba(250,204,21,.62)!important}.hnl-token.is-action-target{box-shadow:0 0 0 4px rgba(103,232,249,.62),0 0 28px rgba(103,232,249,.56)!important}.hnl-token.is-goalkeeper-dive{animation:hnl-keeper-pulse .55s ease-in-out infinite alternate}@keyframes hnl-keeper-pulse{to{filter:brightness(1.35);transform:translate(-50%,-50%) scale(1.08)}}
-.hnl-tactical-lab{margin-top:16px;display:grid;gap:14px}.hnl-tactical-lab-grid{display:grid;grid-template-columns:minmax(310px,.82fr) minmax(420px,1.18fr);gap:14px}.hnl-tactical-sequence{display:grid;gap:9px;max-height:430px;overflow:auto;padding-right:4px}.hnl-tactical-step{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px;border:1px solid rgba(159,104,255,.2);border-radius:12px;background:rgba(255,255,255,.025)}.hnl-tactical-step b{display:block}.hnl-tactical-step small{display:block;color:#adb8ce;margin-top:3px}.hnl-tactical-step-index{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(155,92,246,.18);font-weight:900}.hnl-tactical-step-actions{display:flex;gap:5px}.hnl-tactical-step-actions button{width:30px;height:30px;padding:0;border-radius:8px}
-.hnl-tactical-builder{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.hnl-tactical-builder .full{grid-column:1/-1}.hnl-tactical-builder label{display:grid;gap:6px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:#c6d0e2}.hnl-tactical-script{min-height:145px;resize:vertical;line-height:1.55}.hnl-tactical-presets{display:flex;flex-wrap:wrap;gap:7px}.hnl-tactical-timeline{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}.hnl-tactical-timeline span{display:block;height:100%;width:0;background:linear-gradient(90deg,#8b5cf6,#67e8f9,#facc15);transition:width .2s linear}.hnl-simulation-score{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.hnl-simulation-score div{padding:12px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07)}.hnl-simulation-score strong,.hnl-simulation-score span{display:block}.hnl-simulation-score strong{font-size:22px}.hnl-simulation-score span{font-size:11px;color:#abb6cb}
-@media(max-width:1050px){.hnl-tactical-lab-grid{grid-template-columns:1fr}.hnl-tactical-builder{grid-template-columns:1fr}.hnl-tactical-builder .full{grid-column:1}.hnl-simulation-score{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){.hnl-board{min-height:480px!important}.hnl-field-goal{display:block!important}.hnl-tactical-step{grid-template-columns:30px minmax(0,1fr)}.hnl-tactical-step-actions{grid-column:2}.hnl-simulation-score{grid-template-columns:1fr}}
+
+.hnl-tactical-lab {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.hnl-tactical-lab .hnl-card {
+  padding: 22px;
+}
+
+.hnl-tactical-lab h2 {
+  margin: 8px 0 6px;
+}
+
+.hnl-tactical-lab p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.hnl-tactical-guide {
+  border-color: rgba(103, 232, 249, .24) !important;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(103, 232, 249, .11), transparent 27%),
+    linear-gradient(145deg, rgba(20, 29, 49, .98), rgba(14, 22, 38, .98)) !important;
+}
+
+.hnl-tactical-guide-head,
+.hnl-console-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.hnl-guide-time {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid rgba(103, 232, 249, .22);
+  border-radius: 999px;
+  background: rgba(103, 232, 249, .07);
+  color: #a5f3fc;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.hnl-tutorial-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.hnl-tutorial-steps li {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 108px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  background: rgba(4, 10, 22, .4);
+}
+
+.hnl-tutorial-steps li > b {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(155, 92, 246, .38), rgba(93, 140, 255, .2));
+  color: #fff;
+}
+
+.hnl-tutorial-steps strong,
+.hnl-tutorial-steps small {
+  display: block;
+}
+
+.hnl-tutorial-steps strong {
+  margin: 2px 0 5px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.hnl-tutorial-steps small {
+  color: var(--hnl-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.hnl-tactical-help {
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  background: rgba(4, 10, 22, .3);
+}
+
+.hnl-tactical-help summary {
+  padding: 13px 15px;
+  color: #dcd4ff;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.hnl-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.hnl-help-grid p {
+  display: grid;
+  gap: 3px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.hnl-help-grid strong {
+  color: #fff;
+  font-size: 12px;
+}
+
+.hnl-help-grid span {
+  color: var(--hnl-muted);
+  font-size: 11px;
+}
+
+.hnl-tactical-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.hnl-tactical-lab-grid > .hnl-card {
+  height: 100%;
+}
+
+.hnl-tactical-builder {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 17px;
+}
+
+.hnl-tactical-builder > label {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  color: #c4b5fd;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.hnl-tactical-builder > label small {
+  color: var(--hnl-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.hnl-tactical-builder .full {
+  grid-column: 1 / -1;
+}
+
+.hnl-tactical-builder [hidden] {
+  display: none !important;
+}
+
+.hnl-inline-help {
+  min-height: 45px;
+  padding: 11px 13px;
+  border: 1px solid rgba(103, 232, 249, .16);
+  border-radius: 11px;
+  background: rgba(103, 232, 249, .055);
+  color: #bae6fd !important;
+  font-size: 11px;
+}
+
+.hnl-tactical-script {
+  min-height: 142px !important;
+  margin-top: 17px;
+  line-height: 1.55;
+}
+
+.hnl-tactical-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.hnl-tactical-presets .hnl-btn {
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 11px;
+}
+
+.hnl-interpretation-feedback {
+  min-height: 25px;
+  margin-top: 10px;
+  color: var(--hnl-muted);
+  font-size: 11px;
+}
+
+.hnl-interpretation-feedback .hnl-notice {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+}
+
+.hnl-interpretation-feedback .hnl-notice strong,
+.hnl-interpretation-feedback .hnl-notice small,
+.hnl-interpretation-feedback .hnl-notice span {
+  display: block;
+}
+
+.hnl-script-actions {
+  margin-top: 10px;
+}
+
+.hnl-tactical-console {
+  overflow: hidden;
+}
+
+.hnl-console-head > div:first-child {
+  min-width: 240px;
+  max-width: 760px;
+}
+
+.hnl-execution-actions {
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.hnl-check {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 10px;
+  background: rgba(4, 10, 22, .38);
+  color: #dbe5f8;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.hnl-check input {
+  accent-color: #8b5cf6;
+}
+
+.hnl-tactical-timeline {
+  height: 8px;
+  margin: 18px 0 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .07);
+}
+
+.hnl-tactical-timeline span {
+  width: 0;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #67e8f9, #8b5cf6);
+  transition: width .35s ease;
+}
+
+.hnl-simulation-score {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.hnl-simulation-score > div {
+  display: grid;
+  gap: 2px;
+  min-height: 70px;
+  align-content: center;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  background: rgba(4, 10, 22, .36);
+}
+
+.hnl-simulation-score strong {
+  color: #fff;
+  font-size: 20px;
+}
+
+.hnl-simulation-score span {
+  color: var(--hnl-muted);
+  font-size: 10px;
+}
+
+.hnl-tactical-sequence {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.hnl-tactical-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  background: rgba(4, 10, 22, .34);
+}
+
+.hnl-tactical-step-index {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, .18);
+  color: #ddd6fe;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.hnl-tactical-step > span:nth-child(2) {
+  min-width: 0;
+}
+
+.hnl-tactical-step b,
+.hnl-tactical-step small {
+  display: block;
+}
+
+.hnl-tactical-step b {
+  overflow: hidden;
+  color: #f8fafc;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hnl-tactical-step small {
+  margin-top: 3px;
+  color: var(--hnl-muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.hnl-tactical-step-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.hnl-tactical-step-actions .hnl-btn {
+  width: 31px;
+  min-width: 31px;
+  min-height: 31px;
+  padding: 0;
+}
+
+.hnl-empty {
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  color: var(--hnl-muted);
+  text-align: center;
+}
+
+.hnl-board {
+  scroll-margin-block: 24px;
+}
+
+.hnl-board.is-playback-focus {
+  border-color: rgba(103, 232, 249, .72) !important;
+  box-shadow:
+    0 0 0 5px rgba(103, 232, 249, .13),
+    inset 0 0 0 4px rgba(255, 255, 255, .04),
+    0 22px 60px rgba(0, 0, 0, .36) !important;
+}
+
+.hnl-playback-hud {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  z-index: 12;
+  min-width: 220px;
+  max-width: calc(100% - 40px);
+  padding: 12px 18px;
+  transform: translateX(-50%);
+  border: 1px solid rgba(103, 232, 249, .48);
+  border-radius: 999px;
+  background: rgba(4, 10, 22, .91);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, .42);
+  color: #e6fbff;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+}
+
+.hnl-playback-hud.success {
+  border-color: rgba(69, 212, 131, .58);
+  color: #c8f7dc;
+}
+
+.hnl-playback-hud.error {
+  border-color: rgba(255, 107, 131, .58);
+  color: #ffd6de;
+}
+
+.hnl-playback-hud[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .hnl-tutorial-steps,
+  .hnl-simulation-score {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hnl-tactical-lab-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hnl-console-head {
+    flex-direction: column;
+  }
+
+  .hnl-execution-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 680px) {
+  .hnl-tactical-lab .hnl-card {
+    padding: 16px;
+  }
+
+  .hnl-tactical-guide-head {
+    flex-direction: column;
+  }
+
+  .hnl-guide-time {
+    display: none;
+  }
+
+  .hnl-tutorial-steps,
+  .hnl-help-grid,
+  .hnl-tactical-builder,
+  .hnl-simulation-score {
+    grid-template-columns: 1fr;
+  }
+
+  .hnl-tutorial-steps li {
+    min-height: 0;
+  }
+
+  .hnl-tactical-builder .full {
+    grid-column: auto;
+  }
+
+  .hnl-execution-actions,
+  .hnl-execution-actions .hnl-btn,
+  .hnl-check {
+    width: 100%;
+  }
+
+  .hnl-tactical-step {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .hnl-tactical-step-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+}
