@@ -4,6 +4,7 @@ const { callBot } = require('./services/botApi.service');
 const CHANNEL_ID = '1524621308682436740';
 const MARKER_CHANNEL = 'hnl-system-publications';
 const PUBLICATION_KEY = 'nexus-cup-rules-2026-v1';
+const CONTENT_REVISION = 'format-tbd-v2';
 
 const RULES_MESSAGE = `🏆 **NEXUS CUP — REGRAS OFICIAIS**
 
@@ -13,7 +14,7 @@ const RULES_MESSAGE = `🏆 **NEXUS CUP — REGRAS OFICIAIS**
 • Cumprir cada série em **MD3 (melhor de 3)** e gravar clipes caso queira revisão.
 
 🧩 **Formato**
-• **8 equipes** em **2 grupos de 4**, todos contra todos no próprio grupo.
+• **Equipes a definir** em **2 grupos de tamanho a definir**, todos contra todos no próprio grupo.
 • Avançam os **2 maiores pontuadores de cada grupo**.
 • Semifinais: **1º A × 2º B** e **1º B × 2º A**; vencedores fazem a final.
 
@@ -45,10 +46,13 @@ Ao participar, todo o elenco confirma que leu e aceitou estas regras.`;
 
 const state = {
   key: PUBLICATION_KEY,
+  revision: CONTENT_REVISION,
   channelId: CHANNEL_ID,
   status: 'scheduled',
   publishedAt: null,
+  updatedAt: null,
   discordMessageId: null,
+  action: null,
   error: null
 };
 
@@ -63,13 +67,14 @@ function parseMarker(message = {}) {
   }
 }
 
-async function existingPublication() {
-  const messages = await storage.readChatMessages({ channelId: MARKER_CHANNEL, limit: 100 }).catch(() => []);
+async function existingPublications() {
+  const messages = await storage.readChatMessages({ channelId: MARKER_CHANNEL, limit: 100 });
+  const publications = [];
   for (const message of messages) {
     const marker = parseMarker(message);
-    if (marker?.status === 'published') return marker;
+    if (marker?.status === 'published') publications.push(marker);
   }
-  return null;
+  return publications;
 }
 
 async function saveMarker(payload = {}) {
@@ -78,23 +83,60 @@ async function saveMarker(payload = {}) {
     source: 'system',
     authorId: 'hollow-nexus-site',
     authorName: 'Hollow Nexus League',
-    content: JSON.stringify({ type: 'discord_publication', key: PUBLICATION_KEY, channelId: CHANNEL_ID, ...payload }),
+    content: JSON.stringify({ type: 'discord_publication', key: PUBLICATION_KEY, revision: CONTENT_REVISION, channelId: CHANNEL_ID, ...payload }),
     attachments: [],
-    createdAt: payload.publishedAt || new Date().toISOString()
+    createdAt: payload.updatedAt || payload.publishedAt || new Date().toISOString()
   });
 }
 
 async function publishOnce() {
-  const existing = await existingPublication();
-  if (existing) {
+  const publications = await existingPublications();
+  const current = publications.find((marker) => marker.revision === CONTENT_REVISION);
+  if (current) {
     Object.assign(state, {
       status: 'published',
-      publishedAt: existing.publishedAt || null,
-      discordMessageId: existing.discordMessageId || null,
+      publishedAt: current.publishedAt || null,
+      updatedAt: current.updatedAt || null,
+      discordMessageId: current.discordMessageId || null,
+      action: current.action || 'edited',
       error: null
     });
-    console.log(`[Nexus Cup/Regras] Publicação ${PUBLICATION_KEY} já existe no canal ${CHANNEL_ID}.`);
+    console.log(`[Nexus Cup/Regras] Revisão ${CONTENT_REVISION} já aplicada no canal ${CHANNEL_ID}.`);
     return { ...state, skipped: true };
+  }
+
+  const editable = publications.find((marker) => marker.discordMessageId);
+  if (editable) {
+    state.status = 'editing';
+    await callBot('/internal/discord/edit-message', {
+      method: 'POST',
+      body: JSON.stringify({
+        discordChannelId: CHANNEL_ID,
+        discordMessageId: editable.discordMessageId,
+        content: RULES_MESSAGE,
+        allowedMentions: { parse: [] }
+      })
+    });
+
+    const updatedAt = new Date().toISOString();
+    const publishedAt = editable.publishedAt || updatedAt;
+    await saveMarker({
+      status: 'published',
+      action: 'edited',
+      publishedAt,
+      updatedAt,
+      discordMessageId: editable.discordMessageId
+    });
+    Object.assign(state, {
+      status: 'published',
+      publishedAt,
+      updatedAt,
+      discordMessageId: editable.discordMessageId,
+      action: 'edited',
+      error: null
+    });
+    console.log(`[Nexus Cup/Regras] Mensagem ${editable.discordMessageId} editada com a revisão ${CONTENT_REVISION}.`);
+    return { ...state, skipped: false, edited: true };
   }
 
   state.status = 'publishing';
@@ -109,8 +151,8 @@ async function publishOnce() {
 
   const publishedAt = new Date().toISOString();
   const discordMessageId = sent.discordMessageId || sent.messageId || sent.id || sent.message?.id || null;
-  await saveMarker({ status: 'published', publishedAt, discordMessageId });
-  Object.assign(state, { status: 'published', publishedAt, discordMessageId, error: null });
+  await saveMarker({ status: 'published', action: 'sent', publishedAt, updatedAt: publishedAt, discordMessageId });
+  Object.assign(state, { status: 'published', publishedAt, updatedAt: publishedAt, discordMessageId, action: 'sent', error: null });
   console.log(`[Nexus Cup/Regras] Regras publicadas no canal ${CHANNEL_ID}${discordMessageId ? ` (mensagem ${discordMessageId})` : ''}.`);
   return { ...state, skipped: false };
 }
