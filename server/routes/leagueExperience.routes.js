@@ -1,7 +1,7 @@
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
-const { canManageTeam } = require('../services/teamAccess.service');
+const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 const CALENDAR_CHANNEL = 'league-calendar-settings';
@@ -96,7 +96,7 @@ function rosterEntries(team = {}, users = []) {
   });
 }
 
-function publicTeam(team = {}, users = [], viewer = null) {
+function publicTeam(team = {}, users = [], viewer = null, isAdmin = false) {
   const roster = rosterEntries(team, users);
   return {
     id: team.id || '',
@@ -120,7 +120,8 @@ function publicTeam(team = {}, users = [], viewer = null) {
     playerDetails: roster.filter((player) => player.rosterRole !== 'Reserva'),
     reserveDetails: roster.filter((player) => player.rosterRole === 'Reserva'),
     rosterCount: roster.length,
-    canManage: canManageTeam(viewer, team),
+    canManage: Boolean(isAdmin || canManageTeam(viewer, team)),
+    canDelete: Boolean(isAdmin || canDeleteTeam(viewer, team)),
     createdAt: team.createdAt || null,
     updatedAt: team.updatedAt || null
   };
@@ -222,14 +223,15 @@ function registerLeagueExperienceRoutes(app) {
     const teams = await storage.readTeams().catch(() => []);
     const users = await storage.readUsers().catch(() => []);
     const isAdmin = await isAdminRecord(viewer).catch(() => false);
-    return res.json({ success: true, authenticated: true, viewer: publicUser(viewer), viewerTeams: teams.filter((team) => canManageTeam(viewer, team)).map((team) => publicTeam(team, users, viewer)), isAdmin });
+    return res.json({ success: true, authenticated: true, viewer: publicUser(viewer), viewerTeams: teams.filter((team) => isAdmin || canManageTeam(viewer, team)).map((team) => publicTeam(team, users, viewer, isAdmin)), isAdmin });
   });
 
   app.get('/api/league/players', async (req, res) => {
     const [users, teams, viewer] = await Promise.all([storage.readUsers().catch(() => []), storage.readTeams().catch(() => []), getSessionUser(req).catch(() => null)]);
+    const isAdmin = viewer ? await isAdminRecord(viewer).catch(() => false) : false;
     const players = users.filter((user) => !user.deletedAt && !user.hiddenFromPlayersDirectory).map((user) => {
       const team = currentTeamForUser(user, teams);
-      return { ...publicUser(user), team: team ? { id: team.id || '', name: team.name || '', tag: team.tag || '', logo: teamLogo(team) } : null, profileUrl: `/pages/perfil-jogador.html?id=${encodeURIComponent(user.id || user.discordId || '')}`, canManageCurrentTeam: Boolean(team && canManageTeam(viewer, team)) };
+      return { ...publicUser(user), team: team ? { id: team.id || '', name: team.name || '', tag: team.tag || '', logo: teamLogo(team) } : null, profileUrl: `/pages/perfil-jogador.html?id=${encodeURIComponent(user.id || user.discordId || '')}`, canManageCurrentTeam: Boolean(team && (isAdmin || canManageTeam(viewer, team))) };
     }).sort((a, b) => String(a.name).localeCompare(String(b.name), 'pt-BR'));
     return res.json({ success: true, players });
   });
@@ -249,7 +251,8 @@ function registerLeagueExperienceRoutes(app) {
     const id = decodeURIComponent(String(req.params.teamId || '')).trim().toLowerCase();
     const team = teams.find((item) => teamIdentityValues(item).includes(id));
     if (!team) return res.status(404).json({ success: false, message: 'Clube não encontrado.' });
-    return res.json({ success: true, club: publicTeam(team, users, viewer) });
+    const isAdmin = viewer ? await isAdminRecord(viewer).catch(() => false) : false;
+    return res.json({ success: true, club: publicTeam(team, users, viewer, isAdmin) });
   });
 
   app.get('/api/league/cafe-ranking', async (_req, res) => {
