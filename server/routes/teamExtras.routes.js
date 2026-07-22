@@ -1,7 +1,7 @@
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
-const { getSessionUser, isOwnerRecord } = require('../services/access.service');
-const { canManageTeam } = require('../services/teamAccess.service');
+const { getSessionUser, isOwnerRecord, isAdminRecord } = require('../services/access.service');
+const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service');
 const { normalizeBracketForResponse, sanitizeTeam } = require('../services/bracket.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
@@ -32,7 +32,7 @@ async function permissionsForUser(user = {}) {
   return { isOwner: false, permissions, roles, matchedRoleIds };
 }
 
-function enrichTeam(team = {}, users = [], viewer = null) {
+function enrichTeam(team = {}, users = [], viewer = null, isAdmin = false) {
   const usersById = new Map(users.map((user) => [String(user.id || ''), user]));
   const usersByDiscord = new Map(users.map((user) => [String(user.discordId || ''), user]).filter(([id]) => id));
   const owner = usersById.get(String(team.ownerUserId || '')) || null;
@@ -52,7 +52,7 @@ function enrichTeam(team = {}, users = [], viewer = null) {
   const fallbackCaptain = playerDetails[0] || null;
   const directorName = director ? userDisplay(director) : (team.directorName || team.ownerName || safe.ownerName || 'não definido');
   const captainName = captain ? userDisplay(captain) : (team.captainName || fallbackCaptain?.name || 'não definido');
-  return { ...safe, ownerName: owner ? userDisplay(owner) : (safe.ownerName || team.ownerName || directorName), ownerAvatar: owner?.avatar || safe.ownerAvatar || '', directorUserId: team.directorUserId || team.ownerUserId || '', directorName, directorDiscordId: director?.discordId || team.directorDiscordId || owner?.discordId || '', captainUserId: team.captainUserId || '', captainName, captainDiscordId: captain?.discordId || team.captainDiscordId || fallbackCaptain?.discordId || '', playerDetails, reserveDetails, canManage: canManageTeam(viewer, team) };
+  return { ...safe, ownerName: owner ? userDisplay(owner) : (safe.ownerName || team.ownerName || directorName), ownerAvatar: owner?.avatar || safe.ownerAvatar || '', directorUserId: team.directorUserId || team.ownerUserId || '', directorName, directorDiscordId: director?.discordId || team.directorDiscordId || owner?.discordId || '', captainUserId: team.captainUserId || '', captainName, captainDiscordId: captain?.discordId || team.captainDiscordId || fallbackCaptain?.discordId || '', playerDetails, reserveDetails, canManage: Boolean(isAdmin || canManageTeam(viewer, team)), canDelete: Boolean(isAdmin || canDeleteTeam(viewer, team)) };
 }
 
 function findUser(users = [], { userId = '', discordId = '' } = {}) { const safeUserId = clean(userId); const safeDiscordId = clean(discordId); return users.find((user) => (safeUserId && String(user.id || '') === safeUserId) || (safeDiscordId && String(user.discordId || '') === safeDiscordId)) || null; }
@@ -66,7 +66,7 @@ function registerTeamExtrasRoutes(app) {
   });
 
   app.get('/api/teams', requireSession, async (req, res) => {
-    try { const [teams, users, bracket, viewer] = await Promise.all([storage.readTeams(), storage.readUsers(), storage.readBracket(), getSessionUser(req)]); const enriched = teams.map((team) => enrichTeam(team, users, viewer)); return res.json({ success: true, teams: enriched, bracket: normalizeBracketForResponse(bracket, teams, users) }); }
+    try { const [teams, users, bracket, viewer] = await Promise.all([storage.readTeams(), storage.readUsers(), storage.readBracket(), getSessionUser(req)]); const isAdmin = await isAdminRecord(viewer).catch(() => false); const enriched = teams.map((team) => enrichTeam(team, users, viewer, isAdmin)); return res.json({ success: true, teams: enriched, bracket: normalizeBracketForResponse(bracket, teams, users), isAdmin }); }
     catch (error) { return res.status(500).json({ success: false, message: error.message, teams: [] }); }
   });
 
@@ -75,14 +75,15 @@ function registerTeamExtrasRoutes(app) {
       const [teams, users, viewer] = await Promise.all([storage.readTeams(), storage.readUsers(), getSessionUser(req)]);
       const team = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
       if (!team) return res.status(404).json({ success: false, message: 'Time não encontrado.' });
-      if (!canManageTeam(viewer, team)) return res.status(403).json({ success: false, message: 'Você não pode transferir esse time.' });
+      const isAdmin = await isAdminRecord(viewer).catch(() => false);
+      if (!isAdmin && !canManageTeam(viewer, team)) return res.status(403).json({ success: false, message: 'Você não pode transferir esse time.' });
       const targetDiscordId = splitDiscordId(req.body?.discordId || req.body?.newCaptainDiscordId || '');
       const targetUserId = clean(req.body?.userId || req.body?.newCaptainUserId || '');
       const target = findUser(users, { userId: targetUserId, discordId: targetDiscordId });
       if (!target) return res.status(400).json({ success: false, message: 'Novo capitão precisa estar cadastrado/vinculado no site.' });
       if (!target.discordId) return res.status(400).json({ success: false, message: 'Novo capitão precisa ter Discord vinculado no perfil.' });
       const saved = await storage.saveTeam({ ...team, captainUserId: target.id, captainName: userDisplay(target), captainDiscordId: target.discordId || '', updatedAt: new Date().toISOString() });
-      return res.json({ success: true, team: enrichTeam(saved, users, viewer), message: `Capitão transferido para ${userDisplay(target)}.` });
+      return res.json({ success: true, team: enrichTeam(saved, users, viewer, isAdmin), message: `Capitão transferido para ${userDisplay(target)}.` });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 }
