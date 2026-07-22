@@ -101,8 +101,8 @@ requireMarkers('server/routes/placar.routes.js', [
 const publicationSource = requireMarkers('server/nexusCupRulesPublication.js', [
   "const CHANNEL_ID = '1524621308682436740'",
   'NEXUS CUP — REGRAS OFICIAIS',
-  '8 equipes',
-  '2 grupos de 4',
+  'Equipes a definir',
+  '2 grupos de tamanho a definir',
   'Vitória 2×1: **3 pts**',
   'Vitória 2×0: **4 pts**',
   'Regra da cera',
@@ -110,7 +110,8 @@ const publicationSource = requireMarkers('server/nexusCupRulesPublication.js', [
   'Quatro jogadores na área',
   'clipe como prova',
   "allowedMentions: { parse: [] }",
-  'existingPublication'
+  'existingPublications',
+  "callBot('/internal/discord/edit-message'"
 ]);
 try {
   const sandbox = { module: { exports: {} }, exports: {}, require: () => ({}), console, setTimeout };
