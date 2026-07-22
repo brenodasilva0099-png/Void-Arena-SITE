@@ -319,7 +319,7 @@
       const actionIndex = plain.search(/faz(?:\s+um)?\s+passe|passa|toca|lanca|sai|avanca|corre|desloca|vai|chuta|finaliza|defende|mergulha|pula/);
       const beforeAction = actionIndex > 0 ? sentence.slice(0, actionIndex) : '';
       const sentenceRefs = referencesInText(sentence, 'ally');
-      const actor = referencesInText(beforeAction, 'ally')[0] || sentenceRefs[0] || activeActor;
+      const actor = referencesInText(beforeAction, 'ally')[0] || activeActor || sentenceRefs[0];
       if (/passe|passa|toca|lanca/.test(plain)) {
         const targetText = sentence.match(/(?:para|pro|pra|ao)\s+(?:o\s+|a\s+)?(.+)$/iu)?.[1] || '';
         const targetRefs = referencesInText(targetText, 'ally');
