@@ -82,6 +82,9 @@
   function showLoginRequired() {
     if (consoleEl) consoleEl.hidden = true;
     if (loginEl) loginEl.hidden = false;
+    if (queue3) queue3.textContent = '—/6';
+    if (queue5) queue5.textContent = '—/10';
+    if (ranksEl) ranksEl.innerHTML = '<div class="hnl-rank-chip"><strong>Patentes</strong><span>entre com Discord</span></div>';
     setStatus('Entre com Discord para que o bot reconheça sua conta e carregue o ranking.', 'err');
   }
 
