@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'page-integrity.json');
-const BUILD = '2026-07-22-page-integrity-v7';
+const BUILD = '2026-07-22-page-integrity-v8';
 
 let changed = false;
 const report = {
