@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const BUILD = '2026-07-21-discord-legal-placar-v1';
+const BUILD = '2026-07-21-discord-legal-placar-v2';
 const LOGO = '/assets/hollow-nexus-official.svg';
 const RELEASE_ID = 'release-2026-07-21-discord-legal-placar';
 let changed = false;
@@ -159,19 +159,54 @@ const privacyPage = shell({
   body: legalBody({ version: '2026.07.21', summary: 'Coletamos apenas o necessário para reconhecer membros e operar o site, o bot e os eventos; não vendemos dados pessoais.', sections: privacySections, policy: true })
 });
 
-const placarBody = `<section class="hnl-placar-overview"><article class="hnl-card hnl-placar-intro"><span class="hnl-chip green">Dados do bot</span><h2>Ranking Café com Leite 3x3 e 5x5</h2><p>Este Placar reúne somente os jogadores que participam das filas e partidas do sistema Café com Leite no bot do servidor. Cada modo mantém classificação e estatísticas próprias.</p><div class="hnl-queue-grid"><div class="hnl-queue-card"><strong id="queue3v3">0/6</strong><span>Fila Café com Leite 3x3</span></div><div class="hnl-queue-card"><strong id="queue5v5">0/10</strong><span>Fila Café com Leite 5x5</span></div></div></article><article class="hnl-card"><span class="hnl-section-kicker">Patentes da temporada</span><h2>Faixas de pontuação</h2><p>As patentes são calculadas pelo bot conforme os pontos validados em cada fila.</p><div class="hnl-placar-ranks" id="placarRanks"><div class="hnl-rank-chip"><strong>Patentes</strong><span>carregando...</span></div></div></article></section><section class="hnl-card hnl-placar-login" id="placarLoginRequired" hidden><span class="hnl-section-kicker">Reconhecimento necessário</span><h2>Entre com Discord para abrir o Placar</h2><p>O login permite ao bot reconhecer sua conta, patente e participação nas filas 3x3 e 5x5.</p><a class="hnl-btn discord" href="/pages/login.html?next=%2Fpages%2Fplacar.html">Entrar com Discord</a></section><section class="hnl-card hnl-placar-console" id="placarConsole"><div class="hnl-placar-toolbar"><div><h2>Classificação individual</h2><p>Escolha o modo e consulte os dados sincronizados com o bot.</p></div><button id="reloadPlacarBtn" class="hnl-btn" type="button">Atualizar dados</button></div><div class="hnl-placar-tabs" role="tablist" aria-label="Modo do Placar"><button class="hnl-btn hnl-placar-tab active" type="button" role="tab" data-placar-tab="3v3">Placar 3x3</button><button class="hnl-btn hnl-placar-tab" type="button" role="tab" data-placar-tab="5v5">Placar 5x5</button></div><section class="hnl-placar-panel" data-placar-panel="3v3"><div class="hnl-table-wrap"><table class="hnl-rank-table" id="placar3v3Table"></table></div></section><section class="hnl-placar-panel" data-placar-panel="5v5" hidden><div class="hnl-table-wrap"><table class="hnl-rank-table" id="placar5v5Table"></table></div></section><div id="placarStatus" class="hnl-placar-status">Sincronizando com o bot...</div></section>`;
+const placarBody = `<section class="hnl-placar-overview">
+  <article class="hnl-card hnl-placar-intro">
+    <span class="hnl-chip green">Dados do bot + Discord</span>
+    <h2>Ranking Café com Leite 3x3 e 5x5</h2>
+    <p>O Placar mostra todos os membros do servidor, inclusive quem ainda não jogou. As estatísticas 3x3 e 5x5 continuam separadas e são preenchidas pelas partidas do sistema Café com Leite.</p>
+    <div class="hnl-queue-grid">
+      <div class="hnl-queue-card"><strong id="queue3v3">0/6</strong><span>Fila Café com Leite 3x3</span></div>
+      <div class="hnl-queue-card"><strong id="queue5v5">0/10</strong><span>Fila Café com Leite 5x5</span></div>
+      <div class="hnl-queue-card"><strong id="placarMemberCount">0</strong><span>Membros no Placar</span></div>
+    </div>
+  </article>
+  <article class="hnl-card">
+    <span class="hnl-section-kicker">Patentes da temporada</span>
+    <h2>Faixas de pontuação</h2>
+    <p>As patentes são calculadas pelo bot conforme os pontos validados em cada fila.</p>
+    <div class="hnl-placar-ranks" id="placarRanks"><div class="hnl-rank-chip"><strong>Patentes</strong><span>carregando...</span></div></div>
+  </article>
+</section>
+<section class="hnl-card hnl-placar-login" id="placarLoginRequired" hidden>
+  <span class="hnl-section-kicker">Reconhecimento necessário</span><h2>Entre com Discord para abrir o Placar</h2>
+  <p>O login permite ao bot reconhecer sua conta e carregar a lista atual do servidor, os cargos e os rankings Café com Leite.</p>
+  <a class="hnl-btn discord" href="/pages/login.html?next=%2Fpages%2Fplacar.html">Entrar com Discord</a>
+</section>
+<section class="hnl-card hnl-placar-console" id="placarConsole">
+  <div class="hnl-placar-toolbar"><div><h2>Todos os jogadores do servidor</h2><p>Busque um membro e organize a lista do jeito que precisar.</p></div><button id="reloadPlacarBtn" class="hnl-btn" type="button">Atualizar dados</button></div>
+  <div class="hnl-placar-tabs" role="tablist" aria-label="Modo do Placar"><button class="hnl-btn hnl-placar-tab active" type="button" role="tab" data-placar-tab="3v3">Placar 3x3</button><button class="hnl-btn hnl-placar-tab" type="button" role="tab" data-placar-tab="5v5">Placar 5x5</button></div>
+  <div class="hnl-placar-filters">
+    <label><span>Buscar jogador ou cargo</span><input id="placarSearch" type="search" autocomplete="off" placeholder="Nome, Discord ID ou cargo"></label>
+    <label><span>Organizar por</span><select id="placarSort"><option value="points-desc">Mais pontos</option><option value="points-asc">Menos pontos</option><option value="recent-desc">Atividade mais recente</option><option value="recent-asc">Sem atividade / mais antigos</option><option value="role-asc">Cargo (A–Z)</option><option value="name-asc">Nome (A–Z)</option><option value="name-desc">Nome (Z–A)</option></select></label>
+    <label><span>Filtrar cargo</span><select id="placarRoleFilter"><option value="all">Todos os cargos</option></select></label>
+    <strong id="placarResultCount" aria-live="polite">0 membros exibidos</strong>
+  </div>
+  <section class="hnl-placar-panel" data-placar-panel="3v3"><div class="hnl-table-wrap"><table class="hnl-rank-table" id="placar3v3Table"></table></div></section>
+  <section class="hnl-placar-panel" data-placar-panel="5v5" hidden><div class="hnl-table-wrap"><table class="hnl-rank-table" id="placar5v5Table"></table></div></section>
+  <div id="placarStatus" class="hnl-placar-status">Sincronizando com o bot...</div>
+</section>`;
 
 const placarPage = shell({
   title: 'Placar Café com Leite',
   page: 'placar',
   tab: 'cafe',
   href: '/pages/placar.html',
-  heroHtml: hero('Placar Café com Leite', 'Ranking individual dos jogadores que usam as filas 3x3 e 5x5 do sistema Café com Leite no bot.', '⌗', 'Café com Leite'),
+  heroHtml: hero('Placar Café com Leite', 'Todos os membros do servidor, com ranking individual 3x3 e 5x5, cargos e atividade no sistema Café com Leite.', '⌗', 'Café com Leite'),
   body: placarBody,
   extraScripts: `<script src="/js/pages/placar.js?v=${BUILD}"></script>`
 });
 
-const releaseCard = `<article class="hnl-card va-update-card" id="${RELEASE_ID}"><span class="va-update-dot"></span><div class="va-update-meta"><span>21/07/2026</span><span>Site + Bot</span><span>Discord / Legal / Placar</span></div><h3>Login único pelo Discord, termos revisados e Placar integrado ao visual atual</h3><p class="va-muted">O acesso público foi centralizado no Discord para reconhecer membros, cargos e clubes, enquanto as páginas legais e o ranking Café com Leite foram atualizados.</p><ul class="va-update-list"><li class="site">Google, cadastro local e login por e-mail/senha foram removidos da interface e bloqueados nas rotas públicas.</li><li class="site">A nova tela explica reconhecimento, permissões, clubes, inscrições, notificações e vantagens antes do OAuth.</li><li class="site">Termos e Privacidade agora cobrem login Discord, LGPD, clubes, inscrições, moderação, premiações e conteúdo enviado.</li><li class="bot">O Placar 3x3 e 5x5 do Café com Leite continua usando os dados reais de filas, patentes e estatísticas fornecidos pelo bot.</li><li class="bot">As regras oficiais da Nexus Cup foram publicadas uma única vez no canal 1524621308682436740 e o formato passou a indicar equipes e tamanho dos grupos como a definir.</li><li class="fix">Placar, Termos, Privacidade e Atualizações foram migrados para a estrutura visual atual e o Placar entrou no menu.</li></ul></article>`;
+const releaseCard = `<article class="hnl-card va-update-card" id="${RELEASE_ID}"><span class="va-update-dot"></span><div class="va-update-meta"><span>21/07/2026</span><span>Site + Bot</span><span>Discord / Legal / Placar</span></div><h3>Login único pelo Discord, termos revisados e Placar integrado ao visual atual</h3><p class="va-muted">O acesso público foi centralizado no Discord para reconhecer membros, cargos e clubes, enquanto as páginas legais e o ranking Café com Leite foram atualizados.</p><ul class="va-update-list"><li class="site">Google, cadastro local e login por e-mail/senha foram removidos da interface e bloqueados nas rotas públicas.</li><li class="site">A nova tela explica reconhecimento, permissões, clubes, inscrições, notificações e vantagens antes do OAuth.</li><li class="site">Termos e Privacidade agora cobrem login Discord, LGPD, clubes, inscrições, moderação, premiações e conteúdo enviado.</li><li class="bot">O Placar 3x3 e 5x5 agora reúne todos os membros do servidor, preserva as estatísticas reais do Café com Leite e permite organizar por pontos, cargo, atividade ou nome.</li><li class="bot">As regras oficiais da Nexus Cup foram publicadas uma única vez no canal 1524621308682436740 e o formato passou a indicar equipes e tamanho dos grupos como a definir.</li><li class="fix">Placar, Termos, Privacidade e Atualizações foram migrados para a estrutura visual atual e o Placar entrou no menu.</li></ul></article>`;
 
 function updateCards(html = '') {
   const cards = [];
