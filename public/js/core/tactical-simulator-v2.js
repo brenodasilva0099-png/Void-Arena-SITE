@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'hnl:tactical-simulator:v3';
+  const KEEPER_SETTINGS_KEY = 'hnl:tactical-keeper:v1';
   const $ = (selector, root = document) => root?.querySelector?.(selector) || null;
   const $$ = (selector, root = document) => root?.querySelectorAll ? Array.from(root.querySelectorAll(selector)) : [];
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -9,6 +10,20 @@
   let steps = [];
   let running = false;
   let refreshQueued = false;
+  let keeperSettings = {
+    mode: 'automatic',
+    intelligence: 'adaptive',
+    coverage: 'auto',
+    manualTarget: 'centro',
+    testTarget: 'baixo direito'
+  };
+
+  const GOAL_ZONES = [
+    'alto esquerdo', 'alto centro', 'alto direito',
+    'meio esquerdo', 'centro', 'meio direito',
+    'baixo esquerdo', 'baixo centro', 'baixo direito'
+  ];
+  const KEEPER_CHANCES = { low: 0.28, medium: 0.52, high: 0.76 };
 
   const ROLE_GROUPS = [
     { id: 'keeper', aliases: ['goleiro', 'gol', 'gk'] },
@@ -21,12 +36,31 @@
   const ACTION_HELP = {
     pass: 'Passe move a bola entre dois aliados. Se você deixar alguém em branco, a prancheta escolhe uma opção válida e avisa o ajuste.',
     run: 'Deslocamento move um jogador sem alterar a posse da bola.',
-    shot: 'Finalização leva a bola até uma das nove zonas do gol e compara o lado escolhido para o goleiro.',
-    keeper: 'Defesa move o goleiro adversário. Se não houver um GOL, o adversário mais próximo do próprio gol será usado.'
+    shot: 'Finalização leva a bola até uma das nove zonas. A reação usa o modo, a inteligência e o lado configurados no painel do goleiro.',
+    keeper: 'Movimento isolado do goleiro para ensaiar posicionamento. Nas finalizações, a defesa inteligente reage automaticamente.'
   };
 
   function normalize(value = '') {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
+  }
+
+  function canonicalTarget(value = 'centro') {
+    const key = normalize(value).replace('meio centro', 'centro');
+    return GOAL_ZONES.find((zone) => normalize(zone) === key) || 'centro';
+  }
+
+  function sanitizeKeeperSettings(value = {}) {
+    return {
+      mode: ['automatic', 'manual'].includes(value.mode) ? value.mode : 'automatic',
+      intelligence: ['low', 'medium', 'high', 'adaptive'].includes(value.intelligence) ? value.intelligence : 'adaptive',
+      coverage: ['auto', 'left', 'center', 'right'].includes(value.coverage) ? value.coverage : 'auto',
+      manualTarget: canonicalTarget(value.manualTarget),
+      testTarget: canonicalTarget(value.testTarget || 'baixo direito')
+    };
+  }
+
+  function saveKeeperSettings() {
+    localStorage.setItem(KEEPER_SETTINGS_KEY, JSON.stringify({ ...keeperSettings, updatedAt: new Date().toISOString() }));
   }
 
   function roleGroup(value = '') {
@@ -144,6 +178,9 @@
       const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem('hnl:tactical-simulator:v2') || '{}');
       steps = Array.isArray(current.steps) ? current.steps : [];
     } catch { steps = []; }
+    try {
+      keeperSettings = sanitizeKeeperSettings(JSON.parse(localStorage.getItem(KEEPER_SETTINGS_KEY) || '{}'));
+    } catch { keeperSettings = sanitizeKeeperSettings(); }
   }
 
   function actionLabel(step = {}) {
@@ -239,7 +276,7 @@
       const shooter = bestShooter(rawStep.from);
       if (!shooter) return { error: `${label}: adicione um aliado para finalizar.` };
       if (!rawStep.from || normalize(rawStep.from) !== normalize(shooter.name)) notes.push(`${label}: finalizador ajustado para ${shooter.name}`);
-      return { step: { type, from: shooter.name, target: rawStep.target || 'centro', keeperTarget: rawStep.keeperTarget || 'centro' }, notes };
+      return { step: { type, from: shooter.name, target: canonicalTarget(rawStep.target) }, notes };
     }
 
     const keeper = goalkeeper('enemy');
@@ -270,7 +307,7 @@
     } else if (type === 'run') {
       rawStep = { type, from, zone: $('#runZone')?.value || 'ataque' };
     } else if (type === 'shot') {
-      rawStep = { type, from: $('#shotPlayer')?.value || from, target: $('#shotTarget')?.value || 'centro', keeperTarget: $('#keeperDirection')?.value || 'centro' };
+      rawStep = { type, from: $('#shotPlayer')?.value || from, target: $('#shotTarget')?.value || 'centro' };
     } else {
       rawStep = { type: 'keeper', target: $('#keeperDirection')?.value || 'centro' };
     }
@@ -352,8 +389,156 @@
   }
 
   function targetCoordinates(target = 'centro') {
-    const key = normalize(target);
-    return { x: 97, y: /alto|esquer/.test(key) ? 40 : /baixo|direit/.test(key) ? 60 : 50 };
+    const key = normalize(canonicalTarget(target));
+    return {
+      x: /alto/.test(key) ? 98 : /baixo/.test(key) ? 96 : 97,
+      y: /esquer/.test(key) ? 40 : /direit/.test(key) ? 60 : 50
+    };
+  }
+
+  function targetSide(target = 'centro') {
+    const key = normalize(canonicalTarget(target));
+    if (/esquer/.test(key)) return 'left';
+    if (/direit/.test(key)) return 'right';
+    return 'center';
+  }
+
+  function targetHeight(target = 'centro') {
+    const key = normalize(canonicalTarget(target));
+    if (/alto/.test(key)) return 'high';
+    if (/baixo/.test(key)) return 'low';
+    return 'middle';
+  }
+
+  function buildTarget(height = 'middle', side = 'center') {
+    const heightLabel = { high: 'alto', middle: 'meio', low: 'baixo' }[height] || 'meio';
+    const sideLabel = { left: 'esquerdo', center: 'centro', right: 'direito' }[side] || 'centro';
+    return canonicalTarget(height === 'middle' && side === 'center' ? 'centro' : `${heightLabel} ${sideLabel}`);
+  }
+
+  function intelligenceLabel(value = keeperSettings.intelligence) {
+    return { low: 'Baixa', medium: 'Média', high: 'Alta', adaptive: 'Adaptativa' }[value] || 'Adaptativa';
+  }
+
+  function keeperChance(level = keeperSettings.intelligence, shooter = null, actionCount = steps.length) {
+    if (KEEPER_CHANCES[level]) return KEEPER_CHANCES[level];
+    const shooterX = typeof shooter === 'number' ? shooter : positionOf(shooter?.node).x;
+    const distanceFromGoal = Math.max(0, 92 - shooterX);
+    const distanceAdjustment = Math.max(-0.1, Math.min(0.12, (distanceFromGoal - 25) * 0.006));
+    const buildupAdjustment = Math.min(0.08, Math.max(0, actionCount - 1) * 0.015);
+    return Math.max(0.38, Math.min(0.82, 0.58 + distanceAdjustment + buildupAdjustment));
+  }
+
+  function planKeeperDefense(shotTarget = 'centro', shooter = null, randomValue = Math.random(), settings = keeperSettings) {
+    const config = sanitizeKeeperSettings(settings);
+    const target = canonicalTarget(shotTarget);
+    if (config.mode === 'manual') {
+      const keeperTarget = canonicalTarget(config.manualTarget);
+      return {
+        mode: 'manual',
+        intelligence: config.intelligence,
+        coverage: targetSide(keeperTarget),
+        chance: null,
+        readSuccessful: keeperTarget === target,
+        shotTarget: target,
+        keeperTarget
+      };
+    }
+
+    const chance = keeperChance(config.intelligence, shooter);
+    const readSuccessful = Number(randomValue) <= chance;
+    let keeperTarget;
+    if (config.coverage === 'auto') {
+      if (readSuccessful) {
+        keeperTarget = target;
+      } else {
+        const alternatives = GOAL_ZONES.filter((zone) => zone !== target);
+        keeperTarget = alternatives[Math.floor(((Number(randomValue) * 7.13) % 1) * alternatives.length)] || 'centro';
+      }
+    } else {
+      const shotHeight = targetHeight(target);
+      const heights = ['high', 'middle', 'low'];
+      const alternativeHeights = heights.filter((height) => height !== shotHeight);
+      const chosenHeight = readSuccessful
+        ? shotHeight
+        : alternativeHeights[Math.floor(((Number(randomValue) * 5.31) % 1) * alternativeHeights.length)] || 'middle';
+      keeperTarget = buildTarget(chosenHeight, config.coverage);
+    }
+
+    return {
+      mode: 'automatic',
+      intelligence: config.intelligence,
+      coverage: config.coverage,
+      chance,
+      readSuccessful,
+      shotTarget: target,
+      keeperTarget: canonicalTarget(keeperTarget)
+    };
+  }
+
+  function keeperStrategyText() {
+    if (keeperSettings.mode === 'manual') return `Manual: mergulho no ${keeperSettings.manualTarget}.`;
+    const side = { auto: 'lê o lado do chute', left: 'prioriza o lado esquerdo', center: 'protege o centro', right: 'prioriza o lado direito' }[keeperSettings.coverage];
+    return `IA ${intelligenceLabel().toLocaleLowerCase('pt-BR')}: ${side}.`;
+  }
+
+  function syncKeeperPanel() {
+    const mode = $('#keeperControlMode');
+    const intelligence = $('#keeperIntelligence');
+    const coverage = $('#keeperCoverage');
+    const manualTarget = $('#keeperManualTarget');
+    const testTarget = $('#keeperTestTarget');
+    if (mode) mode.value = keeperSettings.mode;
+    if (intelligence) intelligence.value = keeperSettings.intelligence;
+    if (coverage) coverage.value = keeperSettings.coverage;
+    if (manualTarget) manualTarget.value = keeperSettings.manualTarget;
+    if (testTarget) testTarget.value = keeperSettings.testTarget;
+    const manual = keeperSettings.mode === 'manual';
+    if ($('#keeperManualField')) $('#keeperManualField').hidden = !manual;
+    if (intelligence) intelligence.disabled = manual;
+    if (coverage) coverage.disabled = manual;
+    const chance = keeperChance(keeperSettings.intelligence, bestShooter());
+    if ($('#keeperReadingChance')) $('#keeperReadingChance').textContent = manual ? 'Manual' : `${Math.round(chance * 100)}%`;
+    if ($('#keeperCurrentStrategy')) $('#keeperCurrentStrategy').textContent = keeperStrategyText();
+  }
+
+  function readKeeperSettingsFromUi() {
+    keeperSettings = sanitizeKeeperSettings({
+      mode: $('#keeperControlMode')?.value,
+      intelligence: $('#keeperIntelligence')?.value,
+      coverage: $('#keeperCoverage')?.value,
+      manualTarget: $('#keeperManualTarget')?.value,
+      testTarget: $('#keeperTestTarget')?.value
+    });
+    saveKeeperSettings();
+    syncKeeperPanel();
+    setStatus('Configuração do goleiro salva para as próximas finalizações.', 'success');
+  }
+
+  function renderKeeperDecision(decision, defended) {
+    if (!decision) return;
+    const chance = decision.chance == null ? 'comando manual' : `${Math.round(decision.chance * 100)}% de leitura`;
+    const mode = decision.mode === 'manual' ? 'Manual' : `IA ${intelligenceLabel(decision.intelligence)}`;
+    const decisionBox = $('#keeperLastDecision');
+    if (decisionBox) decisionBox.innerHTML = `<strong>${esc(mode)}: ${esc(decision.keeperTarget)}</strong><span>Chute no ${esc(decision.shotTarget)} · ${esc(chance)}</span>`;
+    const result = $('#keeperLastResult');
+    if (result) result.textContent = defended ? 'DEFESA' : 'GOL';
+    const resultCard = $('#keeperResultCard');
+    if (resultCard) {
+      resultCard.classList.toggle('success', Boolean(defended));
+      resultCard.classList.toggle('danger', !defended);
+    }
+  }
+
+  function highlightGoalZones(shotTarget = '', keeperTarget = '', defended = false) {
+    const target = $('.hnl-goal-target');
+    if (!target) return;
+    $$('span', target).forEach((cell) => cell.classList.remove('shot-active', 'keeper-active', 'defended'));
+    const shotCell = shotTarget ? $$('span', target).find((cell) => cell.dataset.goalZone === canonicalTarget(shotTarget)) : null;
+    const keeperCell = keeperTarget ? $$('span', target).find((cell) => cell.dataset.goalZone === canonicalTarget(keeperTarget)) : null;
+    shotCell?.classList.add('shot-active');
+    keeperCell?.classList.add('keeper-active');
+    if (defended && shotCell) shotCell.classList.add('defended');
   }
 
   function ensureBallOnField() {
@@ -450,16 +635,72 @@
       if (!shooter) throw new Error('Adicione um aliado para executar a finalização.');
       if (!ballToken) throw new Error('Não foi possível posicionar a bola no campo.');
       const start = positionOf(shooter.node);
-      const target = targetCoordinates(step.target);
+      const shotTarget = canonicalTarget(step.target);
+      const target = targetCoordinates(shotTarget);
       await moveNode(ballToken.node, start.x, start.y, 180);
       const keeper = goalkeeper('enemy');
-      if (keeper) moveNode(keeper.node, 92, targetCoordinates(step.keeperTarget || 'centro').y, 500);
+      const decision = keeper ? planKeeperDefense(shotTarget, shooter) : null;
+      let keeperMove = Promise.resolve();
+      if (keeper && decision) {
+        keeper.node.classList.add('is-goalkeeper-dive');
+        keeperMove = moveNode(keeper.node, 92, targetCoordinates(decision.keeperTarget).y, 500);
+      }
       await moveNode(ballToken.node, target.x, target.y, 680);
-      const savedTarget = normalize(step.target);
-      const savedKeeper = normalize(step.keeperTarget || 'centro');
-      const defended = keeper && savedTarget === savedKeeper;
+      await keeperMove;
+      keeper?.node?.classList.remove('is-goalkeeper-dive');
+      const defended = Boolean(keeper && decision && decision.shotTarget === decision.keeperTarget);
+      highlightGoalZones(shotTarget, decision?.keeperTarget || '', defended);
+      renderKeeperDecision(decision, defended);
       if ($('#simulationResult')) $('#simulationResult').textContent = defended ? 'DEFESA' : 'GOL';
-      setStatus(defended ? 'O goleiro defendeu a finalização.' : 'Gol na simulação.', defended ? '' : 'success');
+      const reaction = decision?.mode === 'manual'
+        ? `comando manual no ${decision.keeperTarget}`
+        : `${intelligenceLabel(decision?.intelligence)} no ${decision?.keeperTarget || 'centro'}`;
+      setStatus(defended
+        ? `Defesa! O goleiro reagiu com ${reaction}.`
+        : `Gol. O chute foi no ${shotTarget} e o goleiro tentou ${decision?.keeperTarget || 'sem reação'}.`, defended ? 'success' : '');
+      return { defended, decision, shotTarget };
+    }
+  }
+
+  async function testKeeperDefense() {
+    if (running) return;
+    const shooter = bestShooter();
+    const keeper = goalkeeper('enemy');
+    const ballToken = ensureBallOnField();
+    if (!shooter) { setStatus('Adicione um jogador aliado para testar a finalização.', 'error'); return; }
+    if (!keeper) { setStatus('Adicione um adversário para representar o goleiro.', 'error'); return; }
+    if (!ballToken) { setStatus('Não foi possível posicionar a bola para o teste.', 'error'); return; }
+
+    keeperSettings = sanitizeKeeperSettings({ ...keeperSettings, testTarget: $('#keeperTestTarget')?.value });
+    saveKeeperSettings();
+    syncKeeperPanel();
+    running = true;
+    const button = $('#testKeeperDefense');
+    const executeButton = $('#executeTacticalSequence');
+    const originalText = button?.textContent || '🧤 Testar defesa';
+    if (button) { button.disabled = true; button.textContent = 'Preparando teste…'; }
+    if (executeButton) executeButton.disabled = true;
+    const original = new Map(tokenNodes().map((node) => [node.dataset.id, positionOf(node)]));
+    if ($('#simulationResult')) $('#simulationResult').textContent = 'TESTE';
+    setStatus('Preparando um chute isolado para testar o goleiro.');
+    try {
+      await focusBoardForPlayback();
+      if (button) button.textContent = 'Goleiro reagindo…';
+      const outcome = await executeStep({ type: 'shot', from: shooter.name, target: keeperSettings.testTarget });
+      await sleep(900);
+      await Promise.all(tokenNodes().map((node) => {
+        const saved = original.get(node.dataset.id);
+        return saved ? moveNode(node, saved.x, saved.y, 280) : Promise.resolve();
+      }));
+      finishPlayback(outcome?.defended ? '🧤 Defesa concluída' : '⚽ Gol no teste', outcome?.defended ? 'success' : 'error');
+    } catch (error) {
+      keeper?.node?.classList.remove('is-goalkeeper-dive');
+      setStatus(error.message || 'Não foi possível testar a defesa.', 'error');
+      finishPlayback('Falha no teste do goleiro', 'error');
+    } finally {
+      running = false;
+      if (button) { button.disabled = false; button.textContent = originalText; }
+      if (executeButton) executeButton.disabled = false;
     }
   }
 
@@ -513,19 +754,28 @@
   }
 
   function injectFieldDetails(board) {
-    if (!board || $('.hnl-penalty-arc', board)) return;
-    ['left', 'right'].forEach((side) => {
-      const arc = document.createElement('div');
-      arc.className = `hnl-penalty-arc ${side}`;
-      arc.setAttribute('aria-hidden', 'true');
-      board.appendChild(arc);
-    });
-    ['tl', 'tr', 'bl', 'br'].forEach((corner) => {
-      const arc = document.createElement('div');
-      arc.className = `hnl-corner-arc ${corner}`;
-      arc.setAttribute('aria-hidden', 'true');
-      board.appendChild(arc);
-    });
+    if (!board) return;
+    if (!$('.hnl-penalty-arc', board)) {
+      ['left', 'right'].forEach((side) => {
+        const arc = document.createElement('div');
+        arc.className = `hnl-penalty-arc ${side}`;
+        arc.setAttribute('aria-hidden', 'true');
+        board.appendChild(arc);
+      });
+      ['tl', 'tr', 'bl', 'br'].forEach((corner) => {
+        const arc = document.createElement('div');
+        arc.className = `hnl-corner-arc ${corner}`;
+        arc.setAttribute('aria-hidden', 'true');
+        board.appendChild(arc);
+      });
+    }
+    if (!$('.hnl-goal-target', board)) {
+      const goalTarget = document.createElement('div');
+      goalTarget.className = 'hnl-goal-target';
+      goalTarget.setAttribute('aria-hidden', 'true');
+      goalTarget.innerHTML = GOAL_ZONES.map((zone) => `<span data-goal-zone="${esc(zone)}"></span>`).join('');
+      board.appendChild(goalTarget);
+    }
   }
 
   function injectLab() {
@@ -549,14 +799,14 @@
     section.innerHTML = `
       <article class="hnl-card hnl-tactical-guide">
         <div class="hnl-tactical-guide-head">
-          <div><span class="hnl-section-kicker">Guia rápido</span><h2>Como montar e assistir a uma jogada</h2><p>Use o plano automático para um teste rápido ou crie um roteiro personalizado. A prancheta corrige referências incompletas antes de executar.</p></div>
+          <div><span class="hnl-section-kicker">Guia rápido</span><h2>Como montar e assistir a uma jogada</h2><p>Use o plano automático para um teste rápido ou crie um roteiro personalizado com reação inteligente do goleiro.</p></div>
           <span class="hnl-guide-time">Leitura: 1 min</span>
         </div>
         <ol class="hnl-tutorial-steps">
           <li><b>1</b><span><strong>Monte o time</strong><small>Escolha os jogadores e arraste os avatares para as posições desejadas.</small></span></li>
           <li><b>2</b><span><strong>Crie as ações</strong><small>Monte manualmente ou descreva passes, movimentos e chutes em português.</small></span></li>
-          <li><b>3</b><span><strong>Revise o roteiro</strong><small>Reordene ou remova ações. Campos ausentes recebem uma opção válida automaticamente.</small></span></li>
-          <li><b>4</b><span><strong>Assista no campo</strong><small>Ao executar, a página sobe até o campo e faz uma contagem antes da animação.</small></span></li>
+          <li><b>3</b><span><strong>Configure o goleiro</strong><small>Escolha defesa manual ou automática, inteligência e prioridade de lado.</small></span></li>
+          <li><b>4</b><span><strong>Revise e assista</strong><small>Reordene as ações. Ao executar, a página sobe ao campo antes da animação.</small></span></li>
         </ol>
         <details class="hnl-tactical-help">
           <summary>O que cada função faz</summary>
@@ -565,8 +815,30 @@
             <p><strong>Salvar posições</strong><span>Guarda jogadores e posições atuais da prancheta neste navegador.</span></p>
             <p><strong>Salvar roteiro</strong><span>Guarda a sequência personalizada de ações neste navegador.</span></p>
             <p><strong>Restaurar posições</strong><span>Depois da execução, devolve os jogadores aos lugares onde começaram.</span></p>
+            <p><strong>Defesa inteligente</strong><span>Define como o goleiro lê o chute e escolhe a zona do mergulho.</span></p>
           </div>
         </details>
+      </article>
+      <article class="hnl-card hnl-keeper-panel">
+        <div class="hnl-keeper-panel-head">
+          <div><span class="hnl-section-kicker">🧤 Goleiro</span><h2>Defesa inteligente</h2><p>Controle a reação do goleiro em toda finalização e faça um teste isolado antes de executar o roteiro.</p></div>
+          <span class="hnl-keeper-badge">9 zonas de defesa</span>
+        </div>
+        <div class="hnl-keeper-control-grid">
+          <label>Modo de defesa<select class="hnl-select" id="keeperControlMode"><option value="automatic">Defender automaticamente</option><option value="manual">Escolher defesa manualmente</option></select></label>
+          <label id="keeperIntelligenceField">Nível de inteligência<select class="hnl-select" id="keeperIntelligence"><option value="low">Baixa — reação tardia</option><option value="medium">Média — equilibrada</option><option value="high">Alta — leitura rápida</option><option value="adaptive">Automática — adapta à jogada</option></select></label>
+          <label id="keeperCoverageField">Lado para defender<select class="hnl-select" id="keeperCoverage"><option value="auto">Automático — ler o chute</option><option value="left">Priorizar esquerda</option><option value="center">Proteger o centro</option><option value="right">Priorizar direita</option></select></label>
+          <label id="keeperManualField" hidden>Direção manual exata<select class="hnl-select" id="keeperManualTarget"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select></label>
+          <label>Direção do chute de teste<select class="hnl-select" id="keeperTestTarget"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option selected>baixo direito</option></select></label>
+          <div class="hnl-keeper-test-action"><button class="hnl-btn accent" id="testKeeperDefense" type="button">🧤 Testar defesa</button><small>O teste usa o atacante mais avançado e restaura a formação ao terminar.</small></div>
+        </div>
+        <div class="hnl-keeper-metrics">
+          <div><span>Chance de leitura</span><strong id="keeperReadingChance">--</strong></div>
+          <div class="hnl-keeper-strategy"><span>Estratégia atual</span><strong id="keeperCurrentStrategy">Carregando…</strong></div>
+          <div id="keeperResultCard"><span>Último resultado</span><strong id="keeperLastResult">PRONTO</strong></div>
+          <div class="hnl-keeper-last"><span>Última decisão</span><p id="keeperLastDecision"><strong>Ainda não testado</strong><span>Escolha as opções acima e use “Testar defesa”.</span></p></div>
+        </div>
+        <div class="hnl-keeper-note"><strong>Como funciona:</strong> baixa, média e alta usam chances fixas de leitura. No automático, a chance se adapta à distância do chute e ao número de ações da jogada. Se você priorizar um lado, o goleiro protege aquele setor mesmo quando o chute vai para outro.</div>
       </article>
       <div class="hnl-tactical-lab-grid">
         <article class="hnl-card">
@@ -582,7 +854,7 @@
             <label data-action-field="run">Zona do deslocamento<select class="hnl-select" id="runZone"><option value="centro">Meio / centro</option><option value="direita">Ala direita</option><option value="esquerda">Ala esquerda</option><option value="ataque">Avançar ao ataque</option></select></label>
             <label data-action-field="shot">Finalizador<select class="hnl-select" id="shotPlayer"></select></label>
             <label data-action-field="shot">Alvo do chute<select class="hnl-select" id="shotTarget"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select></label>
-            <label data-action-field="shot keeper">Lado do goleiro<select class="hnl-select" id="keeperDirection"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select><small id="keeperPlayerInfo"></small></label>
+            <label data-action-field="keeper">Direção do movimento<select class="hnl-select" id="keeperDirection"><option>alto esquerdo</option><option>alto centro</option><option>alto direito</option><option>meio esquerdo</option><option selected>centro</option><option>meio direito</option><option>baixo esquerdo</option><option>baixo centro</option><option>baixo direito</option></select><small id="keeperPlayerInfo"></small></label>
             <div class="hnl-actions full"><button class="hnl-btn primary" id="addTacticalStep" type="button">+ Adicionar ao roteiro</button><button class="hnl-btn" id="refreshTacticalPlayers" type="button">Atualizar jogadores</button></div>
           </div>
         </article>
@@ -610,10 +882,15 @@
 
     refreshSelectors();
     updateBuilderFields();
+    syncKeeperPanel();
     renderSteps();
     $('#actionType')?.addEventListener('change', updateBuilderFields);
     $('#addTacticalStep')?.addEventListener('click', addStructuredStep);
     $('#refreshTacticalPlayers')?.addEventListener('click', () => { refreshSelectors(); setStatus('Lista de jogadores atualizada.', 'success'); });
+    ['#keeperControlMode', '#keeperIntelligence', '#keeperCoverage', '#keeperManualTarget', '#keeperTestTarget'].forEach((selector) => {
+      $(selector)?.addEventListener('change', readKeeperSettingsFromUi);
+    });
+    $('#testKeeperDefense')?.addEventListener('click', testKeeperDefense);
     $('#parseTacticalScript')?.addEventListener('click', () => {
       const text = $('#tacticalScript')?.value || '';
       const interpretation = parseScript(text);
@@ -656,6 +933,14 @@
       const interpretation = parseScript(text);
       const prepared = prepareSequence(interpretation.steps);
       return { actions: prepared.steps, notes: prepared.notes, errors: prepared.errors, ignored: interpretation.ignored };
+    },
+    previewKeeper(options = {}) {
+      return planKeeperDefense(
+        options.shotTarget || 'centro',
+        Number.isFinite(Number(options.shooterX)) ? Number(options.shooterX) : 50,
+        Number.isFinite(Number(options.random)) ? Number(options.random) : 0.5,
+        sanitizeKeeperSettings(options.settings || keeperSettings)
+      );
     }
   });
 
