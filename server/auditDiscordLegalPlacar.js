@@ -50,6 +50,10 @@ requireMarkers('public/pages/placar.html', [
   'class="frm-shell"',
   'Placar Café com Leite',
   'Ranking Café com Leite 3x3 e 5x5',
+  'id="placarMemberCount"',
+  'id="placarSearch"',
+  'id="placarSort"',
+  'id="placarRoleFilter"',
   'id="placar3v3Table"',
   'id="placar5v5Table"',
   '/js/pages/placar.js',
@@ -73,6 +77,11 @@ const placarJs = requireMarkers('public/js/pages/placar.js', [
   '/api/auth/session',
   '/api/placar',
   "data-placar-tab",
+  'points-desc',
+  'recent-desc',
+  'role-asc',
+  'name-asc',
+  'Nunca jogou',
   'showLoginRequired'
 ]);
 try { new vm.Script(authUi, { filename: 'league-auth-ui.js' }); }
@@ -94,6 +103,11 @@ if (!authRoutes.includes("res.status(410).json(discordOnlyPayload)")) {
 requireMarkers('server/routes/placar.routes.js', [
   "app.get('/api/placar'",
   "callBot('/internal/placar'",
+  "callBot('/internal/discord/members/all?limit=1000'",
+  'completeLeaderboard',
+  'serverMembersCount',
+  'primaryRole',
+  'lastActivityAt',
   "'3v3'",
   "'5v5'"
 ]);
@@ -111,7 +125,8 @@ const publicationSource = requireMarkers('server/nexusCupRulesPublication.js', [
   'clipe como prova',
   "allowedMentions: { parse: [] }",
   'existingPublications',
-  "callBot('/internal/discord/edit-message'"
+  "callBot('/internal/discord/edit-message'",
+  "method: 'PATCH'"
 ]);
 try {
   const sandbox = { module: { exports: {} }, exports: {}, require: () => ({}), console, setTimeout };
