@@ -1,6 +1,6 @@
 const storage = require('../storage');
-const { getSessionUser } = require('../services/access.service');
-const { canManageTeam } = require('../services/teamAccess.service');
+const { getSessionUser, isAdminRecord } = require('../services/access.service');
+const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service');
 const { callBot } = require('../services/botApi.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 const { normalizeBracketForResponse } = require('../services/bracket.service');
@@ -144,7 +144,7 @@ function rosterEntries(team = {}, users = []) {
   });
 }
 
-function publicTeam(team = {}, users = [], viewer = null) {
+function publicTeam(team = {}, users = [], viewer = null, isAdmin = false) {
   const roster = rosterEntries(team, users);
   return {
     ...team,
@@ -169,7 +169,8 @@ function publicTeam(team = {}, users = [], viewer = null) {
     playerDetails: roster.filter((player) => player.rosterRole !== 'Reserva'),
     reserveDetails: roster.filter((player) => player.rosterRole === 'Reserva'),
     rosterCount: roster.length,
-    canManage: canManageTeam(viewer, team)
+    canManage: Boolean(isAdmin || canManageTeam(viewer, team)),
+    canDelete: Boolean(isAdmin || canDeleteTeam(viewer, team))
   };
 }
 
@@ -191,6 +192,7 @@ async function snapshot(req = null) {
     req ? safeRead('sessão', () => getSessionUser(req), null) : Promise.resolve({ value: null, error: '' })
   ]);
   const errors = [teamsResult.error, usersResult.error, eventsResult.error, bracketResult.error, settingsResult.error, viewerResult.error].filter(Boolean);
+  const isAdmin = viewerResult.value ? await isAdminRecord(viewerResult.value).catch(() => false) : false;
   return {
     teams: teamsResult.value,
     users: usersResult.value,
@@ -198,6 +200,7 @@ async function snapshot(req = null) {
     bracket: bracketResult.value,
     settings: settingsResult.value,
     viewer: viewerResult.value,
+    isAdmin,
     degraded: errors.length > 0,
     errors
   };
@@ -316,7 +319,7 @@ function registerLeagueStableRoutes(app) {
 
   app.get('/api/league/overview', async (req, res) => {
     const data = await snapshot(req);
-    const clubs = data.teams.map((team) => publicTeam(team, data.users, data.viewer));
+    const clubs = data.teams.map((team) => publicTeam(team, data.users, data.viewer, data.isAdmin));
     const players = data.users.filter((user) => !user.deletedAt && !user.hiddenFromPlayersDirectory).map((user) => {
       const team = currentTeamForUser(user, data.teams);
       return { ...publicUser(user), team: team ? { id: team.id || '', name: team.name || '', tag: team.tag || '', logo: teamLogo(team) } : null };
@@ -328,12 +331,12 @@ function registerLeagueStableRoutes(app) {
 
   app.get('/api/league/clubs', async (req, res) => {
     const data = await snapshot(req);
-    return res.json({ success: true, degraded: data.degraded, errors: data.errors, clubs: data.teams.map((team) => publicTeam(team, data.users, data.viewer)) });
+    return res.json({ success: true, degraded: data.degraded, errors: data.errors, clubs: data.teams.map((team) => publicTeam(team, data.users, data.viewer, data.isAdmin)) });
   });
 
   app.get('/api/teams', async (req, res) => {
     const data = await snapshot(req);
-    return res.json({ success: true, degraded: data.degraded, errors: data.errors, teams: data.teams.map((team) => publicTeam(team, data.users, data.viewer)), bracket: normalizeBracketForResponse(data.bracket || {}, data.teams, data.users) });
+    return res.json({ success: true, degraded: data.degraded, errors: data.errors, teams: data.teams.map((team) => publicTeam(team, data.users, data.viewer, data.isAdmin)), bracket: normalizeBracketForResponse(data.bracket || {}, data.teams, data.users), isAdmin: data.isAdmin });
   });
 
   app.get('/api/league/clubs/:teamId', async (req, res) => {
@@ -341,7 +344,7 @@ function registerLeagueStableRoutes(app) {
     const id = decodeURIComponent(String(req.params.teamId || '')).trim().toLocaleLowerCase('pt-BR');
     const team = data.teams.find((item) => teamIdentityValues(item).includes(id));
     if (!team) return res.status(404).json({ success: false, message: 'Clube não encontrado.' });
-    return res.json({ success: true, degraded: data.degraded, errors: data.errors, club: publicTeam(team, data.users, data.viewer) });
+    return res.json({ success: true, degraded: data.degraded, errors: data.errors, club: publicTeam(team, data.users, data.viewer, data.isAdmin) });
   });
 
   const playersHandler = async (req, res) => {
@@ -352,7 +355,7 @@ function registerLeagueStableRoutes(app) {
         ...publicUser(user),
         team: team ? { id: team.id || '', name: team.name || '', tag: team.tag || '', logo: teamLogo(team) } : null,
         profileUrl: `/pages/perfil-jogador.html?id=${encodeURIComponent(user.id || user.discordId || '')}`,
-        canManageCurrentTeam: Boolean(team && canManageTeam(data.viewer, team))
+        canManageCurrentTeam: Boolean(team && (data.isAdmin || canManageTeam(data.viewer, team)))
       };
     }).sort((a, b) => String(a.name).localeCompare(String(b.name), 'pt-BR'));
     return res.json({ success: true, degraded: data.degraded, errors: data.errors, players });
@@ -380,7 +383,7 @@ function registerLeagueStableRoutes(app) {
     const [data, settings, cafe] = await Promise.all([snapshot(req), readRankingSettings(), buildCafeRanking()]);
     const clubs = data.teams.map((team) => {
       const setting = settingFor(settings, 'club', team);
-      return { ...publicTeam(team, data.users, data.viewer), points: number(setting.points ?? team.points), wins: number(setting.wins ?? team.wins), losses: number(setting.losses ?? team.losses), goals: number(setting.goals ?? team.goals) };
+      return { ...publicTeam(team, data.users, data.viewer, data.isAdmin), points: number(setting.points ?? team.points), wins: number(setting.wins ?? team.wins), losses: number(setting.losses ?? team.losses), goals: number(setting.goals ?? team.goals) };
     }).sort((a, b) => b.points - a.points || b.wins - a.wins || b.goals - a.goals || String(a.name).localeCompare(String(b.name), 'pt-BR'));
     const players = cafe.ranking.map((player) => {
       const setting = settingFor(settings, 'player', player);
@@ -397,7 +400,7 @@ function registerLeagueStableRoutes(app) {
   const bracketHandler = async (req, res) => {
     const data = await snapshot(req);
     const bracket = normalizeBracketForResponse(data.bracket || {}, data.teams, data.users);
-    return res.json({ success: true, degraded: data.degraded, errors: data.errors, teams: data.teams.map((team) => publicTeam(team, data.users, data.viewer)), events: data.events, settings: data.settings, bracket, groups: bracket.groups || [], groupStandings: bracket.groupStandings || {} });
+    return res.json({ success: true, degraded: data.degraded, errors: data.errors, teams: data.teams.map((team) => publicTeam(team, data.users, data.viewer, data.isAdmin)), events: data.events, settings: data.settings, bracket, groups: bracket.groups || [], groupStandings: bracket.groupStandings || {} });
   };
   app.get('/api/league/bracket', bracketHandler);
   app.get('/api/league/groups', bracketHandler);
@@ -420,7 +423,7 @@ function registerLeagueStableRoutes(app) {
     const fromTeam = data.teams.find((team) => String(team.id || '') === String(req.body?.fromTeamId || '')) || null;
     const toTeam = data.teams.find((team) => String(team.id || '') === String(req.body?.toTeamId || '')) || null;
     const player = data.users.find((user) => [user.id, user.discordId].some((value) => String(value || '') === String(req.body?.playerId || ''))) || null;
-    if (!toTeam || !canManageTeam(viewer, toTeam)) return res.status(403).json({ success: false, message: 'Você só pode solicitar transferência para um clube que administra.' });
+    if (!toTeam || (!data.isAdmin && !canManageTeam(viewer, toTeam))) return res.status(403).json({ success: false, message: 'Você só pode solicitar transferência para um clube que administra.' });
     if (!player) return res.status(400).json({ success: false, message: 'Selecione um jogador válido.' });
     const createdAt = new Date().toISOString();
     const payload = { type: 'league_transfer_request', status: 'pending', player: { id: player.id || '', discordId: player.discordId || '', name: displayName(player) }, fromTeam: fromTeam ? { id: fromTeam.id || '', name: fromTeam.name || '' } : null, toTeam: { id: toTeam.id || '', name: toTeam.name || '' }, note: text(req.body?.note, 800), requestedBy: { id: viewer.id || '', discordId: viewer.discordId || '', name: displayName(viewer) }, createdAt };
