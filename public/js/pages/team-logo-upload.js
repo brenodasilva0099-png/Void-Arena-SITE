@@ -10,7 +10,7 @@
 
   function setStatus(input, message, type = '') {
     const form = input?.closest('form');
-    const status = form?.querySelector('.va-status') || document.getElementById('teamCreateStatus') || document.getElementById('teamManageStatus');
+    const status = form?.querySelector('.va-status') || document.getElementById('createClubStatus') || document.getElementById('clubManageStatus') || document.getElementById('teamCreateStatus') || document.getElementById('teamManageStatus');
     if (!status) return;
     status.textContent = message || '';
     status.className = `va-status ${type}`.trim();
@@ -150,7 +150,10 @@
 
     const tools = document.createElement('div');
     tools.className = 'va-logo-upload-tools';
-    tools.innerHTML = '<button class="va-btn mini" type="button" data-logo-file-btn>Selecionar arquivo</button><button class="va-btn mini secondary" type="button" data-logo-paste-btn>Colar Ctrl+V</button><input data-logo-file-input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />';
+    tools.tabIndex = 0;
+    tools.setAttribute('role', 'button');
+    tools.setAttribute('aria-label', 'Arraste uma logo, selecione um arquivo ou cole uma imagem');
+    tools.innerHTML = '<div class="va-logo-drop-copy"><strong>Solte a logo aqui</strong><small>PNG, JPG, WEBP ou GIF · também aceita uma imagem copiada</small></div><div class="va-logo-drop-actions"><button class="va-btn hnl-btn mini" type="button" data-logo-file-btn>Escolher arquivo</button><button class="va-btn hnl-btn mini secondary" type="button" data-logo-paste-btn>Colar imagem</button></div><input data-logo-file-input type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />';
 
     const wrap = input.closest('.va-logo-input-wrap');
     if (wrap) wrap.appendChild(tools);
@@ -171,6 +174,20 @@
       if (file) setLogoFromFile(input, file);
       fileInput.value = '';
     });
+    const cancelDrag = (event) => { event.preventDefault(); event.stopPropagation(); };
+    ['dragenter', 'dragover'].forEach((type) => tools.addEventListener(type, (event) => { cancelDrag(event); tools.classList.add('is-dragging'); }));
+    ['dragleave', 'dragend'].forEach((type) => tools.addEventListener(type, (event) => { cancelDrag(event); tools.classList.remove('is-dragging'); }));
+    tools.addEventListener('drop', (event) => {
+      cancelDrag(event);
+      tools.classList.remove('is-dragging');
+      const file = Array.from(event.dataTransfer?.files || []).find((item) => /^image\//i.test(item.type || ''));
+      if (file) setLogoFromFile(input, file);
+      else setStatus(input, 'Solte um arquivo de imagem PNG, JPG, WEBP ou GIF.', 'err');
+    });
+    tools.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); fileInput?.click(); }
+    });
+    tools.addEventListener('focus', () => { activeLogoInput = input; });
     input.addEventListener('input', () => {
       const extracted = extractImageUrl(input.value || '');
       if (extracted && extracted !== input.value.trim()) input.value = extracted;
@@ -217,7 +234,13 @@
     const style = document.createElement('style');
     style.id = 'vaLogoUploadStyles';
     style.textContent = `
-      .va-logo-upload-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+      .va-logo-upload-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-top: 8px; min-height: 88px; padding: 14px; border: 1px dashed rgba(103,232,249,.48); border-radius: 12px; background: rgba(8,18,35,.68); cursor: copy; transition: border-color .16s ease,background .16s ease,transform .16s ease; }
+      .va-logo-upload-tools:hover,.va-logo-upload-tools:focus-visible,.va-logo-upload-tools.is-dragging { border-color: #67e8f9; background: rgba(8,48,68,.8); outline: none; }
+      .va-logo-upload-tools.is-dragging { transform: scale(1.01); }
+      .va-logo-drop-copy { display: grid; gap: 4px; min-width: 210px; }
+      .va-logo-drop-copy strong { color: #fff; }
+      .va-logo-drop-copy small { color: #aeb8ce; line-height: 1.35; }
+      .va-logo-drop-actions { display: flex; flex-wrap: wrap; gap: 8px; }
       .va-logo-input-wrap .va-logo-upload-tools { margin-top: 0; }
       .va-logo-preview-row.compact { margin-top: 10px; }
       .va-team-logo.preview img, .va-public-team-logo img, .va-team-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
