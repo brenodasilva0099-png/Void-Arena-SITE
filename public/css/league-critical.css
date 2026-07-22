@@ -58,7 +58,8 @@ a{color:inherit}
   html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
   body.frm-polish-page,.frm-polish-page{height:auto;min-height:100vh;overflow:visible}
   .frm-shell{height:auto;min-height:100vh;overflow:visible;align-items:stretch}
-  .frm-sidebar{position:relative;top:auto;align-self:stretch;height:auto;min-height:100vh;overflow:visible;display:block;padding-bottom:28px}
+  .frm-sidebar{position:relative!important;top:auto!important;align-self:stretch!important;height:auto!important;min-height:100vh!important;overflow:visible!important;display:block!important;padding-bottom:28px}
+  .frm-sidebar::after{content:none!important;display:none!important;height:0!important}
   .frm-nav{min-height:0;overflow:visible;padding-right:0}
   .frm-main{height:auto;min-height:100vh;overflow:visible}
 }
