@@ -179,8 +179,35 @@ function registerStableDiscordAuthRoutes(app) {
   removeRoutes(app, [
     ['get', '/api/auth/session'],
     ['get', '/auth/discord'],
-    ['get', '/auth/discord/callback']
+    ['get', '/auth/discord/callback'],
+    ['get', '/auth/google'],
+    ['get', '/auth/google/callback'],
+    ['post', '/api/auth/register'],
+    ['post', '/api/auth/login']
   ]);
+
+  const discordOnlyPayload = {
+    success: false,
+    code: 'DISCORD_ONLY_AUTH',
+    message: 'O acesso à Hollow Nexus League é feito exclusivamente pelo Discord.',
+    loginUrl: '/pages/login.html'
+  };
+
+  app.get('/auth/google', (_req, res) => {
+    return res.redirect(303, '/pages/login.html?auth=discord_only');
+  });
+
+  app.get('/auth/google/callback', (_req, res) => {
+    return res.redirect(303, '/pages/login.html?auth=discord_only');
+  });
+
+  app.post('/api/auth/register', (_req, res) => {
+    return res.status(410).json(discordOnlyPayload);
+  });
+
+  app.post('/api/auth/login', (_req, res) => {
+    return res.status(410).json(discordOnlyPayload);
+  });
 
   app.get('/api/auth/session', async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -209,7 +236,7 @@ function registerStableDiscordAuthRoutes(app) {
     if (currentUserId) return res.redirect(next);
 
     if (!clientId) {
-      return res.status(501).send('Login Discord não configurado. Defina DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET e DISCORD_CALLBACK_URL no Render.');
+      return res.redirect(303, `/pages/login.html?auth=discord_not_configured&next=${encodeURIComponent(next)}`);
     }
 
     const state = signPayload({
@@ -243,7 +270,7 @@ function registerStableDiscordAuthRoutes(app) {
     const { clientId, clientSecret } = discordCredentials();
 
     if (!code || !clientId || !clientSecret) {
-      return res.status(400).send('Callback Discord inválido ou variáveis Discord ausentes.');
+      return res.redirect(303, '/pages/login.html?auth=discord_failed');
     }
 
     const statePayload = verifyPayload(state);
@@ -309,7 +336,8 @@ function registerStableDiscordAuthRoutes(app) {
       setPersistentAuthCookies(req, res, user.id);
       return res.redirect(next);
     } catch (error) {
-      return res.status(500).send(`Erro no login Discord: ${error.message}`);
+      console.error('[Discord/Auth] Falha no OAuth:', error);
+      return res.redirect(303, `/pages/login.html?auth=discord_failed&next=${encodeURIComponent(next)}`);
     }
   });
 
