@@ -158,7 +158,7 @@ for (const file of files) {
 }
 
 const experienceScript = read(path.join(PUBLIC_DIR, 'js', 'core', 'league-experience.js'));
-for (const marker of ['openTeamRegistration', '/api/events/${encodeURIComponent(event.id)}/register', 'data-register-event', 'openPlayerSelector', "api('/api/league/cafe-ranking')", 'simulateAttack', 'applyAdminVisibility', 'data-admin-delete-club', 'data-admin-delete-player']) {
+for (const marker of ['openTeamRegistration', '/api/events/${encodeURIComponent(event.id)}/register', 'data-register-event', 'openPlayerSelector', "api('/api/league/cafe-ranking')", 'simulateAttack', 'applyAdminVisibility', 'data-delete-club', 'data-admin-delete-player']) {
   if (!experienceScript.includes(marker)) failures.push(`public/js/core/league-experience.js: fluxo obrigatório ausente ${marker}`);
 }
 
