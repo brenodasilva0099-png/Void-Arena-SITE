@@ -52,6 +52,7 @@ function registerStaticAssetGuard(app) {
 
   const guard = (req, res, next) => {
     if (!isStaticAssetPath(req.path)) return next();
+    if (!['GET', 'HEAD'].includes(String(req.method || 'GET').toUpperCase())) return next();
 
     const asset = resolveAssetFile(req.path);
     if (!asset) {
@@ -59,28 +60,28 @@ function registerStaticAssetGuard(app) {
     }
 
     const isCodeAsset = /\.(?:css|js|mjs|map|json)$/i.test(asset.relative);
-    res.setHeader(
-      'Cache-Control',
-      isCodeAsset
-        ? 'no-store, no-cache, must-revalidate, proxy-revalidate'
-        : 'public, max-age=60, must-revalidate'
-    );
-    res.setHeader('X-Void-Arena-Static-Guard', 'hard-static-v3');
-    res.type(assetContentType(asset.relative));
-
-    fs.stat(asset.fullPath, (statError, stats) => {
-      if (statError || !stats.isFile()) {
-        console.error('[Static Guard] Asset ausente:', req.path, statError?.message || 'não é arquivo');
+    fs.readFile(asset.fullPath, (readError, data) => {
+      if (readError) {
+        console.error('[Static Guard] Asset ausente:', req.path, readError.message);
+        if (res.headersSent) return res.end();
         return res.status(404).type('text/plain; charset=utf-8').send('Asset não encontrado.');
       }
 
-      return res.sendFile(asset.fullPath, (sendError) => {
-        if (!sendError) return;
-        console.error('[Static Guard] Falha ao servir asset:', req.path, sendError.message);
-        if (!res.headersSent) {
-          return res.status(500).type('text/plain; charset=utf-8').send('Falha ao carregar asset.');
-        }
-      });
+      res.status(200);
+      res.setHeader(
+        'Cache-Control',
+        isCodeAsset
+          ? 'no-store, no-cache, must-revalidate, proxy-revalidate'
+          : 'public, max-age=60, must-revalidate'
+      );
+      res.setHeader('Pragma', isCodeAsset ? 'no-cache' : '');
+      res.setHeader('Expires', isCodeAsset ? '0' : '');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Void-Arena-Static-Guard', 'hard-static-v4');
+      res.setHeader('Content-Type', assetContentType(asset.relative));
+      res.setHeader('Content-Length', data.length);
+      if (String(req.method || '').toUpperCase() === 'HEAD') return res.end();
+      return res.end(data);
     });
   };
 
@@ -88,11 +89,14 @@ function registerStaticAssetGuard(app) {
 
   const stack = app._router?.stack || app.router?.stack;
   if (Array.isArray(stack) && stack.length > 1) {
-    const layer = stack.pop();
-    stack.unshift(layer);
+    const guardIndex = stack.findIndex((layer) => layer?.handle === guard);
+    if (guardIndex > 0) {
+      const [guardLayer] = stack.splice(guardIndex, 1);
+      stack.unshift(guardLayer);
+    }
   }
 
-  console.log('[Static Guard] Assets CSS/JS blindados antes de paginas, API e fallback.');
+  console.log('[Static Guard] Assets CSS/JS servidos diretamente antes de páginas, API e fallback.');
 }
 
 module.exports = { registerStaticAssetGuard, isStaticAssetPath, assetContentType, resolveAssetFile };
