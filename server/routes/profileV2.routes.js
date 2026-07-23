@@ -7,6 +7,43 @@ function requireSession(req, res, next) {
 }
 
 function clean(value = '', max = 500) { return String(value || '').trim().slice(0, max); }
+function normalizeIdentity(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+function extractDiscordId(value = '') {
+  const raw = String(value || '').trim();
+  const mention = raw.match(/^<@!?(\d{16,22})>$/);
+  if (mention) return mention[1];
+  return /^\d{16,22}$/.test(raw) ? raw : '';
+}
+function addIdentity(target, value) {
+  if (value == null) return;
+  if (Array.isArray(value)) {
+    value.forEach((item) => addIdentity(target, item));
+    return;
+  }
+  if (typeof value === 'object') {
+    ['id', 'userId', 'discordId', 'account', 'discord', 'name', 'username', 'displayName', 'captainName', 'ownerName'].forEach((key) => addIdentity(target, value[key]));
+    return;
+  }
+  const normalized = normalizeIdentity(value);
+  if (normalized) target.add(normalized);
+  const discordId = extractDiscordId(value);
+  if (discordId) target.add(normalizeIdentity(discordId));
+}
+function identitySet(...values) {
+  const identities = new Set();
+  values.forEach((value) => addIdentity(identities, value));
+  return identities;
+}
+function intersects(left = new Set(), right = new Set()) {
+  for (const value of left) if (right.has(value)) return true;
+  return false;
+}
 function normalizeSocials(raw = {}) {
   return {
     site: clean(raw.site, 180), discord: clean(raw.discord, 180), instagram: clean(raw.instagram, 180), twitch: clean(raw.twitch, 180),
@@ -48,15 +85,57 @@ async function readDiscordRoles(discordId = '') {
   }
 }
 function publicUser(user = {}, roles = []) { return { id: user.id || '', name: user.name || '', discordId: user.discordId || '', provider: user.provider || '', avatar: user.avatar || '', profile: normalizeProfile(user.profile || {}), socials: normalizeSocials(user.socials || {}), roles: filterPublicRoles(roles), createdAt: user.createdAt || null, updatedAt: user.updatedAt || null, canDeleteAccount: !user.discordId && String(user.provider || '').toLowerCase() !== 'discord' }; }
+function userIdentities(user = {}) {
+  return identitySet(user.id, user.discordId, user.name, user.profile?.username, user.socials?.discord);
+}
 function playerMatchesUser(player = {}, user = {}) {
-  const ids = [user.id, user.discordId, user.name, user.profile?.username].map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
-  return ids.includes(String(player.id || '').trim().toLowerCase()) || ids.includes(String(player.discordId || '').trim().toLowerCase()) || ids.includes(String(player.name || '').trim().toLowerCase());
+  const userIds = userIdentities(user);
+  const playerIds = typeof player === 'object'
+    ? identitySet(player.id, player.userId, player.discordId, player.account, player.discord, player.name, player.username, player.displayName)
+    : identitySet(player);
+  return intersects(userIds, playerIds);
+}
+function teamOwnerMatchesUser(team = {}, user = {}) {
+  const ownerIds = identitySet(
+    team.ownerUserId,
+    team.ownerId,
+    team.captainUserId,
+    team.captainId,
+    team.captainDiscordId,
+    team.ownerDiscordId,
+    team.captainName,
+    team.ownerName,
+    team.captain,
+    team.owner
+  );
+  return intersects(userIdentities(user), ownerIds);
+}
+function teamRosterEntries(team = {}) {
+  const entries = [
+    ...(Array.isArray(team.playerDetails) ? team.playerDetails : []),
+    ...(Array.isArray(team.reserveDetails) ? team.reserveDetails : []),
+    ...(Array.isArray(team.roster) ? team.roster : []),
+    ...(Array.isArray(team.members) ? team.members : [])
+  ];
+  const players = Array.isArray(team.players) ? team.players : [];
+  const reserves = Array.isArray(team.reserves) ? team.reserves : [];
+  const playerAccounts = Array.isArray(team.playerAccounts?.players) ? team.playerAccounts.players : [];
+  const reserveAccounts = Array.isArray(team.playerAccounts?.reserves) ? team.playerAccounts.reserves : [];
+  const appendLegacy = (names, accounts, rosterRole) => {
+    const length = Math.max(names.length, accounts.length);
+    for (let index = 0; index < length; index += 1) {
+      const raw = names[index];
+      const base = raw && typeof raw === 'object' ? raw : { name: raw || '' };
+      entries.push({ ...base, account: base.account || accounts[index] || '', discordId: base.discordId || extractDiscordId(accounts[index] || ''), rosterRole });
+    }
+  };
+  appendLegacy(players, playerAccounts, 'Titular');
+  appendLegacy(reserves, reserveAccounts, 'Reserva');
+  return entries;
 }
 function findCurrentTeam(teams = [], user = {}) {
-  return teams.find((team) => String(team.ownerUserId || '') === String(user.id || '')) || teams.find((team) => {
-    const details = [...(Array.isArray(team.playerDetails) ? team.playerDetails : []), ...(Array.isArray(team.reserveDetails) ? team.reserveDetails : [])];
-    return details.some((player) => playerMatchesUser(player, user));
-  }) || null;
+  const safeTeams = Array.isArray(teams) ? teams : [];
+  return safeTeams.find((team) => teamOwnerMatchesUser(team, user)) || safeTeams.find((team) => teamRosterEntries(team).some((player) => playerMatchesUser(player, user))) || null;
 }
 function buildStats(user = {}, team = null) {
   const base = user.playerStats || user.stats || {};
@@ -119,4 +198,4 @@ function registerProfileV2Routes(app) {
   });
 }
 
-module.exports = { registerProfileV2Routes };
+module.exports = { registerProfileV2Routes, findCurrentTeam, playerMatchesUser };
