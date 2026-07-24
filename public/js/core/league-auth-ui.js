@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const BUILD = '2026-07-21-discord-only-auth-v1';
+  const BUILD = '2026-07-24-discord-only-auth-v2';
   const BUTTON_SELECTOR = [
     '[data-frm-login]',
     '[data-discord-login]',
@@ -27,6 +27,10 @@
 
   function oauthHref() {
     return `/auth/discord?next=${encodeURIComponent(currentReturnPath())}`;
+  }
+
+  function isDirectOAuthButton(button) {
+    return Boolean(button?.matches?.('[data-discord-oauth]'));
   }
 
   function defaultDiscordAvatar(discordId) {
@@ -63,12 +67,13 @@
     preserveButtonClass(button);
     button.dataset.loggedIn = '0';
     button.dataset.hnlAuthState = 'logged-out';
-    button.href = explainerHref();
-    button.title = 'Entrar exclusivamente com Discord';
-    button.setAttribute('aria-label', 'Entrar com Discord');
+    const directOAuth = isDirectOAuthButton(button);
+    button.href = directOAuth ? oauthHref() : explainerHref();
+    button.title = directOAuth ? 'Continuar com Discord' : 'Entrar exclusivamente com Discord';
+    button.setAttribute('aria-label', directOAuth ? 'Continuar com Discord' : 'Entrar com Discord');
     button.className = button.dataset.hnlAuthOriginalClass || 'frm-btn';
     button.classList.remove('hnl-auth-avatar-button');
-    button.innerHTML = '<span aria-hidden="true">◉</span> Entrar com Discord';
+    if (!directOAuth) button.innerHTML = '<span aria-hidden="true">◉</span> Entrar com Discord';
   }
 
   function renderLoggedIn(button, user) {
@@ -88,6 +93,7 @@
   function setupDiscordCtas() {
     document.querySelectorAll('[data-discord-oauth]').forEach((link) => {
       link.href = oauthHref();
+      link.dataset.hnlDirectOAuth = '1';
       link.setAttribute('rel', 'nofollow');
     });
   }
@@ -138,11 +144,20 @@
       allButtons().forEach(renderLoggedOut);
       document.documentElement.dataset.discordAuthenticated = '0';
     } finally {
+      setupDiscordCtas();
       running = false;
     }
   }
 
   document.addEventListener('click', (event) => {
+    const directOAuth = event.target && event.target.closest ? event.target.closest('[data-discord-oauth]') : null;
+    if (directOAuth && directOAuth.dataset.loggedIn !== '1') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      location.assign(oauthHref());
+      return;
+    }
+
     const button = event.target && event.target.closest ? event.target.closest(BUTTON_SELECTOR) : null;
     if (!button || button.dataset.loggedIn === '1') return;
     event.preventDefault();
