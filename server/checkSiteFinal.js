@@ -105,5 +105,21 @@ for (const [label, source, marker] of [
   }
 }
 
+const publicationRoutes = [
+  path.join(ROOT, 'server', 'routes', 'nexusCupRulesPublication.routes.js'),
+  path.join(ROOT, 'server', 'routes', 'teamRegistrationGuidancePublication.routes.js')
+];
+for (const file of publicationRoutes) {
+  const source = fs.readFileSync(file, 'utf8');
+  if (!source.includes("mode: 'manual-only'")) {
+    console.error(`[Check Final] Publicador sem modo manual-only: ${path.relative(ROOT, file)}`);
+    process.exit(1);
+  }
+  if (/setTimeout\s*\(|publishNexusCupRules\s*\(|publishTeamRegistrationGuidance\s*\(/.test(source)) {
+    console.error(`[Check Final] Publicação automática detectada no boot: ${path.relative(ROOT, file)}`);
+    process.exit(1);
+  }
+}
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Autenticação canônica, formulários, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
+console.log('[Check Final] Autenticação canônica, formulários, publicações Discord manuais, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
