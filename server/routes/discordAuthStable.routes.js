@@ -6,23 +6,21 @@ const {
   saveUser
 } = require('../storage');
 const { removeRoutes } = require('../utils/expressRoutes');
+const {
+  clean,
+  maxAgeMs,
+  signPayload,
+  verifyPayload,
+  readIdentity,
+  applyIdentityToSession,
+  setIdentityCookies,
+  clearIdentityCookies,
+  resolveIdentityUser,
+  pendingUser
+} = require('../authIdentity');
 
 const CANONICAL_SITE = 'https://hollow-nexus-league.onrender.com';
-const SESSION_COOKIE = 'void.arena.login';
-const AUTH_COOKIE = 'hnl.discord.auth';
-const DEFAULT_MAX_AGE = 1000 * 60 * 60 * 24 * 30;
-
-function clean(value = '') {
-  return String(value || '').trim();
-}
-
-function sessionSecret() {
-  return process.env.SESSION_SECRET || 'abyss-tourment-dev-secret';
-}
-
-function maxAgeMs() {
-  return Number(process.env.SESSION_MAX_AGE_MS || DEFAULT_MAX_AGE) || DEFAULT_MAX_AGE;
-}
+const AUTH_BUILD = 'hnl-canonical-auth-v1';
 
 function safeNext(value = '') {
   const next = clean(value);
@@ -43,83 +41,18 @@ function publicSiteUrl() {
   if (/^https?:\/\//i.test(configured) && !/void-arena-site(?:-[a-z0-9]+)?\.onrender\.com/i.test(configured)) {
     return configured;
   }
-
   return CANONICAL_SITE;
 }
 
 function callbackUrl() {
   const configured = clean(process.env.DISCORD_CALLBACK_URL || '').replace(/\/+$/, '');
-  if (
-    /^https?:\/\//i.test(configured) &&
-    !/void-arena-site(?:-[a-z0-9]+)?\.onrender\.com/i.test(configured)
-  ) {
+  if (/^https?:\/\//i.test(configured) && !/void-arena-site(?:-[a-z0-9]+)?\.onrender\.com/i.test(configured)) {
     return configured;
   }
   return `${publicSiteUrl()}/auth/discord/callback`;
 }
 
-function signPayload(payload = {}) {
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = crypto.createHmac('sha256', sessionSecret()).update(body).digest('base64url');
-  return `${body}.${signature}`;
-}
-
-function verifyPayload(token = '') {
-  try {
-    const [body, signature] = clean(token).split('.');
-    if (!body || !signature) return null;
-    const expected = crypto.createHmac('sha256', sessionSecret()).update(body).digest('base64url');
-    if (signature.length !== expected.length) return null;
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-    if (!payload?.userId || !payload?.exp || Date.now() > Number(payload.exp)) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function parseCookies(header = '') {
-  const cookies = {};
-  String(header || '').split(';').forEach((part) => {
-    const index = part.indexOf('=');
-    if (index < 0) return;
-    const key = part.slice(0, index).trim();
-    const raw = part.slice(index + 1).trim();
-    if (!key) return;
-    try { cookies[key] = decodeURIComponent(raw); }
-    catch { cookies[key] = raw; }
-  });
-  return cookies;
-}
-
-function secureRequest(req) {
-  return Boolean(req.secure || String(req.headers['x-forwarded-proto'] || '').includes('https'));
-}
-
-function setPersistentAuthCookies(req, res, userId) {
-  const age = maxAgeMs();
-  const token = signPayload({ userId, exp: Date.now() + age });
-  const options = {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: secureRequest(req),
-    path: '/',
-    maxAge: age
-  };
-  res.cookie(SESSION_COOKIE, token, options);
-  res.cookie(AUTH_COOKIE, token, options);
-}
-
-function resolveSessionUserId(req) {
-  if (req.session?.userId) return String(req.session.userId);
-  const cookies = parseCookies(req.headers.cookie || '');
-  const restored = verifyPayload(cookies[AUTH_COOKIE] || cookies[SESSION_COOKIE] || '');
-  if (restored?.userId && req.session) req.session.userId = restored.userId;
-  return restored?.userId ? String(restored.userId) : '';
-}
-
-function discordAvatarUrl(profile = {}, size = 128) {
+function discordAvatarUrl(profile = {}, size = 256) {
   if (!profile.id || !profile.avatar) return null;
   const extension = String(profile.avatar).startsWith('a_') ? 'gif' : 'png';
   return `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.${extension}?size=${size}`;
@@ -159,15 +92,6 @@ function discordCredentials() {
   };
 }
 
-function saveSession(req, userId) {
-  return new Promise((resolve, reject) => {
-    if (!req.session) return reject(new Error('Middleware de sessão indisponível.'));
-    req.session.userId = userId;
-    req.session.authenticatedAt = new Date().toISOString();
-    req.session.save((error) => error ? reject(error) : resolve());
-  });
-}
-
 function regenerateSession(req) {
   return new Promise((resolve, reject) => {
     if (!req.session || typeof req.session.regenerate !== 'function') return resolve();
@@ -175,16 +99,60 @@ function regenerateSession(req) {
   });
 }
 
+function saveSession(req) {
+  return new Promise((resolve, reject) => {
+    if (!req.session || typeof req.session.save !== 'function') return resolve();
+    req.session.save((error) => error ? reject(error) : resolve());
+  });
+}
+
+async function resolvedAuth(req) {
+  return resolveIdentityUser(req, { findUserById, findUserByDiscordId });
+}
+
+function sessionPayload(result = {}) {
+  if (!result.authenticated) {
+    return { success: true, authenticated: false, pending: false, build: AUTH_BUILD, user: null };
+  }
+  if (result.user) {
+    return {
+      success: true,
+      authenticated: true,
+      pending: false,
+      storageAvailable: true,
+      build: AUTH_BUILD,
+      user: safeUser(result.user)
+    };
+  }
+  return {
+    success: true,
+    authenticated: true,
+    pending: true,
+    storageAvailable: Boolean(result.storageAvailable),
+    build: AUTH_BUILD,
+    user: pendingUser(result.identity),
+    message: result.error?.message || 'Sessão Discord preservada; os dados persistentes ainda não responderam.'
+  };
+}
+
 function registerStableDiscordAuthRoutes(app) {
   removeRoutes(app, [
     ['get', '/api/auth/session'],
+    ['get', '/api/me'],
     ['get', '/auth/discord'],
     ['get', '/auth/discord/callback'],
     ['get', '/auth/google'],
     ['get', '/auth/google/callback'],
     ['post', '/api/auth/register'],
-    ['post', '/api/auth/login']
+    ['post', '/api/auth/login'],
+    ['post', '/api/auth/logout'],
+    ['post', '/api/logout']
   ]);
+
+  app.use((req, _res, next) => {
+    applyIdentityToSession(req, readIdentity(req));
+    return next();
+  });
 
   const discordOnlyPayload = {
     success: false,
@@ -193,63 +161,67 @@ function registerStableDiscordAuthRoutes(app) {
     loginUrl: '/pages/login.html'
   };
 
-  app.get('/auth/google', (_req, res) => {
-    return res.redirect(303, '/pages/login.html?auth=discord_only');
-  });
-
-  app.get('/auth/google/callback', (_req, res) => {
-    return res.redirect(303, '/pages/login.html?auth=discord_only');
-  });
-
-  app.post('/api/auth/register', (_req, res) => {
-    return res.status(410).json(discordOnlyPayload);
-  });
-
-  app.post('/api/auth/login', (_req, res) => {
-    return res.status(410).json(discordOnlyPayload);
-  });
+  app.get('/auth/google', (_req, res) => res.redirect(303, '/pages/login.html?auth=discord_only'));
+  app.get('/auth/google/callback', (_req, res) => res.redirect(303, '/pages/login.html?auth=discord_only'));
+  app.post('/api/auth/register', (_req, res) => res.status(410).json(discordOnlyPayload));
+  app.post('/api/auth/login', (_req, res) => res.status(410).json(discordOnlyPayload));
 
   app.get('/api/auth/session', async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
 
-    const userId = resolveSessionUserId(req);
-    if (!userId) return res.json({ success: true, authenticated: false, user: null });
+    const result = await resolvedAuth(req);
+    if (result.user) setIdentityCookies(req, res, result.user);
+    return res.json(sessionPayload(result));
+  });
 
-    try {
-      const user = await findUserById(userId);
-      if (!user) return res.json({ success: true, authenticated: false, pending: true, user: null });
-      if (req.session && !req.session.userId) req.session.userId = user.id;
-      setPersistentAuthCookies(req, res, user.id);
-      return res.json({ success: true, authenticated: true, user: safeUser(user) });
-    } catch (error) {
-      return res.json({ success: true, authenticated: false, pending: true, user: null, message: error.message });
+  app.get('/api/me', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const result = await resolvedAuth(req);
+    if (!result.authenticated) {
+      return res.status(401).json({ success: false, authenticated: false, message: 'Não autenticado.' });
     }
+    if (result.user) {
+      setIdentityCookies(req, res, result.user);
+      return res.json({ success: true, authenticated: true, pending: false, user: safeUser(result.user) });
+    }
+    return res.json({
+      success: true,
+      authenticated: true,
+      pending: true,
+      storageAvailable: Boolean(result.storageAvailable),
+      user: pendingUser(result.identity),
+      message: result.error?.message || 'Dados persistentes temporariamente indisponíveis.'
+    });
   });
 
   app.get('/auth/discord', async (req, res) => {
     const { clientId } = discordCredentials();
     const next = safeNext(req.query.next || req.query.redirect || '/pages/perfil.html');
+    const current = await resolvedAuth(req);
 
-    const currentUserId = resolveSessionUserId(req);
-    if (currentUserId) return res.redirect(next);
+    // Cookie Discord válido continua autenticado mesmo se o storage estiver reiniciando.
+    if (current.authenticated && (current.user || current.identity.discordId)) {
+      if (current.user) setIdentityCookies(req, res, current.user);
+      return res.redirect(303, next);
+    }
 
     if (!clientId) {
       return res.redirect(303, `/pages/login.html?auth=discord_not_configured&next=${encodeURIComponent(next)}`);
     }
 
     const state = signPayload({
-      userId: 'oauth-state',
+      kind: 'discord-oauth-state',
       next,
-      exp: Date.now() + 1000 * 60 * 10,
-      nonce: crypto.randomBytes(12).toString('hex')
+      nonce: crypto.randomBytes(18).toString('hex'),
+      exp: Date.now() + 1000 * 60 * 10
     });
 
     if (req.session) {
       req.session.oauthReturnTo = next;
       req.session.oauthState = state;
-      await new Promise((resolve) => req.session.save(() => resolve()));
+      await saveSession(req).catch(() => {});
     }
 
     const params = new URLSearchParams({
@@ -261,22 +233,26 @@ function registerStableDiscordAuthRoutes(app) {
       prompt: 'consent'
     });
 
-    return res.redirect(`https://discord.com/oauth2/authorize?${params.toString()}`);
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    return res.redirect(302, `https://discord.com/oauth2/authorize?${params.toString()}`);
   });
 
   app.get('/auth/discord/callback', async (req, res) => {
     const code = clean(req.query.code || '');
     const state = clean(req.query.state || '');
     const { clientId, clientSecret } = discordCredentials();
-
-    if (!code || !clientId || !clientSecret) {
-      return res.redirect(303, '/pages/login.html?auth=discord_failed');
-    }
-
     const statePayload = verifyPayload(state);
     const next = safeNext(statePayload?.next || req.session?.oauthReturnTo || '/pages/perfil.html');
 
+    if (!statePayload || statePayload.kind !== 'discord-oauth-state') {
+      return res.redirect(303, `/pages/login.html?auth=discord_state_error&next=${encodeURIComponent(next)}`);
+    }
+    if (!code || !clientId || !clientSecret) {
+      return res.redirect(303, `/pages/login.html?auth=discord_failed&next=${encodeURIComponent(next)}`);
+    }
+
     try {
+      const redirectUri = callbackUrl();
       const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -285,10 +261,9 @@ function registerStableDiscordAuthRoutes(app) {
           client_secret: clientSecret,
           grant_type: 'authorization_code',
           code,
-          redirect_uri: callbackUrl()
+          redirect_uri: redirectUri
         })
       });
-
       const tokenData = await tokenResponse.json().catch(() => ({}));
       if (!tokenResponse.ok || !tokenData.access_token) {
         throw new Error(tokenData.error_description || tokenData.error || 'Falha ao trocar o código do Discord.');
@@ -315,8 +290,8 @@ function registerStableDiscordAuthRoutes(app) {
       user = await saveUser({
         ...(user || {}),
         id: user?.id || crypto.randomUUID(),
-        name: username || user?.name || discordTag,
-        email: email || user?.email || null,
+        name: user?.name || username || discordTag,
+        email: user?.email || email || null,
         avatar: avatar || user?.avatar || null,
         provider: 'discord',
         discordId: profile.id,
@@ -325,23 +300,41 @@ function registerStableDiscordAuthRoutes(app) {
         profile: {
           ...(user?.profile || {}),
           username: user?.profile?.username || username || discordTag,
-          discord: discordTag
+          discord: user?.profile?.discord || discordTag
         },
         createdAt: user?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
 
       await regenerateSession(req);
-      await saveSession(req, user.id);
-      setPersistentAuthCookies(req, res, user.id);
-      return res.redirect(next);
+      applyIdentityToSession(req, {
+        userId: user.id,
+        discordId: profile.id,
+        name: user.profile?.username || user.name || username,
+        avatar: user.avatar || avatar || ''
+      });
+      req.session.authenticatedAt = new Date().toISOString();
+      await saveSession(req);
+      setIdentityCookies(req, res, user);
+      return res.redirect(303, next);
     } catch (error) {
-      console.error('[Discord/Auth] Falha no OAuth:', error);
+      console.error('[Discord/Auth] Falha no OAuth canônico:', error);
       return res.redirect(303, `/pages/login.html?auth=discord_failed&next=${encodeURIComponent(next)}`);
     }
   });
 
-  console.log('[Discord/Auth] OAuth, sessão persistente e status de autenticação registrados.');
+  const logout = async (req, res) => {
+    clearIdentityCookies(req, res);
+    if (!req.session || typeof req.session.destroy !== 'function') {
+      return res.json({ success: true });
+    }
+    return req.session.destroy(() => res.json({ success: true }));
+  };
+
+  app.post('/api/auth/logout', logout);
+  app.post('/api/logout', logout);
+
+  console.log(`[Discord/Auth] Implementação canônica registrada (${AUTH_BUILD}); sessão, /api/me e OAuth usam a mesma identidade.`);
 }
 
 module.exports = { registerStableDiscordAuthRoutes };
