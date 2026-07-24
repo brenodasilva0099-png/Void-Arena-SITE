@@ -28,10 +28,7 @@ const patches = [
   './patchDiscordLoginBrandAndDataRuntime',
   './patchLeagueNamespaceRuntime',
   './patchOfficialLeagueLogoRuntime',
-  './patchDiscordAvatarSessionRuntime',
-  './patchDiscordAvatarStabilityRuntime',
   './patchStableAuthUiRuntime',
-  './patchSessionFlowRuntime',
   './patchDiscordMemberRolesRuntime',
   './patchPlayersRolesAndFastTeamsRuntime',
   './patchRoleNotificationsRuntime',
@@ -63,7 +60,7 @@ const patches = [
   './patchDashboardCompetitionHighlightRuntime',
   './patchAdvancedTacticalSimulatorRuntime',
   './patchDiscordLegalPlacarRuntime',
-  './patchPersistentDiscordIdentityRuntime',
+  './patchCanonicalAuthClientRuntime',
   './patchBracketStylesheetFinalRuntime'
 ];
 
