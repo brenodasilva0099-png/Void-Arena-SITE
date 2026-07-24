@@ -27,7 +27,7 @@ if (html) {
 
   const style = `<style id="${STYLE_MARKER}">
   .hnl-home-competition-panel{align-self:start!important;overflow:hidden!important;background:radial-gradient(circle at 92% 5%,rgba(155,92,246,.18),transparent 30%),linear-gradient(180deg,rgba(20,29,47,.98),rgba(13,20,35,.98))!important}
-  .hnl-home-competition-panel>h2{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px!important;font-size:25px!important}.hnl-home-competition-panel>h2:after{content:'AO VIVO';display:inline-flex;align-items:center;min-height:25px;padding:0 9px;border-radius:999px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#76e9a6;font-size:9px;font-weight:950;letter-spacing:.09em}
+  .hnl-home-competition-panel>h2{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px!important;font-size:25px!important}.hnl-home-competition-panel>h2:after{content:'DESTAQUE';display:inline-flex;align-items:center;min-height:25px;padding:0 9px;border-radius:999px;background:rgba(155,92,246,.13);border:1px solid rgba(181,126,255,.32);color:#d8c2ff;font-size:9px;font-weight:950;letter-spacing:.09em}
   .hnl-home-competition-list{display:grid!important;gap:11px!important}
   .hnl-home-comp-card{position:relative;overflow:hidden;padding:15px;border:1px solid rgba(159,104,255,.22);border-radius:14px;background:rgba(8,13,25,.48);box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)}
   .hnl-home-comp-card.is-featured{padding:18px;background:radial-gradient(circle at 100% 0,rgba(150,82,238,.25),transparent 34%),linear-gradient(145deg,rgba(25,34,56,.98),rgba(26,20,52,.96));border-color:rgba(181,126,255,.43);box-shadow:0 16px 36px rgba(3,5,14,.22),inset 0 0 0 1px rgba(255,255,255,.025)}
