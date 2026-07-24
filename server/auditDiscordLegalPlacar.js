@@ -90,8 +90,8 @@ const authUi = requireMarkers('public/js/core/league-auth-ui.js', [
 requirePattern(
   'public/js/core/league-auth-ui.js',
   authUi,
-  /20\d{2}-\d{2}-\d{2}-discord-only-auth-v\d+/,
-  'BUILD discord-only-auth versionado'
+  /(?:20\d{2}-\d{2}-\d{2}-discord-only-auth-v\d+|hnl-canonical-auth-client-v\d+)/,
+  'BUILD de autenticação Discord versionado ou canônico'
 );
 
 const placarJs = requireMarkers('public/js/pages/placar.js', [
