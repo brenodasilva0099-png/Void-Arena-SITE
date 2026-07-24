@@ -10,7 +10,7 @@
     return String(event.name || event.title || 'Competição')
       .replace(/\s+/g, ' ')
       .replace(/\bnexus\s+cup\b/i, 'Nexus Cup')
-      .replace(/\s+(\d+[ªº]\s*-?\s*edição)\b/i, ' — $1')
+      .replace(/\s+(\d+[ªº])\s*-?\s*edição\b/i, ' — $1 Edição')
       .trim();
   }
 
