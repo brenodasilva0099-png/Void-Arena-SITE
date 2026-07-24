@@ -6,9 +6,9 @@ const dashboardFile = path.join(ROOT, 'public', 'pages', 'dashboard.html');
 const themeFile = path.join(ROOT, 'public', 'css', 'league-experience.css');
 const updatesFile = path.join(ROOT, 'public', 'pages', 'atualizacoes.html');
 const versionFile = path.join(ROOT, 'public', 'dashboard-competition-highlight.json');
-const BUILD = '2026-07-23-dashboard-competition-v2';
+const BUILD = '2026-07-23-dashboard-competition-v3';
 const THEME_MARKER = 'hnl-dashboard-experience-inline-v1';
-const STYLE_MARKER = 'hnl-dashboard-competition-highlight-v2';
+const STYLE_MARKER = 'hnl-dashboard-competition-highlight-v3';
 let changed = false;
 
 function read(file) { return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''; }
@@ -27,15 +27,24 @@ function replaceDashboardHeroIcon(source = '') {
   );
 }
 
+function replaceDashboardHeroTitle(source = '') {
+  const title = '<h1 class="hnl-home-brand-title"><span class="hnl-home-brand-the">the</span><span class="hnl-home-brand-main">HOLLOW NEXUS <span class="frm-accent">LEAGUE</span></span></h1>';
+  return source.replace(
+    /(<section\b[^>]*class=["'][^"']*\bfrm-page-hero\b[^"']*["'][^>]*>[\s\S]*?)<h1[^>]*>[\s\S]*?<\/h1>/i,
+    `$1${title}`
+  );
+}
+
 let html = read(dashboardFile);
 if (html) {
   const themeCss = read(themeFile).trim();
   html = html
     .replace(/\s*<link\b[^>]*href=["']\/css\/league-experience\.css(?:\?[^"']*)?["'][^>]*>/gi, '')
     .replace(new RegExp(`<style id=["']${THEME_MARKER}["']>[\\s\\S]*?<\\/style>`, 'gi'), '')
-    .replace(/<style id=["']hnl-dashboard-competition-highlight-v[12]["']>[\s\S]*?<\/style>/gi, '')
+    .replace(/<style id=["']hnl-dashboard-competition-highlight-v[123]["']>[\s\S]*?<\/style>/gi, '')
     .replace(/\s*<script\b[^>]*src=["']\/js\/core\/dashboard-competition-highlight\.js(?:\?[^"']*)?["'][^>]*><\/script>/gi, '');
   html = replaceDashboardHeroIcon(html);
+  html = replaceDashboardHeroTitle(html);
 
   const themeStyle = themeCss
     ? `<style id="${THEME_MARKER}">\n${themeCss}\n</style>`
@@ -54,8 +63,11 @@ if (html) {
   .hnl-home-comp-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}.hnl-home-comp-actions .hnl-btn{min-height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px;border:1px solid rgba(159,104,255,.3);border-radius:9px;background:#0d1425;color:#fff;text-decoration:none;font-size:11px;font-weight:900}.hnl-home-comp-actions .hnl-btn.primary{background:linear-gradient(135deg,#9555ee,#7138d0);border-color:rgba(190,139,255,.5)}.hnl-home-comp-actions .hnl-btn:hover{transform:translateY(-1px);border-color:rgba(196,151,255,.65)}.hnl-home-comp-all{margin-left:auto;color:#bfa5ee;text-decoration:none;font-size:11px;font-weight:850}.hnl-home-comp-all:hover{color:#fff}
   .hnl-home-comp-loading,.hnl-home-comp-empty{display:grid;gap:5px;padding:22px;border:1px dashed rgba(159,104,255,.3);border-radius:13px;background:rgba(255,255,255,.02);color:#bbc5d8}.hnl-home-comp-empty strong{color:#fff}
   .frm-page-hero .hnl-hero-icon{font-family:Inter,system-ui,sans-serif!important;font-size:64px!important;line-height:1!important}
+  .frm-page-hero .hnl-home-brand-title{display:grid!important;gap:0!important;margin:0!important;line-height:1!important;letter-spacing:0!important}
+  .hnl-home-brand-the{display:block;font-size:clamp(12px,1vw,16px)!important;line-height:1!important;font-weight:900;letter-spacing:.04em;text-transform:lowercase;color:#fff;margin:0 0 5px 2px}
+  .hnl-home-brand-main{display:block;font-size:clamp(34px,4vw,54px)!important;line-height:.98!important;font-weight:950;letter-spacing:-.045em;white-space:nowrap}
   #homeClubRanking .hnl-profile-row,#homeCompetitions .hnl-profile-row{min-width:0}.hnl-club-logo{display:block!important;max-width:54px!important;max-height:54px!important}
-  @media(max-width:760px){.hnl-home-comp-meta{grid-template-columns:1fr}.hnl-home-comp-all{width:100%;margin-left:0}.hnl-home-competition-panel>h2{font-size:22px!important}}
+  @media(max-width:760px){.hnl-home-comp-meta{grid-template-columns:1fr}.hnl-home-comp-all{width:100%;margin-left:0}.hnl-home-competition-panel>h2{font-size:22px!important}.hnl-home-brand-main{font-size:clamp(28px,9vw,40px)!important;white-space:normal}.hnl-home-brand-the{font-size:12px!important}}
   </style>`;
   const script = `<script src="/js/core/dashboard-competition-highlight.js?v=${BUILD}"></script>`;
   const injectedStyles = [themeStyle, style].filter(Boolean).join('\n');
@@ -65,8 +77,8 @@ if (html) {
 }
 
 let updates = read(updatesFile);
-if (updates && !updates.includes('release-2026-07-23-dashboard-css-hotfix')) {
-  const card = `<article class="va-card va-update-card" id="release-2026-07-23-dashboard-css-hotfix"><span class="va-update-dot"></span><div class="va-update-meta"><span>23/07/2026 • 21:31 BRT</span><span>Site</span><span>Início/Hotfix</span></div><h3>Visual completo da página inicial restaurado</h3><p class="va-muted">O tema da página inicial passou a ser incorporado diretamente no HTML gerado, impedindo que falhas de MIME deixem os cards, logos e grids sem formatação.</p><ul class="va-update-list"><li class="fix">Logos de clubes voltaram aos tamanhos corretos.</li><li class="fix">Ranking, competições, cards e botões recuperaram o layout completo.</li><li class="site">O ícone do herói da página inicial agora usa o símbolo de arena 🏟️.</li></ul></article>`;
+if (updates && !updates.includes('release-2026-07-23-dashboard-brand-the')) {
+  const card = `<article class="va-card va-update-card" id="release-2026-07-23-dashboard-brand-the"><span class="va-update-dot"></span><div class="va-update-meta"><span>23/07/2026 • 21:39 BRT</span><span>Site</span><span>Início/Marca</span></div><h3>Assinatura da marca refinada na página inicial</h3><p class="va-muted">A palavra “the” agora aparece pequena acima de HOLLOW NEXUS LEAGUE, seguindo o mesmo padrão visual apresentado na identidade da barra lateral.</p><ul class="va-update-list"><li class="site">Hierarquia tipográfica da marca ajustada no herói da Home.</li><li class="site">Título permanece responsivo em telas menores.</li></ul></article>`;
   updates = updates.includes('<article class="va-card va-update-card"')
     ? updates.replace('<article class="va-card va-update-card"', `${card}\n<article class="va-card va-update-card"`)
     : updates.replace('</main>', `${card}\n</main>`);
@@ -75,13 +87,14 @@ if (updates && !updates.includes('release-2026-07-23-dashboard-css-hotfix')) {
 
 write(versionFile, JSON.stringify({
   build: BUILD,
-  updatedAt: '2026-07-23T21:31:00-03:00',
+  updatedAt: '2026-07-23T21:39:00-03:00',
   dashboardCompetition: 'featured-card-status-meta-progress-actions',
   dashboardTheme: 'league-experience-inline-no-network-dependency',
   dashboardHeroIcon: '🏟️',
+  dashboardBrandTitle: 'small-the-above-hollow-nexus-league',
   removedDashboardStylesheetRequest: '/css/league-experience.css'
 }, null, 2));
 
 console.log(changed
-  ? '[Dashboard] Tema completo embutido, cards restaurados e ícone da arena aplicado.'
-  : '[Dashboard] Hotfix visual já estava aplicado.');
+  ? '[Dashboard] Marca da Home refinada com “the” pequeno acima do título.'
+  : '[Dashboard] Refinamento da marca já estava aplicado.');
