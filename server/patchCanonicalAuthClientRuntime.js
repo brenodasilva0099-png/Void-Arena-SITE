@@ -2,11 +2,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
+const PUBLIC_DIR = path.join(ROOT, 'public');
 const TARGETS = {
-  assetsApi: path.join(ROOT, 'public', 'assets', 'api.js'),
-  coreApi: path.join(ROOT, 'public', 'js', 'core', 'api.js'),
-  profile: path.join(ROOT, 'public', 'js', 'pages', 'perfil.js'),
-  authUi: path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js')
+  assetsApi: path.join(PUBLIC_DIR, 'assets', 'api.js'),
+  coreApi: path.join(PUBLIC_DIR, 'js', 'core', 'api.js'),
+  profile: path.join(PUBLIC_DIR, 'js', 'pages', 'perfil.js'),
+  authUi: path.join(PUBLIC_DIR, 'js', 'core', 'league-auth-ui.js')
 };
 const MARKER = 'hnl-canonical-auth-client-v1';
 let changed = 0;
@@ -20,6 +21,15 @@ function write(file, content) {
   fs.writeFileSync(file, content, 'utf8');
   changed += 1;
   return true;
+}
+
+function walkHtml(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walkHtml(full);
+    return entry.isFile() && entry.name.toLowerCase().endsWith('.html') ? [full] : [];
+  });
 }
 
 function patchAssetsApi() {
@@ -84,10 +94,28 @@ function patchAuthUi() {
   write(file, src);
 }
 
+function patchHtmlVersions() {
+  const replacements = [
+    [/src="\/assets\/api\.js(?:\?[^\"]*)?"/gi, `src="/assets/api.js?v=${MARKER}"`],
+    [/src="\/js\/core\/api\.js(?:\?[^\"]*)?"/gi, `src="/js/core/api.js?v=${MARKER}"`],
+    [/src="\/js\/core\/league-auth-ui\.js(?:\?[^\"]*)?"/gi, `src="/js/core/league-auth-ui.js?v=${MARKER}"`],
+    [/src="\/js\/pages\/perfil\.js(?:\?[^\"]*)?"/gi, `src="/js/pages/perfil.js?v=${MARKER}"`]
+  ];
+
+  for (const file of walkHtml(PUBLIC_DIR)) {
+    let html = read(file);
+    if (!html) continue;
+    const before = html;
+    for (const [pattern, replacement] of replacements) html = html.replace(pattern, replacement);
+    if (html !== before) write(file, html);
+  }
+}
+
 patchAssetsApi();
 patchCoreApi();
 patchProfile();
 patchAuthUi();
+patchHtmlVersions();
 
 for (const file of Object.values(TARGETS)) {
   const source = read(file);
@@ -95,5 +123,5 @@ for (const file of Object.values(TARGETS)) {
 }
 
 console.log(changed
-  ? `[Discord/Auth] Cliente canônico aplicado em ${changed} arquivo(s); falso logout e tela preta removidos.`
-  : '[Discord/Auth] Cliente canônico já estava aplicado.');
+  ? `[Discord/Auth] Cliente canônico aplicado em ${changed} arquivo(s); falso logout, tela preta e cache antigo removidos.`
+  : '[Discord/Auth] Cliente canônico e versões de cache já estavam aplicados.');
