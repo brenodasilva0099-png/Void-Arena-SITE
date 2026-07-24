@@ -67,7 +67,7 @@ function cookieOptions(req) {
 
 function readIdentity(req) {
   const cookies = parseCookies(req?.headers?.cookie || '');
-  const restored = verifyPayload(cookies[PRIMARY_AUTH_COOKIE] || cookies[LEGACY_AUTH_COOKIE] || '') || {};
+  const restored = verifyPayload(cookies[PRIMARY_AUTH_COOKIE] || '') || verifyPayload(cookies[LEGACY_AUTH_COOKIE] || '') || {};
   return {
     userId: clean(req?.session?.userId || restored.userId || ''),
     discordId: clean(req?.session?.discordId || restored.discordId || ''),
