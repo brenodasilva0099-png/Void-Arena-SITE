@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const patches = [
+  './patchCanonicalBotBridgeRuntime',
   './fetchTimeoutPatch',
   './sessionPatch',
   './patchBotPublicUrlRuntime',
