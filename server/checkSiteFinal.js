@@ -24,7 +24,8 @@ const patches = [
   './patchAuditInlineProfileRuntime',
   './patchAdvancedTacticalSimulatorRuntime',
   './patchBracketStylesheetFinalRuntime',
-  './patchCanonicalAuthClientRuntime'
+  './patchCanonicalAuthClientRuntime',
+  './patchFormsStaticAssetRuntime'
 ];
 
 require('./auditRuntimeSafety');
@@ -52,6 +53,7 @@ const files = [
   path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-page-integrity.js'),
   path.join(ROOT, 'public', 'js', 'core', 'api.js'),
+  path.join(ROOT, 'public', 'js', 'formularios.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'grupos.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento-autosync-fix.js'),
@@ -86,5 +88,22 @@ for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simul
     process.exit(1);
   }
 }
+
+const formsPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'formularios.html'), 'utf8');
+const appSource = fs.readFileSync(path.join(ROOT, 'server', 'app.js'), 'utf8');
+const formsScript = fs.readFileSync(path.join(ROOT, 'public', 'js', 'formularios.js'), 'utf8');
+for (const [label, source, marker] of [
+  ['página', formsPage, '/js/formularios.js?v=hnl-forms-static-v1'],
+  ['servidor', appSource, 'hnl-forms-static-route-v1'],
+  ['servidor', appSource, "app.get('/js/formularios.js'"],
+  ['servidor', appSource, 'application/javascript; charset=utf-8'],
+  ['cliente', formsScript, 'async function loadForms()']
+]) {
+  if (!source.includes(marker)) {
+    console.error(`[Check Final] Formulários sem recurso obrigatório em ${label}: ${marker}`);
+    process.exit(1);
+  }
+}
+
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Autenticação canônica, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
+console.log('[Check Final] Autenticação canônica, formulários, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
