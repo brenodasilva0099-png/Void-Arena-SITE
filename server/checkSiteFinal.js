@@ -23,7 +23,8 @@ const patches = [
   './patchProfileInlineCriticalExtrasRuntime',
   './patchAuditInlineProfileRuntime',
   './patchAdvancedTacticalSimulatorRuntime',
-  './patchBracketStylesheetFinalRuntime'
+  './patchBracketStylesheetFinalRuntime',
+  './patchCanonicalAuthClientRuntime'
 ];
 
 require('./auditRuntimeSafety');
@@ -41,6 +42,7 @@ function walk(dir) {
 const files = [
   ...walk(path.join(ROOT, 'server')),
   ...walk(path.join(ROOT, 'site')),
+  path.join(ROOT, 'public', 'assets', 'api.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-home-competitions-upgrade.js'),
   path.join(ROOT, 'public', 'js', 'core', 'tactical-simulator-v2.js'),
@@ -69,6 +71,7 @@ if (failures.length) {
   process.exit(1);
 }
 
+require('./auditCanonicalAuth');
 require('./auditSitePages');
 for (const name of ['league-stable-final.json', 'page-integrity.json', 'navigation-integrity.json', 'league-home-competition-profile.json', 'tactical-simulator-version.json']) {
   if (!fs.existsSync(path.join(ROOT, 'public', name))) {
@@ -84,4 +87,4 @@ for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simul
   }
 }
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
+console.log('[Check Final] Autenticação canônica, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
