@@ -14,6 +14,10 @@ function requireMarkers(relative, markers) {
   return source;
 }
 
+function requirePattern(relative, source, pattern, description) {
+  if (!pattern.test(source)) failures.push(`${relative}: marcador ausente ${description}`);
+}
+
 const login = requireMarkers('public/pages/login.html', [
   'data-discord-oauth',
   'Continuar com Discord',
@@ -77,11 +81,19 @@ requireMarkers('public/pages/atualizacoes.html', [
 ]);
 
 const authUi = requireMarkers('public/js/core/league-auth-ui.js', [
-  '2026-07-21-discord-only-auth-v1',
   '/pages/login.html?next=',
   '[data-discord-oauth]',
-  'Entrar com Discord'
+  'Entrar com Discord',
+  '/auth/discord?next=',
+  '/api/auth/session'
 ]);
+requirePattern(
+  'public/js/core/league-auth-ui.js',
+  authUi,
+  /20\d{2}-\d{2}-\d{2}-discord-only-auth-v\d+/,
+  'BUILD discord-only-auth versionado'
+);
+
 const placarJs = requireMarkers('public/js/pages/placar.js', [
   '/api/auth/session',
   '/api/placar',
@@ -105,7 +117,7 @@ const authRoutes = requireMarkers('server/routes/discordAuthStable.routes.js', [
   'DISCORD_ONLY_AUTH',
   "app.get('/auth/discord'"
 ]);
-if (!authRoutes.includes("res.status(410).json(discordOnlyPayload)")) {
+if (!authRoutes.includes('res.status(410).json(discordOnlyPayload)')) {
   failures.push('server/routes/discordAuthStable.routes.js: bloqueio HTTP das rotas locais ausente');
 }
 
@@ -132,7 +144,7 @@ const publicationSource = requireMarkers('server/nexusCupRulesPublication.js', [
   '20s',
   'Quatro jogadores na área',
   'clipe como prova',
-  "allowedMentions: { parse: [] }",
+  'allowedMentions: { parse: [] }',
   'existingPublications',
   "callBot('/internal/discord/edit-message'",
   "method: 'PATCH'"
@@ -149,7 +161,7 @@ try {
 
 requireMarkers('site/index.js', [
   'registerNexusCupRulesPublicationRoutes',
-  "../server/routes/nexusCupRulesPublication.routes"
+  '../server/routes/nexusCupRulesPublication.routes'
 ]);
 
 try {
