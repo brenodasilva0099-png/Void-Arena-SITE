@@ -62,6 +62,7 @@ require('./patchLeagueNavStateRuntime');
 require('./patchLeagueExperienceFinalChangelogRuntime');
 require('./patchSiteIntegrityRuntime');
 require('./patchNavigationIntegrityRuntime');
+require('./patchBracketStylesheetFinalRuntime');
 
 const patchedFiles = [
   path.join(ROOT, 'site', 'index.js'),
