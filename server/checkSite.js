@@ -8,11 +8,14 @@ const CHECK_DIRS = [
   path.join(ROOT, 'site')
 ];
 const EXTRA_FILES = [
+  path.join(ROOT, 'public', 'assets', 'api.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'api.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-page-integrity.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-polish.js'),
   path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
-  path.join(ROOT, 'public', 'js', 'pages', 'grupos.js')
+  path.join(ROOT, 'public', 'js', 'pages', 'grupos.js'),
+  path.join(ROOT, 'public', 'js', 'pages', 'perfil.js')
 ];
 const SKIP = new Set([
   path.join(ROOT, 'server', 'checkSite.js')
@@ -63,16 +66,22 @@ require('./patchLeagueExperienceFinalChangelogRuntime');
 require('./patchSiteIntegrityRuntime');
 require('./patchNavigationIntegrityRuntime');
 require('./patchBracketStylesheetFinalRuntime');
+require('./patchCanonicalAuthClientRuntime');
 
 const patchedFiles = [
   path.join(ROOT, 'site', 'index.js'),
   path.join(ROOT, 'server', 'routes', 'publicTeam.routes.js'),
   path.join(ROOT, 'server', 'routes', 'leagueExperience.routes.js'),
   path.join(ROOT, 'server', 'routes', 'cafeRanking.routes.js'),
-  path.join(ROOT, 'public', 'js', 'core', 'league-experience.js')
+  path.join(ROOT, 'public', 'assets', 'api.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'api.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-auth-ui.js'),
+  path.join(ROOT, 'public', 'js', 'core', 'league-experience.js'),
+  path.join(ROOT, 'public', 'js', 'pages', 'perfil.js')
 ].filter(fs.existsSync);
 checkFiles(patchedFiles, 'sintaxe após patches');
 
+require('./auditCanonicalAuth');
 require('./auditSitePages');
 
 const finalVersion = path.join(ROOT, 'public', 'league-experience-final.json');
@@ -82,4 +91,4 @@ if (!fs.existsSync(finalVersion)) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check] Sintaxe antes/depois, ranking do Discord, experiência, gestão de clubes, menus, changelog, páginas, assets e navegação aprovados.');
+console.log('[Check] Autenticação canônica, sintaxe antes/depois, ranking do Discord, experiência, gestão de clubes, menus, changelog, páginas, assets e navegação aprovados.');
