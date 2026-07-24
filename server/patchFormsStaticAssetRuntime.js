@@ -7,6 +7,7 @@ const PAGE_FILE = path.join(ROOT, 'public', 'pages', 'formularios.html');
 const SCRIPT_FILE = path.join(ROOT, 'public', 'js', 'formularios.js');
 const BUILD = 'hnl-forms-static-v1';
 const ROUTE_MARKER = 'hnl-forms-static-route-v1';
+const CLIENT_MARKER = 'hnl-forms-session-v1';
 
 function read(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
@@ -54,22 +55,37 @@ if (!nextPage.includes(versionedScript)) {
 }
 write(PAGE_FILE, nextPage);
 
+let scriptSource = read(SCRIPT_FILE);
+if (!scriptSource) throw new Error('JavaScript dos formulários ficou vazio.');
+if (!scriptSource.includes(CLIENT_MARKER)) {
+  const oldBlock = `  if (response.status === 401) {\n    location.href = '/';\n    return;\n  }`;
+  const newBlock = `  // ${CLIENT_MARKER}\n  if (response.status === 401) {\n    const session = await fetch('/api/auth/session?t=' + Date.now(), {\n      credentials: 'include',\n      cache: 'no-store',\n      headers: { Accept: 'application/json' }\n    }).then((result) => result.json()).catch(() => null);\n\n    if (!session?.authenticated) {\n      const next = location.pathname + location.search;\n      location.href = '/pages/login.html?next=' + encodeURIComponent(next);\n      return;\n    }\n\n    list.innerHTML = '';\n    empty.hidden = false;\n    empty.textContent = data.message || 'Sua sessão está ativa, mas os formulários ainda não responderam.';\n    return;\n  }`;
+
+  if (!scriptSource.includes(oldBlock)) {
+    throw new Error('Bloco antigo de sessão dos formulários não foi encontrado para correção segura.');
+  }
+  scriptSource = scriptSource.replace(oldBlock, newBlock);
+  write(SCRIPT_FILE, scriptSource);
+}
+
 const finalApp = read(APP_FILE);
 const finalPage = read(PAGE_FILE);
 const finalScript = read(SCRIPT_FILE);
 new Function(finalApp);
 new Function(finalScript);
 
-for (const marker of [ROUTE_MARKER, "app.get('/js/formularios.js'", "application/javascript; charset=utf-8", BUILD]) {
-  if (!finalApp.includes(marker) && marker !== BUILD) {
+for (const marker of [ROUTE_MARKER, "app.get('/js/formularios.js'", 'application/javascript; charset=utf-8']) {
+  if (!finalApp.includes(marker)) {
     throw new Error(`Rota dedicada dos formulários incompleta: ${marker}`);
   }
 }
 if (!finalPage.includes(`/js/formularios.js?v=${BUILD}`)) {
   throw new Error('Página de formulários não usa a versão dedicada do asset.');
 }
-if (!finalScript.includes('async function loadForms()')) {
-  throw new Error('JavaScript dos formulários não contém a função de carregamento.');
+for (const marker of ['async function loadForms()', CLIENT_MARKER, '/api/auth/session']) {
+  if (!finalScript.includes(marker)) {
+    throw new Error(`JavaScript dos formulários incompleto: ${marker}`);
+  }
 }
 
-console.log('[Formularios/Asset] JavaScript servido por rota dedicada com MIME correto e cache desativado.');
+console.log('[Formularios/Asset] JavaScript servido por rota dedicada com MIME correto, cache desativado e sessão canônica.');
