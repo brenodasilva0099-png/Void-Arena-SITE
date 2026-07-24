@@ -1,6 +1,7 @@
 const expressSessionPath = require.resolve('express-session');
 const originalSession = require('express-session');
 const { createSessionStore } = require('./sessionStore');
+const { readIdentity, applyIdentityToSession } = require('./authIdentity');
 
 function patchedSession(options = {}) {
   const nextOptions = { ...(options || {}) };
@@ -14,16 +15,20 @@ function patchedSession(options = {}) {
     nextOptions.store = createSessionStore();
   }
 
-  return originalSession(nextOptions);
+  const sessionMiddleware = originalSession(nextOptions);
+
+  // A sessão do Express pode usar disco efêmero no Render. A identidade assinada
+  // por Discord ID é reaplicada em toda requisição antes de qualquer rota.
+  return function canonicalSessionMiddleware(req, res, next) {
+    return sessionMiddleware(req, res, (error) => {
+      if (error) return next(error);
+      applyIdentityToSession(req, readIdentity(req));
+      return next();
+    });
+  };
 }
 
 Object.assign(patchedSession, originalSession);
 require.cache[expressSessionPath].exports = patchedSession;
 
-try {
-  require('./patchStatelessSessionRuntime');
-} catch (error) {
-  console.error('Patch de sessão sem disco falhou:', error.message);
-}
-
-console.log('Patch de sessao persistente carregado.');
+console.log('[Discord/Auth] Sessão global usa uma única identidade canônica; cookie concorrente removido.');
