@@ -64,6 +64,7 @@ const patches = [
   './patchAdvancedTacticalSimulatorRuntime',
   './patchDiscordLegalPlacarRuntime',
   './patchDiscordLoginNoWaitRuntime',
+  './patchDiscordOAuthStartRuntime',
   './patchBracketStylesheetFinalRuntime'
 ];
 
