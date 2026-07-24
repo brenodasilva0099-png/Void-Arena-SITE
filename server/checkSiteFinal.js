@@ -22,7 +22,8 @@ const patches = [
   './patchLeagueProfilesCompetitionsHomeRuntime',
   './patchProfileInlineCriticalExtrasRuntime',
   './patchAuditInlineProfileRuntime',
-  './patchAdvancedTacticalSimulatorRuntime'
+  './patchAdvancedTacticalSimulatorRuntime',
+  './patchBracketStylesheetFinalRuntime'
 ];
 
 require('./auditRuntimeSafety');
