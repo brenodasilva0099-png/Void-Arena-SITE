@@ -1,5 +1,4 @@
 require('dotenv').config();
-require('../server/patchDiscordStorageFallbackRuntime');
 
 const http = require('node:http');
 const { createServer } = require('../server/app');
