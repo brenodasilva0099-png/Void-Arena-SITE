@@ -8,7 +8,7 @@ const LEAGUE_JS = path.join(PUBLIC_DIR, 'js', 'core', 'league-polish.js');
 const NO_MOCK_JS = path.join(PUBLIC_DIR, 'js', 'core', 'federation-no-mock.js');
 const UPDATES_FILE = path.join(PAGES_DIR, 'atualizacoes.html');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'stable-auth-ui.json');
-const BUILD = '2026-07-18-stable-auth-ui-v1';
+const BUILD = '2026-07-24-stable-auth-ui-v2';
 const CSS = `/css/league-auth-ui.css?v=${BUILD}`;
 const JS = `/js/core/league-auth-ui.js?v=${BUILD}`;
 let changed = false;
@@ -132,7 +132,7 @@ write(VERSION_FILE, JSON.stringify({
   authEndpoint: '/api/auth/session',
   js: JS,
   css: CSS,
-  updatedAt: '2026-07-18T18:30:00-03:00'
+  updatedAt: '2026-07-24T13:12:00-03:00'
 }, null, 2));
 
 console.log(changed
