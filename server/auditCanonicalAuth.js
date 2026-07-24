@@ -4,6 +4,8 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const files = {
   boot: path.join(__dirname, 'bootSite.js'),
+  siteIndex: path.join(ROOT, 'site', 'index.js'),
+  storage: path.join(__dirname, 'storage.js'),
   session: path.join(__dirname, 'sessionPatch.js'),
   identity: path.join(__dirname, 'authIdentity.js'),
   authRoutes: path.join(__dirname, 'routes', 'discordAuthStable.routes.js'),
@@ -41,6 +43,11 @@ for (const forbidden of [
   expect(!source.boot.includes(forbidden), `boot ainda contém patch conflitante: ${forbidden}`);
 }
 
+expect(!source.siteIndex.includes('patchDiscordStorageFallbackRuntime'), 'site/index ainda carrega fallback antigo depois da auditoria');
+expect(source.storage.includes('STORAGE_READ_RETRIES'), 'storage não separa tentativas de leitura e escrita');
+expect(source.storage.includes("data?.code === 'INTERNAL_TOKEN_NOT_CONFIGURED'"), 'storage continua repetindo quando o token interno está ausente');
+expect(!source.storage.includes('SITE_BOT_STORAGE_RETRIES || 7'), 'storage voltou às sete tentativas longas');
+
 expect(!source.session.includes('patchStatelessSessionRuntime'), 'sessionPatch ainda injeta o cookie stateless concorrente');
 expect(source.session.includes('readIdentity') && source.session.includes('applyIdentityToSession'), 'sessão global não reaplica a identidade canônica');
 
@@ -70,13 +77,13 @@ for (const [label, client] of [['assets/api.js', source.assetsApi], ['core/api.j
   expect(client.includes('/api/auth/session'), `${label} não consulta a sessão canônica`);
 }
 
-expect(!source.authUi.includes('allButtons().forEach(renderLoggedOut);\n      document.documentElement.dataset.discordAuthenticated = \'0\';\n    } finally'), 'UI ainda converte falha transitória em logout visual');
+expect(!source.authUi.includes("allButtons().forEach(renderLoggedOut);\n      document.documentElement.dataset.discordAuthenticated = '0';\n    } finally"), 'UI ainda converte falha transitória em logout visual');
 
 if (failures.length) {
   failures.forEach((failure) => console.error(`[Auth Audit] ${failure}`));
   throw new Error(`Auditoria canônica de autenticação falhou com ${failures.length} inconsistência(s).`);
 }
 
-console.log('[Auth Audit] OAuth, cookies, sessão global, /api/me, perfil e cliente usam uma única identidade por Discord ID.');
+console.log('[Auth Audit] OAuth, cookies, sessão global, /api/me, perfil e cliente usam uma única identidade por Discord ID; fallback antigo e espera excessiva ausentes.');
 
 module.exports = { files };
