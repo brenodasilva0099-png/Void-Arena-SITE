@@ -1,8 +1,28 @@
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
+const { resolveIdentityUser, setIdentityCookies } = require('../authIdentity');
 
-function requireSession(req, res, next) {
-  if (!req.session?.userId) return res.status(401).json({ success: false, message: 'Faça login para continuar.' });
+async function requireSession(req, res, next) {
+  const result = await resolveIdentityUser(req, {
+    findUserById: storage.findUserById,
+    findUserByDiscordId: storage.findUserByDiscordId
+  });
+
+  if (!result.authenticated) {
+    return res.status(401).json({ success: false, message: 'Faça login para continuar.' });
+  }
+
+  if (!result.user) {
+    return res.status(503).json({
+      success: false,
+      pending: true,
+      authenticated: true,
+      message: result.error?.message || 'Sua sessão Discord está preservada, mas os dados do perfil estão temporariamente indisponíveis.'
+    });
+  }
+
+  req.authUser = result.user;
+  setIdentityCookies(req, res, result.user);
   return next();
 }
 
@@ -154,15 +174,14 @@ function buildStats(user = {}, team = null) {
 
 function registerProfileV2Routes(app) {
   app.get('/api/me/profile-v2', requireSession, async (req, res) => {
-    const [user, teams] = await Promise.all([storage.findUserById(req.session.userId), storage.readTeams().catch(() => [])]);
-    if (!user || user.deletedAt) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+    const user = req.authUser;
+    const teams = await storage.readTeams().catch(() => []);
     const [team, roles] = await Promise.all([Promise.resolve(findCurrentTeam(teams, user)), readDiscordRoles(user.discordId)]);
     return res.json({ success: true, user: publicUser(user, roles), roles, currentTeam: team || null, stats: buildStats(user, team) });
   });
 
   app.put('/api/me/profile-v2', requireSession, async (req, res) => {
-    const user = await storage.findUserById(req.session.userId);
-    if (!user || user.deletedAt) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+    const user = req.authUser;
     const profilePayload = req.body?.profile && typeof req.body.profile === 'object' ? req.body.profile : {};
     const socialsPayload = req.body?.socials && typeof req.body.socials === 'object' ? req.body.socials : {};
     const saved = await storage.saveUser({
@@ -171,14 +190,14 @@ function registerProfileV2Routes(app) {
       socials: normalizeSocials({ ...(user.socials || {}), ...socialsPayload }),
       updatedAt: new Date().toISOString()
     });
+    setIdentityCookies(req, res, saved);
     const teams = await storage.readTeams().catch(() => []);
     const [team, roles] = await Promise.all([Promise.resolve(findCurrentTeam(teams, saved)), readDiscordRoles(saved.discordId)]);
     return res.json({ success: true, user: publicUser(saved, roles), roles, currentTeam: team || null, stats: buildStats(saved, team) });
   });
 
   app.delete('/api/me/profile-v2', requireSession, async (req, res) => {
-    const user = await storage.findUserById(req.session.userId);
-    if (!user || user.deletedAt) return res.status(401).json({ success: false, message: 'Sessão inválida.' });
+    const user = req.authUser;
     if (user.discordId || String(user.provider || '').toLowerCase() === 'discord') {
       return res.status(400).json({ success: false, message: 'Contas criadas/logadas pelo Discord não são apagadas por aqui. Use Sair da conta para desconectar a sessão.' });
     }
