@@ -22,8 +22,8 @@ function write(file, content) {
 
 function replaceDashboardHeroIcon(source = '') {
   return source.replace(
-    /<div\b([^>]*class=["'][^"']*\bhnl-hero-icon\b[^"']*["'][^>]*)>[\s\S]*?<\/div>/i,
-    '<div$1 aria-hidden="true">🏟️</div>'
+    /<div\b[^>]*class=["'][^"']*\bhnl-hero-icon\b[^"']*["'][^>]*>[\s\S]*?<\/div>/i,
+    '<div class="hnl-hero-icon" aria-hidden="true">🏟️</div>'
   );
 }
 
