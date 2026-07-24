@@ -63,9 +63,7 @@ const patches = [
   './patchDashboardCompetitionHighlightRuntime',
   './patchAdvancedTacticalSimulatorRuntime',
   './patchDiscordLegalPlacarRuntime',
-  './patchDiscordLoginNoWaitRuntime',
-  './patchDiscordOAuthStartRuntime',
-  './patchDiscordAuthRecoveryGuardRuntime',
+  './patchPersistentDiscordIdentityRuntime',
   './patchBracketStylesheetFinalRuntime'
 ];
 
