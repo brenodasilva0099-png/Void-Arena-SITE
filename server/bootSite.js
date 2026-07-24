@@ -62,7 +62,8 @@ const patches = [
   './patchProfileInlineCriticalExtrasRuntime',
   './patchDashboardCompetitionHighlightRuntime',
   './patchAdvancedTacticalSimulatorRuntime',
-  './patchDiscordLegalPlacarRuntime'
+  './patchDiscordLegalPlacarRuntime',
+  './patchDiscordLoginNoWaitRuntime'
 ];
 
 for (const patch of patches) {
