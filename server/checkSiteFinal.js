@@ -97,7 +97,10 @@ for (const [label, source, marker] of [
   ['servidor', appSource, 'hnl-forms-static-route-v1'],
   ['servidor', appSource, "app.get('/js/formularios.js'"],
   ['servidor', appSource, 'application/javascript; charset=utf-8'],
-  ['cliente', formsScript, 'async function loadForms()']
+  ['cliente', formsScript, 'async function loadForms()'],
+  ['cliente', formsScript, 'function recoveryNotice(item = {})'],
+  ['cliente', formsScript, 'Recuperação parcial do histórico'],
+  ['cliente', formsScript, 'Não recuperado']
 ]) {
   if (!source.includes(marker)) {
     console.error(`[Check Final] Formulários sem recurso obrigatório em ${label}: ${marker}`);
@@ -122,4 +125,4 @@ for (const file of publicationRoutes) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Autenticação canônica, formulários, publicações Discord manuais, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
+console.log('[Check Final] Autenticação canônica, formulários com recuperação identificada, publicações Discord manuais, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
