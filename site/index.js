@@ -8,6 +8,7 @@ const { registerOrganizedRoutes } = require('../server/bootstrap/organizedRoutes
 const { registerDebugRoutes } = require('../server/routes/debug.routes');
 const { registerPublicEventRoutes } = require('../server/routes/publicEvent.routes');
 const { registerPublicTeamRoutes } = require('../server/routes/publicTeam.routes');
+const { registerStableTeamInviteRoutes } = require('../server/routes/teamInviteStable.routes');
 const { registerEventNotifyRoutes } = require('../server/routes/eventNotify.routes');
 const { registerBracketV2Routes } = require('../server/routes/bracketV2.routes');
 const { registerBridgeRoutes } = require('../server/routes/bridge.routes');
@@ -36,10 +37,12 @@ const PORT = Number(process.env.PORT || 3000);
 
 const app = createServer({ client: null });
 registerStableDiscordAuthRoutes(app);
+registerStableTeamInviteRoutes(app);
 registerStaticAssetGuard(app);
 registerOrganizedRoutes(app);
 registerDebugRoutes(app);
 registerPublicTeamRoutes(app);
+registerStableTeamInviteRoutes(app);
 registerPublicEventRoutes(app);
 registerEventNotifyRoutes(app);
 registerBracketV2Routes(app);
@@ -64,6 +67,7 @@ registerTeamRegistrationGuidancePublicationRoutes(app);
 // Registros finais: removem rotas antigas e impedem que outra camada as sobrescreva.
 registerHubResultBridgeDisabledRoutes(app);
 registerFinalRuntimeStabilityRoutes(app);
+registerStableTeamInviteRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
