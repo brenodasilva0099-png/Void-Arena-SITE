@@ -65,7 +65,6 @@ const patches = [
   './patchFormsStaticAssetRuntime',
   './patchRecruitmentNotificationDeliveryRuntime',
   './patchTeamMemberManagementAndCssRuntime',
-  './patchLeagueChatBridgeRuntime',
   './patchStableTeamInviteUiRuntime',
   './patchProfileCollectionRuntime',
   './patchFinalNavigationNoPrefetchRuntime',
