@@ -14,13 +14,17 @@
   const mentionBtn = Array.from(document.querySelectorAll('.va-bridge-compose .va-btn.secondary')).find((button) => /marcar/i.test(button.textContent || ''));
   const composeEl = $('.va-bridge-compose');
 
-  let mentionData = { members: [], roles: [] };
+  let mentionData = { members: [], roles: [], channels: [] };
   let mentionMenu = null;
 
   function esc(value = '') {
     return String(value).replace(/[&<>"']/g, (char) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[char]));
+  }
+
+  function norm(value = '') {
+    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
 
   function setStatus(message, type = '') {
@@ -52,16 +56,30 @@
     return data;
   }
 
+  function isTextChannel(channel = {}) {
+    return channel.canBridge === true || ['text', 'announcement'].includes(String(channel.kind || '').toLowerCase());
+  }
+
+  function isVoiceChannel(channel = {}) {
+    return ['voice', 'stage'].includes(String(channel.kind || '').toLowerCase());
+  }
+
   function channelLabel(channel = {}) {
-    return `${channel.displayName || channel.name || 'canal'} — ${channel.typeName || channel.kind || 'Texto'}`;
+    const icon = isVoiceChannel(channel) ? '🔊' : channel.kind === 'announcement' ? '📢' : '#';
+    return `${icon} ${channel.displayName || channel.name || 'canal'} — ${channel.typeName || channel.kind || 'Texto'}`;
   }
 
   function renderChannels(channels = [], selected = '') {
-    const usable = channels.filter((channel) => channel.canBridge || ['text', 'announcement'].includes(channel.kind));
+    const usable = channels.filter(isTextChannel);
     channelEl.innerHTML = '<option value="">Selecionar canal de texto</option>' + usable
       .map((channel) => `<option value="${esc(channel.id)}">${esc(channelLabel(channel))}</option>`)
       .join('');
     channelEl.value = selected || '';
+    channelEl.disabled = usable.length === 0;
+    linkBtn.disabled = usable.length === 0 || !channelEl.value;
+    channelEl.addEventListener('change', () => {
+      linkBtn.disabled = !channelEl.value;
+    }, { once: true });
   }
 
   function attachmentHtml(attachments = []) {
@@ -78,19 +96,41 @@
 
   function mentionItems() {
     const roles = (mentionData.roles || []).map((item) => ({
-      label: item.name || 'Cargo', value: item.mention || `<@&${item.id}>`, type: 'Cargo'
+      label: item.name || 'Cargo',
+      value: item.mention || `<@&${item.id}>`,
+      type: 'role',
+      group: 'Cargos',
+      icon: '@'
     }));
     const members = (mentionData.members || []).map((item) => ({
-      label: item.name || item.username || 'Usuário', value: item.mention || `<@${item.id}>`, type: 'Usuário'
+      label: item.name || item.username || 'Usuário',
+      value: item.mention || `<@${item.id}>`,
+      type: 'member',
+      group: 'Usuários',
+      icon: '@'
     }));
-    return [...roles, ...members];
+    const channels = (mentionData.channels || []).filter(isTextChannel).map((item) => ({
+      label: item.displayName || item.name || 'canal',
+      value: `<#${item.id}>`,
+      type: 'channel',
+      group: 'Canais',
+      icon: '#'
+    }));
+    const calls = (mentionData.channels || []).filter(isVoiceChannel).map((item) => ({
+      label: item.displayName || item.name || 'call',
+      value: `<#${item.id}>`,
+      type: 'voice',
+      group: 'Calls',
+      icon: '🔊'
+    }));
+    return [...roles, ...members, ...channels, ...calls];
   }
 
   function renderText(content = '') {
     let output = esc(content);
     for (const item of mentionItems()) {
       const raw = esc(item.value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      output = output.replace(new RegExp(raw, 'g'), `<span class="va-mention-token">@${esc(item.label)}</span>`);
+      output = output.replace(new RegExp(raw, 'g'), `<span class="va-mention-token">${item.icon}${esc(item.label)}</span>`);
     }
     return output;
   }
@@ -103,7 +143,7 @@
         ${attachmentHtml(message.attachments || [])}
         <small class="va-muted">${esc(message.source || 'site')} • ${message.createdAt ? new Date(message.createdAt).toLocaleString('pt-BR') : ''}</small>
       </article>
-    `).join('') : '<div class="va-bridge-empty">Nenhuma mensagem ainda.</div>';
+    `).join('') : '<div class="va-bridge-empty">Nenhuma mensagem ainda. Vincule um canal para importar o histórico.</div>';
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
@@ -128,40 +168,70 @@
       mentionMenu.className = 'va-mention-menu';
       composeEl.appendChild(mentionMenu);
     }
+
     const items = mentionItems();
-    mentionMenu.innerHTML = items.length ? items.map((item) => `
-      <button class="va-mention-option" type="button" data-value="${esc(item.value)}">
-        <i>@</i><b>${esc(item.label)}</b><small>${esc(item.type)}</small>
-      </button>
-    `).join('') : '<div class="va-mention-empty">Nenhum cargo ou usuário disponível.</div>';
+    const groups = ['Cargos', 'Usuários', 'Canais', 'Calls'];
+    mentionMenu.innerHTML = items.length ? groups.map((group) => {
+      const list = items.filter((item) => item.group === group);
+      if (!list.length) return '';
+      return `<div class="va-mention-group"><span>${group}</span>${list.map((item) => `
+        <button class="va-mention-option" type="button" data-value="${esc(item.value)}">
+          <i>${esc(item.icon)}</i><b>${esc(item.label)}</b><small>${esc(item.type)}</small>
+        </button>
+      `).join('')}</div>`;
+    }).join('') : '<div class="va-mention-empty">Nenhum cargo, usuário, canal ou call disponível.</div>';
     mentionMenu.hidden = false;
     mentionMenu.querySelectorAll('[data-value]').forEach((button) => {
       button.addEventListener('click', () => insertMention(button.dataset.value || ''));
     });
   }
 
+  async function refreshMentions() {
+    const data = await request(`/api/bridge/${key}/mentions?t=${Date.now()}`);
+    mentionData = {
+      members: data.members || [],
+      roles: data.roles || [],
+      channels: data.channels || []
+    };
+    return data;
+  }
+
   async function load() {
-    setStatus('Carregando ponte Discord ↔ Site...');
+    setStatus('Carregando canais, cargos, calls e histórico do Discord...');
     const data = await request(`/api/bridge/${key}/state?t=${Date.now()}`);
-    mentionData = data.mentions || mentionData;
+    mentionData = {
+      members: data.mentions?.members || [],
+      roles: data.mentions?.roles || [],
+      channels: data.channels || data.mentions?.channels || []
+    };
     titleEl.textContent = data.bridge?.title || 'Chat';
     subtitleEl.textContent = data.settings?.discordChannelId
       ? `Canal Discord vinculado: ${data.settings.discordChannelId}`
       : 'Canal Discord: não vinculado';
     inputEl.placeholder = data.bridge?.placeholder || 'Enviar mensagem para o Discord...';
-    renderChannels(data.channels || [], data.settings?.discordChannelId || '');
+    renderChannels(mentionData.channels, data.settings?.discordChannelId || '');
     renderMessages(data.messages || []);
-    setStatus(data.message || 'Ponte carregada.', data.settings?.discordChannelId ? 'ok' : '');
+
+    const diagnosticErrors = data.diagnostics?.errors || [];
+    if (diagnosticErrors.length) {
+      setStatus(`❌ ${diagnosticErrors.join(' | ')}`, 'err');
+    } else {
+      setStatus(
+        `Pronto: ${data.diagnostics?.channels || 0} canais/calls, ${data.diagnostics?.roles || 0} cargos e ${data.diagnostics?.members || 0} usuários.`,
+        data.settings?.discordChannelId ? 'ok' : ''
+      );
+    }
   }
 
   async function link() {
-    setStatus('Vinculando canal...');
-    await request(`/api/bridge/${key}/link`, {
+    if (!channelEl.value) return setStatus('Selecione um canal de texto.', 'err');
+    setStatus('Vinculando canal e importando histórico...');
+    const data = await request(`/api/bridge/${key}/link`, {
       method: 'PUT',
       body: JSON.stringify({ discordChannelId: channelEl.value })
     });
     await load();
-    setStatus(channelEl.value ? 'Canal vinculado.' : 'Vínculo removido.', 'ok');
+    setStatus(`Canal vinculado. ${data.history?.imported || 0} mensagem(ns) importada(s).`, 'ok');
   }
 
   async function send() {
@@ -169,14 +239,17 @@
     if (!content) return setStatus('Digite uma mensagem.', 'err');
     sendBtn.disabled = true;
     try {
-      setStatus('Enviando mensagem...');
-      await request(`/api/bridge/${key}/messages`, {
+      setStatus('Enviando mensagem para o Discord...');
+      const data = await request(`/api/bridge/${key}/messages`, {
         method: 'POST',
         body: JSON.stringify({ content })
       });
+      if (data.discord?.success === false && !data.discord?.skipped) {
+        throw new Error(data.discord?.message || 'O BOT não confirmou o envio.');
+      }
       inputEl.value = '';
       await load();
-      setStatus('Mensagem enviada.', 'ok');
+      setStatus('Mensagem enviada e registrada.', 'ok');
     } finally {
       sendBtn.disabled = false;
     }
@@ -191,7 +264,10 @@
   refreshBtn?.addEventListener('click', () => safe(load));
   refreshBtn2?.addEventListener('click', () => safe(load));
   sendBtn?.addEventListener('click', () => safe(send));
-  mentionBtn?.addEventListener('click', showMentions);
+  mentionBtn?.addEventListener('click', () => safe(async () => {
+    if (!mentionItems().length) await refreshMentions();
+    showMentions();
+  }));
   inputEl?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -205,5 +281,5 @@
   safe(load);
   setInterval(() => {
     if (!document.hidden) safe(load);
-  }, 8000);
+  }, 10000);
 })();
