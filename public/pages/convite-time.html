@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Convite de clube | Hollow Nexus League</title>
+  <link rel="icon" href="/assets/hollow-nexus-official.svg">
+  <link rel="stylesheet" href="/css/league-critical.css">
+  <link rel="stylesheet" href="/css/league-polish.css">
+  <link rel="stylesheet" href="/css/league-experience.css">
+</head>
+<body class="frm-polish-page" data-page="team-invite">
+  <main style="max-width:760px;margin:48px auto;padding:20px">
+    <section class="frm-page-hero">
+      <div>
+        <span class="hnl-section-kicker">Hollow Nexus League</span>
+        <h1>Convite para entrar no clube</h1>
+        <p>Abra este link com sua conta do Discord e confirme a entrada no elenco.</p>
+      </div>
+      <div class="hnl-hero-icon" aria-hidden="true">🤝</div>
+    </section>
+    <section class="hnl-card" style="margin-top:16px">
+      <div id="teamInviteStatus" class="va-status">Carregando convite...</div>
+      <div id="teamInviteDetails"></div>
+      <div class="hnl-actions" id="teamInviteActions" hidden style="margin-top:16px">
+        <button class="hnl-btn primary" id="acceptTeamInvite" type="button">Aceitar e entrar no clube</button>
+        <button class="hnl-btn danger" id="rejectTeamInvite" type="button">Recusar</button>
+      </div>
+      <div class="hnl-actions" style="margin-top:16px">
+        <a class="hnl-btn" href="/pages/dashboard.html">Voltar ao site</a>
+      </div>
+    </section>
+  </main>
+  <script src="/js/pages/team-invite.js?v=hnl-team-invite-v1"></script>
+</body>
+</html>
