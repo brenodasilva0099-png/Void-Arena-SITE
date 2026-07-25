@@ -71,15 +71,20 @@ const patches = [
   './patchClubIntegrityRuntime'
 ];
 
+const patchFailures = [];
+
 for (const patch of patches) {
   try {
     require(patch);
   } catch (error) {
-    console.error(`[Boot] Falha no patch ${patch}:`, error);
-    process.exitCode = 1;
-    throw error;
+    patchFailures.push({ patch, message: error?.message || String(error) });
+    console.error(`[Boot/NonFatal] Patch ignorado para manter o SITE online: ${patch}`, error);
   }
 }
 
-console.log(`[Boot] ${patches.length} patches carregados em ordem final.`);
+console.log(`[Boot] ${patches.length - patchFailures.length}/${patches.length} patches carregados.`);
+if (patchFailures.length) {
+  console.warn('[Boot] SITE continuará online com patches opcionais pendentes:', patchFailures);
+}
+
 require('../site/index');
