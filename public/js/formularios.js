@@ -91,11 +91,11 @@ async function sendComment(id) {
   await loadForms();
 }
 
-function field(title, value, full = false) {
+function field(title, value, full = false, fallback = '-') {
   return `
     <div class="field ${full ? 'full' : ''}">
       <strong>${escapeHtml(title)}</strong>
-      <span>${escapeHtml(value || '-')}</span>
+      <span>${escapeHtml(value || fallback)}</span>
     </div>
   `;
 }
@@ -122,10 +122,30 @@ function avatarMarkup(item = {}) {
   `;
 }
 
+function recoveryNotice(item = {}) {
+  const recovery = item.recovery && typeof item.recovery === 'object' ? item.recovery : null;
+  if (!recovery) return '';
+
+  const incomplete = Boolean(recovery.incomplete);
+  const title = incomplete ? '⚠️ Recuperação parcial do histórico' : '✅ Registro recuperado do backup';
+  const message = incomplete
+    ? (recovery.note || 'Algumas respostas não estavam disponíveis no histórico. Solicite ao jogador que confirme ou reenvie os campos marcados como não recuperados.')
+    : (recovery.note || 'O registro completo foi recuperado de um snapshot do banco.');
+
+  return `
+    <div class="full" style="padding:14px 16px;border-radius:16px;border:1px solid ${incomplete ? 'rgba(251,191,36,.48)' : 'rgba(34,197,94,.42)'};background:${incomplete ? 'rgba(245,158,11,.12)' : 'rgba(34,197,94,.10)'};color:#f8fafc;line-height:1.5">
+      <strong style="display:block;margin-bottom:5px;color:${incomplete ? '#fde68a' : '#bbf7d0'}">${escapeHtml(title)}</strong>
+      <span>${escapeHtml(message)}</span>
+    </div>
+  `;
+}
+
 function renderCard(item) {
   const date = item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : 'Data desconhecida';
   const comments = Array.isArray(item.comments) ? item.comments : [];
   const label = item.userName || item.discordTag || 'Jogador';
+  const recoveryIncomplete = Boolean(item.recovery?.incomplete);
+  const missingFallback = recoveryIncomplete ? 'Não recuperado' : '-';
 
   return `
     <article class="card" data-card-id="${escapeHtml(item.id)}">
@@ -140,18 +160,19 @@ function renderCard(item) {
 
       <div class="card-body">
         <div class="grid">
-          ${field('Nome Real / Código Steam', item.realNameSteamCode)}
-          ${field('Idade', item.age)}
-          ${field('Discord', item.discordTag || item.discordId || 'Não vinculado')}
-          ${field('Posição Principal', item.primaryPosition)}
-          ${field('Posição Secundária', item.secondaryPosition)}
-          ${field('Estilo de Jogo', item.playStyle)}
-          ${field('Experiência / Horas', item.experienceHours)}
-          ${field('Time anterior', item.previousTeam)}
-          ${field('Disponibilidade', item.availability, true)}
-          ${field('Pontos fortes', item.strengths, true)}
-          ${field('Pontos fracos', item.weaknesses, true)}
-          ${field('Por que deseja entrar?', item.reason, true)}
+          ${recoveryNotice(item)}
+          ${field('Nome Real / Código Steam', item.realNameSteamCode, false, missingFallback)}
+          ${field('Idade', item.age, false, missingFallback)}
+          ${field('Discord', item.discordTag || item.discordId, false, recoveryIncomplete ? 'Não recuperado' : 'Não vinculado')}
+          ${field('Posição Principal', item.primaryPosition, false, missingFallback)}
+          ${field('Posição Secundária', item.secondaryPosition, false, missingFallback)}
+          ${field('Estilo de Jogo', item.playStyle, false, missingFallback)}
+          ${field('Experiência / Horas', item.experienceHours, false, missingFallback)}
+          ${field('Time anterior', item.previousTeam, false, missingFallback)}
+          ${field('Disponibilidade', item.availability, true, missingFallback)}
+          ${field('Pontos fortes', item.strengths, true, missingFallback)}
+          ${field('Pontos fracos', item.weaknesses, true, missingFallback)}
+          ${field('Por que deseja entrar?', item.reason, true, missingFallback)}
         </div>
 
         ${comments.length ? `
@@ -175,12 +196,34 @@ function renderCard(item) {
   `;
 }
 
+async function hasCanonicalSession() {
+  try {
+    const response = await fetch(`/api/auth/session?t=${Date.now()}`, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+    const data = await response.json().catch(() => ({}));
+    return Boolean(response.ok && (data.authenticated || data.user?.discordId || data.user?.id));
+  } catch {
+    return false;
+  }
+}
+
 async function loadForms() {
   const response = await fetch(`/api/player-applications?t=${Date.now()}`);
   const data = await response.json().catch(() => ({}));
 
   if (response.status === 401) {
-    location.href = '/';
+    const authenticated = await hasCanonicalSession();
+    if (!authenticated) {
+      const next = `${location.pathname}${location.search}${location.hash}`;
+      location.href = `/pages/login.html?next=${encodeURIComponent(next)}`;
+      return;
+    }
+
+    list.innerHTML = '';
+    empty.hidden = false;
+    empty.textContent = 'Sua sessão continua ativa, mas os formulários ainda estão sincronizando. Aguarde alguns segundos e recarregue.';
     return;
   }
 
