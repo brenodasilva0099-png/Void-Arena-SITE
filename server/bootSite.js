@@ -68,7 +68,8 @@ const patches = [
   './patchLeagueChatBridgeRuntime',
   './patchStableTeamInviteUiRuntime',
   './patchProfileCollectionRuntime',
-  './patchFinalNavigationNoPrefetchRuntime'
+  './patchFinalNavigationNoPrefetchRuntime',
+  './patchClubIntegrityRuntime'
 ];
 
 for (const patch of patches) {
