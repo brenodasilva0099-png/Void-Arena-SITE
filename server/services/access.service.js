@@ -1,5 +1,6 @@
 const storage = require('../storage');
 const { callBot } = require('./botApi.service');
+const { readIdentity, applyIdentityToSession } = require('../authIdentity');
 
 const DEFAULT_OWNER_DISCORD_IDS = ['1235713276277559326'];
 const DEFAULT_ADMIN_DISCORD_IDS = ['623932415034916865'];
@@ -93,8 +94,27 @@ async function reactivateUserIfNeeded(user = null) {
 }
 
 async function getSessionUser(req) {
-  if (!req?.session?.userId) return null;
-  const user = await storage.findUserById(req.session.userId).catch(() => null);
+  const identity = readIdentity(req || {});
+  applyIdentityToSession(req, identity);
+
+  let user = null;
+  const userId = String(req?.session?.userId || identity.userId || '').trim();
+  const discordId = String(req?.session?.discordId || identity.discordId || '').trim();
+
+  if (userId) user = await storage.findUserById(userId).catch(() => null);
+  if (!user && discordId && typeof storage.findUserByDiscordId === 'function') {
+    user = await storage.findUserByDiscordId(discordId).catch(() => null);
+  }
+  if (!user && discordId) {
+    const users = await storage.readUsers().catch(() => []);
+    user = users.find((item) => String(item.discordId || '').trim() === discordId) || null;
+  }
+
+  if (user && req?.session) {
+    req.session.userId = user.id || userId || '';
+    req.session.discordId = user.discordId || discordId || '';
+  }
+
   return reactivateUserIfNeeded(user);
 }
 
