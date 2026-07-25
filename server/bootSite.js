@@ -63,6 +63,7 @@ const patches = [
   './patchDiscordLegalPlacarRuntime',
   './patchBracketStylesheetFinalRuntime',
   './patchFormsStaticAssetRuntime',
+  './patchRecruitmentNotificationDeliveryRuntime',
   './patchFinalNavigationNoPrefetchRuntime'
 ];
 
