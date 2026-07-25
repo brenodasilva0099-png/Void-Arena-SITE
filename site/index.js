@@ -32,6 +32,7 @@ const { registerNexusCupRulesPublicationRoutes } = require('../server/routes/nex
 const { registerTeamRegistrationGuidancePublicationRoutes } = require('../server/routes/teamRegistrationGuidancePublication.routes');
 const { registerHubResultBridgeDisabledRoutes } = require('../server/routes/hubResultBridgeDisabled.routes');
 const { registerFinalRuntimeStabilityRoutes } = require('../server/routes/finalRuntimeStability.routes');
+const { registerChatBridgeAssetRoutes } = require('../server/routes/chatBridgeAssets.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -68,6 +69,7 @@ registerTeamRegistrationGuidancePublicationRoutes(app);
 registerHubResultBridgeDisabledRoutes(app);
 registerFinalRuntimeStabilityRoutes(app);
 registerStableTeamInviteRoutes(app);
+registerChatBridgeAssetRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
