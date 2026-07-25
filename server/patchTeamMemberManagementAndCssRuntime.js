@@ -148,11 +148,11 @@ client = client.replace(
   '${rosterHtml(club.roster || [], { canManage: club.canManage, teamId: club.id })}'
 );
 
-if (!client.includes("[data-remove-club-member]")) {
+if (!client.includes('data-remove-club-member=')) {
   throw new Error('Botão de remoção de membro não pôde ser instalado no perfil do clube.');
 }
 
-if (!client.includes("Integrante removido do elenco")) {
+if (!client.includes('button.dataset.removeClubMember')) {
   const anchor = "    if (!club.canManage) return;";
   if (!client.includes(anchor)) throw new Error('Ponto de controle do perfil do clube não encontrado.');
   const handler = `    $$('[data-remove-club-member]', box).forEach((button) => button.addEventListener('click', async () => {
@@ -177,7 +177,7 @@ for (const marker of [
   "app.delete('/api/teams/:teamId/members/:memberKey'",
   'function removeMemberFromTeam',
   'data-remove-club-member',
-  'Integrante removido do elenco.'
+  'button.dataset.removeClubMember'
 ]) {
   if (!app.includes(marker) && !routes.includes(marker) && !client.includes(marker)) {
     throw new Error(`Correção de time/CSS incompleta: ${marker}`);
