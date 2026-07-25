@@ -30,6 +30,7 @@ const { registerLeagueStableRoutes } = require('../server/routes/leagueStable.ro
 const { registerNexusCupRulesPublicationRoutes } = require('../server/routes/nexusCupRulesPublication.routes');
 const { registerTeamRegistrationGuidancePublicationRoutes } = require('../server/routes/teamRegistrationGuidancePublication.routes');
 const { registerHubResultBridgeDisabledRoutes } = require('../server/routes/hubResultBridgeDisabled.routes');
+const { registerFinalRuntimeStabilityRoutes } = require('../server/routes/finalRuntimeStability.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -60,8 +61,9 @@ registerRouteAuditRoutes(app);
 registerLeagueStableRoutes(app);
 registerNexusCupRulesPublicationRoutes(app);
 registerTeamRegistrationGuidancePublicationRoutes(app);
-// Deve ser o último registro: remove qualquer rota antiga de resultado HUB→SITE.
+// Registros finais: removem rotas antigas e impedem que outra camada as sobrescreva.
 registerHubResultBridgeDisabledRoutes(app);
+registerFinalRuntimeStabilityRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
