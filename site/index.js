@@ -33,6 +33,7 @@ const { registerTeamRegistrationGuidancePublicationRoutes } = require('../server
 const { registerHubResultBridgeDisabledRoutes } = require('../server/routes/hubResultBridgeDisabled.routes');
 const { registerFinalRuntimeStabilityRoutes } = require('../server/routes/finalRuntimeStability.routes');
 const { registerChatBridgeAssetRoutes } = require('../server/routes/chatBridgeAssets.routes');
+const { registerProfileAssetsStableRoutes } = require('../server/routes/profileAssetsStable.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -70,6 +71,7 @@ registerHubResultBridgeDisabledRoutes(app);
 registerFinalRuntimeStabilityRoutes(app);
 registerStableTeamInviteRoutes(app);
 registerChatBridgeAssetRoutes(app);
+registerProfileAssetsStableRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
