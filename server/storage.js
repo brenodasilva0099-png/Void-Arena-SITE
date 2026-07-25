@@ -3,6 +3,12 @@ const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN ||
 const STORAGE_TIMEOUT_MS = Number(process.env.SITE_BOT_STORAGE_TIMEOUT_MS || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 8500) || 8500;
 const STORAGE_READ_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_READ_RETRIES || 2) || 2);
 const STORAGE_WRITE_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_WRITE_RETRIES || 4) || 4);
+const READ_CACHE = new Map();
+
+function clone(value) {
+  if (value === undefined) return undefined;
+  return JSON.parse(JSON.stringify(value));
+}
 
 function internalHeaders(extra = {}) {
   return {
@@ -35,6 +41,24 @@ function retriesFor(method = '') {
 
 function isConfigurationFailure(status, data = {}) {
   return [401, 403, 404].includes(Number(status)) || data?.code === 'INTERNAL_TOKEN_NOT_CONFIGURED';
+}
+
+function cacheKey(method = '', args = []) {
+  return `${String(method)}:${JSON.stringify(args || [])}`;
+}
+
+function storeReadCache(method, args, value) {
+  if (!isReadOnlyMethod(method)) return;
+  READ_CACHE.set(cacheKey(method, args), {
+    value: clone(value),
+    savedAt: new Date().toISOString()
+  });
+}
+
+function cachedRead(method, args) {
+  if (!isReadOnlyMethod(method)) return null;
+  const cached = READ_CACHE.get(cacheKey(method, args));
+  return cached ? { ...cached, value: clone(cached.value) } : null;
 }
 
 async function wakeBotStorage() {
@@ -70,7 +94,10 @@ async function callBotStorage(method, args = []) {
       });
 
       const data = await response.json().catch(() => ({}));
-      if (response.ok && data.success !== false) return data.result;
+      if (response.ok && data.success !== false) {
+        storeReadCache(method, args, data.result);
+        return data.result;
+      }
 
       const error = new Error(data.message || `Falha no storage remoto do bot (${response.status}).`);
       error.status = response.status;
@@ -80,7 +107,7 @@ async function callBotStorage(method, args = []) {
     } catch (error) {
       lastError = error;
       const status = Number(error?.status || 0);
-      if (error?.code === 'INTERNAL_TOKEN_NOT_CONFIGURED' || (status && !isTransientStatus(status))) throw error;
+      if (error?.code === 'INTERNAL_TOKEN_NOT_CONFIGURED' || (status && !isTransientStatus(status))) break;
     }
 
     if (attempt < maxAttempts) {
@@ -88,6 +115,12 @@ async function callBotStorage(method, args = []) {
       const delay = Math.min(3500, 700 * attempt + 300 * Math.max(0, attempt - 1));
       await wait(delay);
     }
+  }
+
+  const cached = cachedRead(method, args);
+  if (cached) {
+    console.warn(`[Storage/Cache] BOT indisponível em ${method}; usando última leitura válida de ${cached.savedAt}.`);
+    return cached.value;
   }
 
   const suffix = lastError?.message ? ` ${lastError.message}` : '';
