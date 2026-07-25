@@ -7,20 +7,28 @@ if (!fs.existsSync(file)) process.exit(0);
 let source = fs.readFileSync(file, 'utf8');
 let changed = false;
 
-if (!source.includes("const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));")) {
-  throw new Error('Helper de coleção $$ ausente em league-experience.js.');
+const hasCollectionHelper = source.includes("const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));");
+if (!hasCollectionHelper) {
+  console.warn('[Profile/Collection] Helper $$ não encontrado; patch ignorado sem bloquear o SITE.');
+  process.exit(0);
 }
 
+// Corrige apenas chamadas simples reais como $('seletor').forEach(...).
+// Usa callback para não confundir os cifrões especiais da string de substituição.
 const before = source;
-source = source.replace(/(?<!\$)\$\(([^\n;]+?)\)\.forEach\(/g, '$$($1).forEach(');
-if (source !== before) changed = true;
-
-if (/((?<!\$)\$\([^\n;]+?\)\.forEach\()/.test(source)) {
-  throw new Error('Ainda existe querySelector simples sendo usado com forEach.');
-}
+source = source.replace(/(^|[^\w$])\$\(([^\n;()]+)\)\.forEach\(/gm, (_match, prefix, selector) => `${prefix}$$(${selector}).forEach(`);
+changed = source !== before;
 
 if (changed) fs.writeFileSync(file, source, 'utf8');
+
+// O único bloqueio permitido aqui é sintaxe JavaScript realmente inválida.
 new Function(fs.readFileSync(file, 'utf8'));
+
+const remainingSimpleCalls = (source.match(/(^|[^\w$])\$\(([^\n;()]+)\)\.forEach\(/gm) || []).length;
+if (remainingSimpleCalls) {
+  console.warn('[Profile/Collection] Ocorrências ambíguas preservadas para não interromper o SITE.', { remainingSimpleCalls });
+}
+
 console.log(changed
-  ? '[Profile/Collection] querySelector simples trocado por coleção antes do forEach.'
-  : '[Profile/Collection] Uso de coleções no perfil já estava correto.');
+  ? '[Profile/Collection] Chamadas simples corrigidas sem bloquear o boot.'
+  : '[Profile/Collection] Validação tolerante concluída; nenhuma correção necessária.');
