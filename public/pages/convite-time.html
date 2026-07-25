@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="/css/league-experience.css">
 </head>
 <body class="frm-polish-page" data-page="team-invite">
+  <div data-admin-section hidden aria-hidden="true"></div>
+  <a data-admin-only hidden aria-hidden="true" href="/pages/administracao.html" tabindex="-1">Administração</a>
   <main style="max-width:760px;margin:48px auto;padding:20px">
     <section class="frm-page-hero">
       <div>
@@ -24,13 +26,13 @@
       <div id="teamInviteDetails"></div>
       <div class="hnl-actions" id="teamInviteActions" hidden style="margin-top:16px">
         <button class="hnl-btn primary" id="acceptTeamInvite" type="button">Aceitar e entrar no clube</button>
-        <button class="hnl-btn danger" id="rejectTeamInvite" type="button">Recusar</button>
+        <button class="hnl-btn danger" id="rejectTeamInvite" type="button">Recusar para minha conta</button>
       </div>
       <div class="hnl-actions" style="margin-top:16px">
         <a class="hnl-btn" href="/pages/dashboard.html">Voltar ao site</a>
       </div>
     </section>
   </main>
-  <script src="/js/pages/team-invite.js?v=hnl-team-invite-v1"></script>
+  <script src="/js/pages/team-invite.js?v=hnl-team-invite-v2"></script>
 </body>
 </html>
