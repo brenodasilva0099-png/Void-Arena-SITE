@@ -36,6 +36,10 @@ routes = routes.replace(
   "authorId: user?.id || req.session.userId || ''",
   "authorId: user?.id || user?.discordId || ''"
 );
+routes = routes.replace(
+  "allowedMentions: { parse: mentionParse }",
+  "allowedMentions: { parse: mentionParse }, manual: true"
+);
 
 client = client.replace('let mentionData = { members: [], roles: [] };', 'let mentionData = { members: [], roles: [], channels: [] };');
 client = client.replace(
@@ -73,7 +77,7 @@ write(routeFile, routes);
 write(clientFile, client);
 new Function(read(routeFile));
 new Function(read(clientFile));
-for (const marker of ['req.bridgeUser = user', "type: 'channel'", "group('Canais'", 'Ponte Discord ↔ SITE']) {
+for (const marker of ['req.bridgeUser = user', "type: 'channel'", "group('Canais'", 'manual: true', 'Ponte Discord ↔ SITE']) {
   if (!read(routeFile).includes(marker) && !read(clientFile).includes(marker) && !read(chatPage).includes(marker)) throw new Error(`Chat incompleto: ${marker}`);
 }
 console.log('[Chat/Bridge] Chat Discord recolocado no shell atual com canais, usuários, cargos, histórico e envio.');
