@@ -62,7 +62,8 @@ const patches = [
   './patchCanonicalAuthClientRuntime',
   './patchDiscordLegalPlacarRuntime',
   './patchBracketStylesheetFinalRuntime',
-  './patchFormsStaticAssetRuntime'
+  './patchFormsStaticAssetRuntime',
+  './patchFinalNavigationNoPrefetchRuntime'
 ];
 
 for (const patch of patches) {
