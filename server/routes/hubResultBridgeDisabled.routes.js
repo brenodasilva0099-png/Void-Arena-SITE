@@ -24,7 +24,7 @@ function registerHubResultBridgeDisabledRoutes(app) {
     build: BUILD,
     results: [],
     records: [],
-    message: 'Resultados enviados pela HUB não são mais exibidos no site.'
+    message: ''
   }));
 
   console.log(`[Resultados/HUB] Ponte interna e exibição no SITE removidas (${BUILD}).`);
