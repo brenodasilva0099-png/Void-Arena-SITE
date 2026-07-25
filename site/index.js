@@ -29,6 +29,7 @@ const { registerRouteAuditRoutes } = require('../server/routes/routeAudit.routes
 const { registerLeagueStableRoutes } = require('../server/routes/leagueStable.routes');
 const { registerNexusCupRulesPublicationRoutes } = require('../server/routes/nexusCupRulesPublication.routes');
 const { registerTeamRegistrationGuidancePublicationRoutes } = require('../server/routes/teamRegistrationGuidancePublication.routes');
+const { registerHubResultBridgeDisabledRoutes } = require('../server/routes/hubResultBridgeDisabled.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -59,6 +60,8 @@ registerRouteAuditRoutes(app);
 registerLeagueStableRoutes(app);
 registerNexusCupRulesPublicationRoutes(app);
 registerTeamRegistrationGuidancePublicationRoutes(app);
+// Deve ser o último registro: remove qualquer rota antiga de resultado HUB→SITE.
+registerHubResultBridgeDisabledRoutes(app);
 
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
