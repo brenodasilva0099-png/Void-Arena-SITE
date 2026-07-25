@@ -25,7 +25,8 @@ const patches = [
   './patchAdvancedTacticalSimulatorRuntime',
   './patchBracketStylesheetFinalRuntime',
   './patchCanonicalAuthClientRuntime',
-  './patchFormsStaticAssetRuntime'
+  './patchFormsStaticAssetRuntime',
+  './patchFinalNavigationNoPrefetchRuntime'
 ];
 
 require('./auditRuntimeSafety');
@@ -75,6 +76,7 @@ if (failures.length) {
 
 require('./auditCanonicalAuth');
 require('./auditSitePages');
+require('./auditFinalRuntimeStability');
 for (const name of ['league-stable-final.json', 'page-integrity.json', 'navigation-integrity.json', 'league-home-competition-profile.json', 'tactical-simulator-version.json']) {
   if (!fs.existsSync(path.join(ROOT, 'public', name))) {
     console.error(`[Check Final] Marcador ausente: ${name}`);
@@ -125,4 +127,4 @@ for (const file of publicationRoutes) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Autenticação canônica, formulários com recuperação identificada, publicações Discord manuais, prancheta avançada, perfis, competições, home, rotas, assets, menus e módulos competitivos aprovados.');
+console.log('[Check Final] Sessão sem 500, ponte HUB removida, calls protegidas no BOT, navegação sem prefetch, formulários recuperáveis, publicações Discord manuais e módulos da League aprovados.');
