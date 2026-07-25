@@ -18,7 +18,9 @@ expect(siteIndex.indexOf('registerHubResultBridgeDisabledRoutes(app);') < siteIn
 expect(hubRoute.includes("code: 'HUB_RESULT_SITE_BRIDGE_DISABLED'"), 'rota de bloqueio não retorna código explícito');
 expect(hubRoute.includes("['post', '/internal/results/submit']"), 'rota submit da HUB não é removida');
 expect(hubRoute.includes("['post', '/internal/results/state']"), 'rota state da HUB não é removida');
+expect(hubRoute.includes("['get', '/api/match-results']"), 'endpoint que exibe resultados da HUB não é removido');
 expect(hubRoute.includes('res.status(410)'), 'ponte HUB não falha como recurso removido');
+expect(hubRoute.includes('results: []') && hubRoute.includes('records: []'), 'site ainda pode exibir resultados antigos da HUB');
 
 expect(stabilityRoute.includes("removeRoutes(app, [['get', '/api/auth/session']])"), 'sessão antiga não é removida antes da rota fail-safe');
 expect(stabilityRoute.includes("return res.status(200).json(sessionFallback(req, error));"), 'falha de storage ainda pode gerar 500 na sessão');
@@ -38,4 +40,4 @@ if (failures.length) {
   throw new Error(`Auditoria final de estabilidade falhou com ${failures.length} pendência(s).`);
 }
 
-console.log('[Runtime Stability Audit] Sessão sem 500, páginas administrativas estáveis, prefetch removido e ponte HUB→SITE bloqueada.');
+console.log('[Runtime Stability Audit] Sessão sem 500, páginas estáveis, prefetch removido e resultados HUB→SITE ocultos/bloqueados.');
