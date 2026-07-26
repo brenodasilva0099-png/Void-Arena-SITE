@@ -46,6 +46,20 @@ function resolveAssetFile(requestPath = '') {
   return { relative, fullPath };
 }
 
+function expressReadyInsertionIndex(stack = []) {
+  const expressInitIndex = stack.findIndex((layer) =>
+    layer?.name === 'expressInit' || layer?.handle?.name === 'expressInit'
+  );
+  if (expressInitIndex >= 0) return expressInitIndex + 1;
+
+  const queryIndex = stack.findIndex((layer) =>
+    layer?.name === 'query' || layer?.handle?.name === 'query'
+  );
+  if (queryIndex >= 0) return queryIndex + 1;
+
+  return Math.min(2, stack.length);
+}
+
 function registerStaticAssetGuard(app) {
   if (!app || app.__voidArenaStaticAssetGuardInstalled) return;
   app.__voidArenaStaticAssetGuardInstalled = true;
@@ -90,13 +104,14 @@ function registerStaticAssetGuard(app) {
   const stack = app._router?.stack || app.router?.stack;
   if (Array.isArray(stack) && stack.length > 1) {
     const guardIndex = stack.findIndex((layer) => layer?.handle === guard);
-    if (guardIndex > 0) {
+    if (guardIndex >= 0) {
       const [guardLayer] = stack.splice(guardIndex, 1);
-      stack.unshift(guardLayer);
+      const insertAt = expressReadyInsertionIndex(stack);
+      stack.splice(insertAt, 0, guardLayer);
     }
   }
 
-  console.log('[Static Guard] Assets CSS/JS servidos diretamente antes de páginas, API e fallback.');
+  console.log('[Static Guard] Assets CSS/JS servidos após expressInit e antes das páginas, API e fallback.');
 }
 
 module.exports = { registerStaticAssetGuard, isStaticAssetPath, assetContentType, resolveAssetFile };
