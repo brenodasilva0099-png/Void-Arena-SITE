@@ -1,5 +1,18 @@
 require('dotenv').config();
 
+const CANONICAL_SITE_URL = 'https://hollownexus.com.br';
+const CANONICAL_DISCORD_CALLBACK_URL = `${CANONICAL_SITE_URL}/auth/discord/callback`;
+
+// Definido antes dos requires: nenhuma rota ou fallback antigo pode capturar
+// as variáveis do Render antes da troca para o domínio oficial.
+process.env.CANONICAL_SITE_URL = CANONICAL_SITE_URL;
+process.env.PUBLIC_SITE_URL = CANONICAL_SITE_URL;
+process.env.SITE_PUBLIC_URL = CANONICAL_SITE_URL;
+process.env.SITE_URL = CANONICAL_SITE_URL;
+process.env.APP_URL = CANONICAL_SITE_URL;
+process.env.FRONTEND_URL = CANONICAL_SITE_URL;
+process.env.DISCORD_CALLBACK_URL = CANONICAL_DISCORD_CALLBACK_URL;
+
 const http = require('node:http');
 const { createServer } = require('../server/app');
 const { createRealtimeServer } = require('../server/realtime');
@@ -80,7 +93,8 @@ createRealtimeServer(server, { app });
 
 server.listen(PORT, () => {
   console.log(`Site Hollow Nexus League rodando em: http://localhost:${PORT}`);
-  console.log('Domínio público oficial: https://hollownexus.com.br');
+  console.log(`Domínio público oficial: ${CANONICAL_SITE_URL}`);
+  console.log(`Callback Discord oficial: ${CANONICAL_DISCORD_CALLBACK_URL}`);
   console.log('Realtime WebSocket ativo em: /realtime');
 });
 
