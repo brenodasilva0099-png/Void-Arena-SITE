@@ -15,7 +15,7 @@ const GUIDANCE_MESSAGE = `📣 **AVISOS — ᵗʰᵉ 𝙷𝚘𝚕𝚕𝚘𝚠 �
 
 <@&${TEAM_OUTREACH_ROLE_ID}> **se o seu time ainda não está no servidor, acesse o site e compartilhe o link com todos os integrantes.** Assim, cada jogador poderá entrar com o Discord, ser reconhecido pelo sistema e participar dos eventos e campeonatos da liga.
 
-🌐 **Site oficial:** https://hollow-nexus-league.onrender.com
+🌐 **Site oficial:** https://hollownexus.com.br
 📌 **Canal destas orientações:** <#${CHANNEL_ID}>
 
 **Quem deve fazer o cadastro**
