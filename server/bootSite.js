@@ -68,7 +68,8 @@ const patches = [
   './patchStableTeamInviteUiRuntime',
   './patchProfileCollectionRuntime',
   './patchFinalNavigationNoPrefetchRuntime',
-  './patchClubIntegrityRuntime'
+  './patchClubIntegrityRuntime',
+  './patchNexusCupFinalPublicationRuntime'
 ];
 
 const patchFailures = [];
