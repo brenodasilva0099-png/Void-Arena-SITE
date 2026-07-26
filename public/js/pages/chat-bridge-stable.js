@@ -151,11 +151,11 @@
       icon: '@'
     }));
     const members = (mentionData.members || []).map((item) => ({
-      label: item.name || item.username || 'Usuário',
+      label: item.name || item.username || 'Membro',
       value: item.mention || `<@${item.id}>`,
-      type: 'usuário',
+      type: item.isBot ? 'bot' : 'membro',
       category: 'members',
-      group: 'Usuários',
+      group: 'Membros',
       icon: '@',
       avatar: safeMediaUrl(item.avatarUrl || item.avatar || item.authorAvatar)
     }));
@@ -310,11 +310,11 @@
     const tabs = [
       ['all', 'Todos'],
       ['roles', 'Cargos'],
-      ['members', 'Usuários'],
+      ['members', 'Membros'],
       ['channels', 'Canais'],
       ['calls', 'Calls']
     ];
-    const groups = ['Cargos', 'Usuários', 'Canais', 'Calls'];
+    const groups = ['Cargos', 'Membros', 'Canais', 'Calls'];
     const results = filtered.length ? groups.map((group) => {
       const list = filtered.filter((item) => item.group === group);
       if (!list.length) return '';
@@ -327,7 +327,7 @@
 
     mentionMenu.innerHTML = `
       <div class="va-mention-head"><strong>Inserir menção</strong><button class="va-mention-close" type="button" data-mention-close aria-label="Fechar">×</button></div>
-      <input class="va-mention-search" type="search" data-mention-search value="${esc(mentionQuery)}" placeholder="Buscar usuário, cargo, canal ou call..." autocomplete="off">
+      <input class="va-mention-search" type="search" data-mention-search value="${esc(mentionQuery)}" placeholder="Buscar membro, cargo, canal ou call..." autocomplete="off">
       <div class="va-mention-tabs">${tabs.map(([value, label]) => {
         const count = value === 'all' ? allItems.length : allItems.filter((item) => item.category === value).length;
         return `<button class="va-mention-tab ${mentionFilter === value ? 'active' : ''}" type="button" data-mention-filter="${value}">${label} · ${count}</button>`;
@@ -416,7 +416,7 @@
       if (errors.length) setStatus(`❌ ${errors.join(' | ')}`, 'err');
       else if (!silent) {
         setStatus(
-          `Pronto: ${data.diagnostics?.channels || 0} canais/calls, ${data.diagnostics?.roles || 0} cargos, ${data.diagnostics?.members || 0} usuários e ${messages.length} mensagens carregadas.`,
+          `Pronto: ${data.diagnostics?.channels || 0} canais/calls, ${data.diagnostics?.roles || 0} cargos, ${data.diagnostics?.members || 0} membros e ${messages.length} mensagens carregadas.`,
           selectedDiscordChannelId ? 'ok' : ''
         );
       }
