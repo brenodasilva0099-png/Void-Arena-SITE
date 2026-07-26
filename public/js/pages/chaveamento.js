@@ -7,7 +7,7 @@
   const manualModal = document.getElementById('manualBracketModal');
   const manualBody = document.getElementById('manualEditorBody');
   const manualStatus = document.getElementById('manualEditorStatus');
-  const SUPPORTED_LIMITS = [4, 8, 12, 16, 20, 24, 28, 32];
+  const SUPPORTED_LIMITS = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32];
   let currentBracket = { slots: [], round16: [], quarters: [], semis: [], finals: [], matchProgress: {}, slotSize: 16, teamLimit: 16 };
   let currentSettings = { activeEventId: '', teamSource: 'all', tournamentName: 'Rematch Championship', matchFormat: 'MD1', teamLimit: 16, groupCount: 4, structure: 'single_elimination', autoCreateMatchChannels: true, discordMatchCategoryId: '' };
   let currentEvents = []; let currentTeams = [];
@@ -45,7 +45,7 @@
     if (!adaptiveEl) return;
     const limit = boardLimit();
     const pairSplit = splitPairs(limit);
-    const entryLabel = limit === 4 ? 'Semifinal' : limit === 8 ? 'Quartas' : limit <= 16 ? (limit === 12 ? 'Entrada' : 'Oitavas') : 'Entrada';
+    const entryLabel = ({ 4: 'Semifinal', 8: 'Quartas', 16: 'Oitavas', 32: 'Rodada de 32' })[limit] || 'Entrada';
     const height = Math.max(560, Math.ceil(limit / 2) * 92);
     const round16 = fillArray(currentBracket.round16, 16);
     const quarters = fillArray(currentBracket.quarters, 8);
@@ -55,8 +55,8 @@
     leftCols.push(col(entryLabel, cardsFromPairs(pairSplit.left, entryLabel, 0), 'entry'));
     rightCols.unshift(col(entryLabel, cardsFromPairs(pairSplit.right, entryLabel, pairSplit.left.length), 'entry'));
     if (limit > 16) { leftCols.push(col('Oitavas', cardsFromSingles(round16.slice(0, 8), 8, 'Oitavas', 0), 'round16')); rightCols.unshift(col('Oitavas', cardsFromSingles(round16.slice(8, 16), 8, 'Oitavas', 8), 'round16')); }
-    if (limit >= 12) { leftCols.push(col('Quartas', cardsFromSingles(quarters.slice(0, 4), 4, 'Quartas', 0), 'quarters')); rightCols.unshift(col('Quartas', cardsFromSingles(quarters.slice(4, 8), 4, 'Quartas', 4), 'quarters')); }
-    if (limit >= 8) { leftCols.push(col('Semifinal', cardsFromSingles(semis.slice(0, 2), 2, 'Semi', 0), 'semis')); rightCols.unshift(col('Semifinal', cardsFromSingles(semis.slice(2, 4), 2, 'Semi', 2), 'semis')); }
+    if (limit > 8) { leftCols.push(col('Quartas', cardsFromSingles(quarters.slice(0, 4), 4, 'Quartas', 0), 'quarters')); rightCols.unshift(col('Quartas', cardsFromSingles(quarters.slice(4, 8), 4, 'Quartas', 4), 'quarters')); }
+    if (limit > 4) { leftCols.push(col('Semifinal', cardsFromSingles(semis.slice(0, 2), 2, 'Semi', 0), 'semis')); rightCols.unshift(col('Semifinal', cardsFromSingles(semis.slice(2, 4), 2, 'Semi', 2), 'semis')); }
     const eventTitle = bracketEventTitle();
     adaptiveEl.innerHTML = `<div class="va-model-bracket-wrap"><div class="va-model-title"><h2>Chaveamento</h2><p class="va-model-event-name">${safe(eventTitle)}</p></div><div class="va-model-bracket model-${limit}" style="--model-height:${height}px">${leftCols.join('')}${finalColumn()}${rightCols.join('')}</div></div>`;
   }
