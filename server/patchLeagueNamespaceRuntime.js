@@ -177,7 +177,7 @@ function patchHtml(file) {
   html = html.replace(/\/css\/league-polish\.css(\?[^"']*)?/g, '/css/league-polish.css?v=' + BUILD);
   html = html.replace(/\/api\/federation\//g, '/api/league/');
   html = html.replace(/\/api\/federation/g, '/api/league');
-  html = html.replace(/https:\/\/void-arena-site(?:-[a-z0-9]+)?\.onrender\.com/gi, 'https://hollow-nexus-league.onrender.com');
+  html = html.replace(/https:\/\/(?:void-arena-site(?:-[a-z0-9]+)?|hollow-nexus-league)\.onrender\.com/gi, 'https://hollownexus.com.br');
   html = html.replace(/Hollow Nexus FRM/g, 'Hollow Nexus League');
   html = html.replace(/Hollow Nexus Tournament/g, 'Hollow Nexus League');
   html = html.replace(/Federação Comunitária/g, 'Liga Comunitária');
