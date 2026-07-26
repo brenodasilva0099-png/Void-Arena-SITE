@@ -11,7 +11,16 @@ function requestHost(req) {
   return (forwarded || direct).replace(/:\d+$/, '').toLowerCase();
 }
 
+function routerStack(app) {
+  if (Array.isArray(app?._router?.stack)) return app._router.stack;
+  if (Array.isArray(app?.router?.stack)) return app.router.stack;
+  return null;
+}
+
 function registerCanonicalDomainRoutes(app) {
+  const stack = routerStack(app);
+  const insertionPoint = stack?.length || 0;
+
   app.use((req, res, next) => {
     const host = requestHost(req);
     if (!LEGACY_HOSTS.has(host)) return next();
@@ -22,10 +31,16 @@ function registerCanonicalDomainRoutes(app) {
   });
 
   app.use((_req, res, next) => {
-    res.set('Content-Security-Policy', "upgrade-insecure-requests");
+    res.set('Content-Security-Policy', 'upgrade-insecure-requests');
     res.set('X-Hollow-Nexus-Canonical-Host', CANONICAL_HOST);
     return next();
   });
+
+  const updatedStack = routerStack(app);
+  if (updatedStack && updatedStack.length > insertionPoint) {
+    const canonicalLayers = updatedStack.splice(insertionPoint);
+    updatedStack.unshift(...canonicalLayers);
+  }
 
   console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; Render e www redirecionam preservando a rota.`);
 }
