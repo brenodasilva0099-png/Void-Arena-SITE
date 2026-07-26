@@ -2714,7 +2714,7 @@ function createServer({ client }) {
   function normalizeEventPayload(body = {}, existing = {}) {
     const title = String(body.title || body.name || existing.title || existing.name || 'Novo evento').trim().slice(0, 80);
     const allowedStatuses = new Set(['open', 'closed', 'running', 'finished']);
-    const teamLimit = [4, 8, 16, 32].includes(Number(body.teamLimit)) ? Number(body.teamLimit) : Number(existing.teamLimit || 16) || 16;
+    const teamLimit = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].includes(Number(body.teamLimit)) ? Number(body.teamLimit) : Number(existing.teamLimit || 16) || 16;
     const minimumTeams = Math.max(2, Math.min(teamLimit, Number(body.minimumTeams || existing.minimumTeams || 4) || 4));
     return {
       id: String(body.id || existing.id || '').trim() || undefined,
@@ -2799,8 +2799,8 @@ function createServer({ client }) {
     const allowedFormats = new Set(['MD1', 'MD2', 'MD3', 'MD5']);
     const allowedStructures = new Set(['single_elimination', 'groups', 'groups_playoffs']);
 
-    const teamLimit = [4, 8, 16, 32].includes(Number(req.body.teamLimit)) ? Number(req.body.teamLimit) : 16;
-    const groupCount = [2, 4, 8].includes(Number(req.body.groupCount)) ? Number(req.body.groupCount) : 4;
+    const teamLimit = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].includes(Number(req.body.teamLimit)) ? Number(req.body.teamLimit) : 16;
+    const groupCount = [1, 2, 4, 8].includes(Number(req.body.groupCount)) ? Number(req.body.groupCount) : 4;
 
     const payload = {
       tournamentName: String(req.body.tournamentName || 'Rematch Championship').trim().slice(0, 60),
