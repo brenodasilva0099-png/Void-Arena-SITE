@@ -118,18 +118,41 @@ async function readMentions() {
   const members = Array.from(membersById.values())
     .sort((left, right) => String(left.name || left.username || '').localeCompare(String(right.name || right.username || ''), 'pt-BR'));
   const roles = Array.isArray(catalog.roles) ? catalog.roles : [];
+  const diagnosticSource = allMembersResult.status === 'fulfilled' ? allMembers : catalog;
+  const expectedMemberCount = Math.max(
+    Number(catalog.expectedMemberCount || 0),
+    Number(allMembers.expectedMemberCount || 0),
+    members.length
+  );
+  const fetchedMemberCount = Math.max(
+    Number(catalog.fetchedMemberCount || 0),
+    Number(allMembers.fetchedMemberCount || 0),
+    members.length
+  );
+  const complete = diagnosticSource.complete !== false && members.length >= expectedMemberCount;
+  const guilds = Array.isArray(allMembers.guilds)
+    ? allMembers.guilds
+    : (Array.isArray(catalog.guilds) ? catalog.guilds : []);
   const errors = [
     catalogResult.status === 'rejected' ? catalogResult.reason?.message : '',
     allMembersResult.status === 'rejected' ? allMembersResult.reason?.message : ''
   ].filter(Boolean);
+  const warning = complete
+    ? ''
+    : (diagnosticSource.message || `Catálogo incompleto: ${members.length} de ${expectedMemberCount} membros carregados. Confirme o Server Members Intent no Discord.`);
 
   return {
     success: catalogResult.status === 'fulfilled' || allMembersResult.status === 'fulfilled',
     members,
     roles,
     memberCount: members.length,
+    expectedMemberCount,
+    fetchedMemberCount,
+    complete,
+    guilds,
+    warning,
     roleCount: roles.length,
-    message: catalog.message || allMembers.message || '',
+    message: allMembers.message || catalog.message || '',
     error: members.length || roles.length ? '' : errors.join(' · ')
   };
 }
@@ -181,7 +204,7 @@ function registerBridgeRoutes(app) {
       const historyMessages = history.success
         ? history.messages.map((message) => publicMessage(message, history.botUserId || channelsData.botUserId))
         : await fallbackStoredMessages(bridge, channelsData.botUserId);
-      const errors = [channelsData.error, mentions.error, history.error].filter(Boolean);
+      const errors = [channelsData.error, mentions.error, history.error, mentions.warning].filter(Boolean);
 
       return res.json({
         success: true,
@@ -204,6 +227,10 @@ function registerBridgeRoutes(app) {
           botCatalogAvailable: channelsData.success || mentions.success,
           channels: channelsData.channels.length,
           members: mentions.members.length,
+          expectedMembers: mentions.expectedMemberCount,
+          fetchedMembers: mentions.fetchedMemberCount,
+          memberCatalogComplete: mentions.complete,
+          guilds: mentions.guilds,
           roles: mentions.roles.length,
           errors
         },
@@ -249,7 +276,11 @@ function registerBridgeRoutes(app) {
         members: mentions.members,
         roles: mentions.roles,
         channels: channelsData.channels,
-        message: errors.length ? errors.join(' | ') : (mentions.message || channelsData.message || '')
+        expectedMemberCount: mentions.expectedMemberCount,
+        fetchedMemberCount: mentions.fetchedMemberCount,
+        complete: mentions.complete,
+        guilds: mentions.guilds,
+        message: errors.length ? errors.join(' | ') : (mentions.warning || mentions.message || channelsData.message || '')
       });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message, members: [], roles: [], channels: [] });
