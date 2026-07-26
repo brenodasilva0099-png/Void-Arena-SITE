@@ -3364,13 +3364,13 @@ function updateTournamentChoiceCards() {
 
 function normalizeTournamentTeamLimit(value) {
   const number = Number(value || 16);
-  return [4, 8, 16, 32].includes(number) ? number : 16;
+  return [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].includes(number) ? number : 16;
 }
 
 function normalizeTournamentGroupCount(value, teamLimit = 16) {
   const number = Number(value || 4);
-  const max = Math.max(2, Math.min(8, Math.floor(normalizeTournamentTeamLimit(teamLimit) / 2)));
-  if ([2, 4, 8].includes(number) && number <= max) return number;
+  const max = Math.max(1, Math.min(8, Math.floor(normalizeTournamentTeamLimit(teamLimit) / 2)));
+  if ([1, 2, 4, 8].includes(number) && number <= max) return number;
   return Math.min(4, max);
 }
 
