@@ -5,24 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Chat Discord | Hollow Nexus League</title>
   <link rel="icon" href="/assets/hollow-nexus-official.svg">
-  <link rel="stylesheet" href="/css/league-critical.css?v=2026-07-26-admin-chat-v1">
-  <link rel="stylesheet" href="/css/league-polish.css?v=2026-07-26-admin-chat-v1">
-  <link rel="stylesheet" href="/css/league-experience.css?v=2026-07-26-admin-chat-v1">
-  <link rel="stylesheet" href="/css/bridge-card.css?v=2026-07-26-admin-chat-v1">
-  <style>
-    .hnl-admin-chat-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:12px 0}
-    .hnl-admin-chat-toolbar .va-muted{margin:0}
-    .va-bridge-msg{position:relative}
-    .va-bridge-msg-actions{display:flex;gap:8px;align-items:center;margin-top:9px}
-    .va-bridge-edit-box{display:grid;gap:8px;margin-top:10px}
-    .va-bridge-edit-box textarea{min-height:110px;width:100%;resize:vertical}
-    .va-bridge-edit-actions{display:flex;gap:8px;justify-content:flex-end}
-    .va-bridge-command-badge,.va-bridge-bot-badge{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:800;margin-left:6px;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.35)}
-    .va-bridge-history-actions{display:flex;justify-content:center;padding:10px}
-    .va-bridge-compose{position:relative}
-    .va-bridge-compose textarea{min-height:120px}
-    .va-bridge-msg-content{white-space:pre-wrap;word-break:break-word}
-  </style>
+  <link rel="stylesheet" href="/css/bridge-card.css?v=2026-07-26-admin-chat-v2">
+  <link rel="stylesheet" href="/css/admin-chat.css?v=2026-07-26-admin-chat-v2">
+  <script src="/js/core/league-navigation.js?v=2026-07-22-page-integrity-v8"></script>
+  <link rel="stylesheet" href="/css/league-critical.css?v=2026-07-22-page-integrity-v8">
+  <link rel="stylesheet" href="/css/league-polish.css?v=2026-07-22-page-integrity-v8">
+  <link rel="stylesheet" href="/css/league-experience.css?v=2026-07-22-page-integrity-v8">
+  <meta name="page-integrity-build" content="2026-07-22-page-integrity-v8">
 </head>
 <body class="frm-polish-page" data-page="chat" data-bridge-key="chat">
   <div class="frm-shell">
@@ -31,44 +20,12 @@
         <img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus League">
         <div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div>
       </div>
-      <nav class="frm-nav">
-        <div class="frm-nav-title">Competitivo</div>
-        <a href="/pages/competicoes.html"><i>♕</i><b>Competições</b></a>
-        <a href="/pages/eventos.html"><i>◇</i><b>Eventos</b></a>
-        <a href="/pages/chaveamento.html"><i>⌘</i><b>Chaveamento</b></a>
-        <a href="/pages/grupos.html"><i>≡</i><b>Grupos</b></a>
-        <a href="/pages/resultados.html"><i>◎</i><b>Resultados</b></a>
-        <a href="/pages/rankings.html"><i>▥</i><b>Rankings</b></a>
-        <a href="/pages/calendario.html"><i>□</i><b>Calendário</b></a>
-        <div class="frm-nav-title">Clubes</div>
-        <a href="/pages/clubes.html"><i>◈</i><b>Clubes Participantes</b></a>
-        <a href="/pages/cadastrar-clube.html"><i>+</i><b>Cadastrar Clube</b></a>
-        <a href="/pages/elencos.html"><i>▱</i><b>Elencos</b></a>
-        <a href="/pages/prancheta-tatica.html"><i>▣</i><b>Prancheta Tática</b></a>
-        <a href="/pages/transferencias.html"><i>↔</i><b>Transferências</b></a>
-        <div class="frm-nav-title">Jogadores</div>
-        <a href="/pages/atletas.html"><i>♙</i><b>Jogadores Registrados</b></a>
-        <a href="/pages/mercado.html"><i>✦</i><b>Mercado / Recrutamento</b></a>
-        <a href="/pages/rankings.html"><i>▥</i><b>Ranking de Jogadores</b></a>
-        <div class="frm-nav-title" data-admin-section hidden>Administração</div>
-        <a class="active" href="/pages/chat.html" data-admin-only hidden><i>💬</i><b>Chat Discord</b></a>
-        <a href="/pages/formularios.html" data-admin-only hidden><i>▤</i><b>Formulários</b></a>
-        <a href="/pages/permissoes.html" data-admin-only hidden><i>ⓘ</i><b>Permissões</b></a>
-        <a href="/pages/configuracoes.html" data-admin-only hidden><i>⚙</i><b>Configurações</b></a>
-        <a href="/pages/analise-partidas.html" data-admin-only hidden><i>◉</i><b>Análise de Partidas</b></a>
-      </nav>
+      <nav class="frm-nav"><div class="frm-nav-title">Competitivo</div><a class="" href="/pages/eventos.html"><i>◇</i><b>Eventos</b></a><a class="" href="/pages/chaveamento.html"><i>⌘</i><b>Chaveamento</b></a><a class="" href="/pages/grupos.html"><i>≡</i><b>Grupos</b></a><a class="" href="/pages/resultados.html"><i>◎</i><b>Resultados</b></a><a class="" href="/pages/rankings.html"><i>▥</i><b>Rankings</b></a><a class="" href="/pages/calendario.html"><i>□</i><b>Calendário</b></a><div class="frm-nav-title">Clubes</div><a class="" href="/pages/cadastrar-clube.html"><i>+</i><b>Cadastrar Clube</b></a><a class="" href="/pages/elencos.html"><i>▱</i><b>Elencos</b></a><a class="" href="/pages/prancheta-tatica.html"><i>▣</i><b>Prancheta Tática</b></a><a class="" href="/pages/transferencias.html"><i>↔</i><b>Transferências</b></a><div class="frm-nav-title">Jogadores</div><a class="" href="/pages/mercado.html"><i>✦</i><b>Mercado / Recrutamento</b></a><a class="" href="/pages/rankings.html"><i>▥</i><b>Ranking de Jogadores</b></a><div class="frm-nav-title" data-admin-section hidden>Administração</div><a class="active" href="/pages/chat.html" data-admin-only hidden><i>💬</i><b>Chat Discord</b></a><a class="" href="/pages/formularios.html" data-admin-only hidden><i>▤</i><b>Formulários</b></a><a class="" href="/pages/permissoes.html" data-admin-only hidden><i>ⓘ</i><b>Permissões</b></a><a class="" href="/pages/configuracoes.html" data-admin-only hidden><i>⚙</i><b>Configurações</b></a><a class="" href="/pages/analise-partidas.html" data-admin-only hidden><i>◉</i><b>Análise de Partidas</b></a></nav>
     </aside>
 
     <main class="frm-main">
       <header class="frm-header">
-        <nav class="frm-tabs">
-          <a href="/pages/dashboard.html">Início</a>
-          <a href="/pages/competicoes.html">Competitivo</a>
-          <a href="/pages/clubes.html">Clubes</a>
-          <a href="/pages/atletas.html">Jogadores</a>
-          <a href="/pages/cafe-com-leite.html">Café com Leite</a>
-          <a class="active" href="/pages/administracao.html" data-admin-only hidden>Administração</a>
-        </nav>
+        <nav class="frm-tabs"><a class="" href="/pages/dashboard.html">Início</a><a class="" href="/pages/competicoes.html">Competitivo</a><a class="" href="/pages/clubes.html">Clubes</a><a class="" href="/pages/atletas.html">Jogadores</a><a class="" href="/pages/cafe-com-leite.html">Café com Leite</a><a class="" href="/pages/administracao.html" data-admin-only hidden>Administração</a></nav>
         <div class="frm-header-actions">
           <a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a>
           <a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a>
@@ -76,59 +33,115 @@
         </div>
       </header>
 
-      <section class="frm-page-hero">
+      <section class="frm-page-hero hnl-chat-hero">
         <div>
           <span class="hnl-section-kicker">Controle administrativo do BOT</span>
           <h1>Chat Discord</h1>
-          <p>Escolha um canal, consulte mensagens antigas e envie ou edite mensagens do próprio BOT com menções a usuários, cargos, chats e calls.</p>
+          <p>Consulte o histórico real, organize menções e envie ou edite mensagens do BOT sem sair do painel da liga.</p>
         </div>
         <div class="hnl-hero-icon" aria-hidden="true">💬</div>
       </section>
 
-      <section class="va-bridge-shell">
+      <section class="va-bridge-shell hnl-admin-chat">
         <article class="va-bridge-card">
           <div class="va-bridge-head">
             <div>
-              <p class="va-eyebrow">Ações somente manuais</p>
+              <p class="va-eyebrow">Discord conectado ao painel</p>
               <h2 id="bridgeTitle">Chat Discord</h2>
               <p id="bridgeSubtitle" class="va-bridge-muted">Canal Discord: não vinculado</p>
             </div>
-            <button id="bridgeRefreshBtn" class="va-bridge-icon-btn" type="button" aria-label="Atualizar">↻</button>
-          </div>
-
-          <div class="va-bridge-panel">
-            <h3>Canal controlado pelo painel</h3>
-            <p class="va-muted">Ao vincular, o painel consulta o histórico real do Discord. Nenhuma mensagem é reenviada no boot ou ao atualizar a página.</p>
-            <div class="va-bridge-link-row">
-              <select id="bridgeChannel" class="va-bridge-select">
-                <option value="">Selecionar canal de texto ou anúncios</option>
-              </select>
-              <button id="bridgeRefreshBtn2" class="va-btn secondary" type="button">Atualizar lista</button>
-              <button id="bridgeLinkBtn" class="va-btn primary" type="button">Vincular e carregar histórico</button>
+            <div class="hnl-chat-head-actions">
+              <span id="bridgeConnectionBadge" class="hnl-connection-badge">
+                <i aria-hidden="true"></i><span>Aguardando canal</span>
+              </span>
+              <button id="bridgeRefreshBtn" class="va-bridge-icon-btn" type="button" aria-label="Atualizar dados" title="Atualizar dados">↻</button>
             </div>
           </div>
 
-          <div class="hnl-admin-chat-toolbar">
-            <p class="va-muted">Mensagens humanas são somente leitura. Mensagens do BOT, inclusive respostas de comandos, podem ser editadas.</p>
-            <button id="bridgeLoadOlderBtn" class="va-btn secondary" type="button" hidden>Carregar mensagens mais antigas</button>
-          </div>
+          <section class="va-bridge-panel hnl-channel-panel" aria-labelledby="channelPanelTitle">
+            <div class="hnl-panel-heading">
+              <span class="hnl-panel-icon" aria-hidden="true">#</span>
+              <div>
+                <h3 id="channelPanelTitle">Canal controlado pelo painel</h3>
+                <p class="va-muted">Escolha um canal para consultar o histórico. Atualizar a página nunca reenvia mensagens.</p>
+              </div>
+            </div>
+            <div class="va-bridge-link-row">
+              <label class="hnl-field">
+                <span>Canal de texto ou anúncios</span>
+                <select id="bridgeChannel" class="va-bridge-select">
+                  <option value="">Selecionar canal de texto ou anúncios</option>
+                </select>
+              </label>
+              <button id="bridgeRefreshBtn2" class="va-btn secondary" type="button">↻ Atualizar canais</button>
+              <button id="bridgeLinkBtn" class="va-btn primary" type="button">Vincular canal</button>
+            </div>
+          </section>
 
-          <div id="bridgeMessages" class="va-bridge-messages"></div>
+          <div id="bridgeStatus" class="va-status va-bridge-status" role="status" aria-live="polite">Carregando controle administrativo...</div>
 
-          <div class="va-bridge-compose">
-            <textarea id="bridgeInput" maxlength="2000" placeholder="Escreva exatamente o que o BOT deve enviar..."></textarea>
-            <button id="bridgeMentionBtn" class="va-btn secondary" type="button">Marcar @ / # / call</button>
-            <button id="bridgeSendBtn" class="va-btn primary" type="button">Enviar como BOT</button>
+          <div class="hnl-chat-workspace">
+            <section class="hnl-history-panel" aria-labelledby="historyTitle">
+              <header class="hnl-workspace-head">
+                <div>
+                  <span class="hnl-section-kicker">Histórico real</span>
+                  <h3 id="historyTitle">Mensagens do canal</h3>
+                  <p>Mensagens humanas são somente leitura. Mensagens enviadas pelo BOT podem ser editadas.</p>
+                </div>
+                <span id="bridgeMessageCount" class="hnl-message-count">0 mensagens</span>
+              </header>
+
+              <div class="hnl-history-toolbar">
+                <label class="hnl-history-search">
+                  <span aria-hidden="true">⌕</span>
+                  <input id="bridgeHistorySearch" type="search" placeholder="Buscar por autor ou conteúdo..." autocomplete="off">
+                </label>
+                <button id="bridgeLoadOlderBtn" class="va-btn secondary" type="button" hidden>Carregar antigas</button>
+              </div>
+
+              <div id="bridgeMessages" class="va-bridge-messages" aria-live="polite"></div>
+            </section>
+
+            <aside class="hnl-composer-panel" aria-labelledby="composerTitle">
+              <header class="hnl-workspace-head">
+                <div>
+                  <span class="hnl-section-kicker">Envio manual</span>
+                  <h3 id="composerTitle">Nova mensagem do BOT</h3>
+                  <p>Revise o texto antes de enviar. O painel realiza apenas um envio por ação.</p>
+                </div>
+              </header>
+
+              <div class="va-bridge-compose">
+                <label class="hnl-compose-label" for="bridgeInput">Mensagem</label>
+                <textarea id="bridgeInput" maxlength="2000" placeholder="Escreva exatamente o que o BOT deve enviar..."></textarea>
+                <div class="hnl-compose-meta">
+                  <span><kbd>Enter</kbd> envia · <kbd>Shift</kbd> + <kbd>Enter</kbd> quebra a linha</span>
+                  <strong id="bridgeCharacterCount">0/2000</strong>
+                </div>
+                <div class="hnl-compose-actions">
+                  <button id="bridgeMentionBtn" class="va-btn secondary" type="button">@ Inserir menção</button>
+                  <button id="bridgeSendBtn" class="va-btn primary" type="button">Enviar como BOT</button>
+                </div>
+              </div>
+
+              <div class="hnl-chat-safety">
+                <strong>Antes de enviar</strong>
+                <ul>
+                  <li>Confira o canal vinculado no topo.</li>
+                  <li>Use a busca de menções para usuários, cargos, canais e calls.</li>
+                  <li>Mensagens do BOT continuam editáveis pelo histórico.</li>
+                </ul>
+              </div>
+            </aside>
           </div>
-          <div id="bridgeStatus" class="va-status">Carregando controle administrativo...</div>
         </article>
       </section>
     </main>
   </div>
-
-  <script src="/js/core/league-experience.js?v=2026-07-26-admin-chat-v1"></script>
-  <script src="/js/core/league-auth-ui.js?v=2026-07-26-admin-chat-v1"></script>
-  <script src="/js/core/league-page-integrity.js?v=2026-07-26-admin-chat-v1"></script>
-  <script src="/js/pages/chat-bridge-stable.js?v=2026-07-26-admin-chat-v1"></script>
+  <script src="/js/pages/chat-bridge-stable.js?v=2026-07-26-admin-chat-v2"></script>
+  <script src="/js/core/social-icons.js?v=2026-07-22-page-integrity-v8"></script>
+  <script src="/js/core/league-experience.js?v=2026-07-22-page-integrity-v8"></script>
+  <script src="/js/core/league-auth-ui.js?v=2026-07-22-page-integrity-v8"></script>
+  <script src="/js/core/league-page-integrity.js?v=2026-07-22-page-integrity-v8"></script>
 </body>
 </html>
