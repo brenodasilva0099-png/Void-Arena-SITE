@@ -98,7 +98,7 @@ async function sendRecruitmentDm({ target, viewer, team, rosterSlot, note }) {
   const discordId = String(target?.discordId || '').trim();
   if (!discordId) return { success: false, skipped: true, message: 'Jogador sem Discord ID.' };
   const slotLabel = String(rosterSlot || 'player').toLowerCase() === 'reserve' ? 'reserva' : 'titular';
-  const siteUrl = String(process.env.SITE_PUBLIC_URL || process.env.PUBLIC_SITE_URL || 'https://void-arena-site.onrender.com').replace(/\/$/, '');
+  const siteUrl = String(process.env.SITE_PUBLIC_URL || process.env.PUBLIC_SITE_URL || 'https://hollownexus.com.br').replace(/\/$/, '');
   const content = [
     '🤝 **Convite de recrutamento — Void Arena**',
     '',
