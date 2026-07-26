@@ -83,6 +83,7 @@
   }
 
   function isNexusCupFirstEdition(event = {}) {
+    if (searchKey(event.id) === 'coliseu void arena') return true;
     const value = searchKey(`${event.name || ''} ${event.title || ''} ${event.id || ''}`);
     return value.includes('nexus cup') && /(?:^|\s)(?:1|1a|primeira)(?:\s|$)/.test(value);
   }
