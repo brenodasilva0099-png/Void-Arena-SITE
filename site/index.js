@@ -3,6 +3,7 @@ require('dotenv').config();
 const http = require('node:http');
 const { createServer } = require('../server/app');
 const { createRealtimeServer } = require('../server/realtime');
+const { registerCanonicalDomainRoutes } = require('../server/routes/canonicalDomain.routes');
 const { registerStaticAssetGuard } = require('../server/routes/staticAssetGuard.routes');
 const { registerOrganizedRoutes } = require('../server/bootstrap/organizedRoutes');
 const { registerDebugRoutes } = require('../server/routes/debug.routes');
@@ -38,6 +39,7 @@ const { registerProfileAssetsStableRoutes } = require('../server/routes/profileA
 const PORT = Number(process.env.PORT || 3000);
 
 const app = createServer({ client: null });
+registerCanonicalDomainRoutes(app);
 registerStableDiscordAuthRoutes(app);
 registerStableTeamInviteRoutes(app);
 registerStaticAssetGuard(app);
@@ -78,6 +80,7 @@ createRealtimeServer(server, { app });
 
 server.listen(PORT, () => {
   console.log(`Site Hollow Nexus League rodando em: http://localhost:${PORT}`);
+  console.log('Domínio público oficial: https://hollownexus.com.br');
   console.log('Realtime WebSocket ativo em: /realtime');
 });
 
