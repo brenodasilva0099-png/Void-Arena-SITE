@@ -1,26 +1,15 @@
 const storage = require('../storage');
 const { callBot } = require('../services/botApi.service');
 const localBridgeSettings = require('../localBridgeSettings');
-const { getSessionUser } = require('../services/access.service');
-
-async function requireSession(req, res, next) {
-  try {
-    const user = await getSessionUser(req);
-    if (!user) return res.status(401).json({ success: false, message: 'Faça login para continuar.' });
-    req.bridgeUser = user;
-    return next();
-  } catch (error) {
-    return res.status(503).json({ success: false, message: 'O chat ainda está sincronizando.', detail: error.message });
-  }
-}
+const { getSessionUser, requireAdmin } = require('../services/access.service');
 
 const BRIDGES = {
   chat: {
-    title: 'Chat',
+    title: 'Chat Discord',
     siteChannelId: 'site-main',
     readSettings: () => storage.readChatBridgeSettings(),
     writeSettings: (settings) => storage.writeChatBridgeSettings(settings),
-    placeholder: 'Enviar mensagem para o chat geral...'
+    placeholder: 'Escreva exatamente o que o BOT deve enviar...'
   },
   estatisticas: {
     title: 'Estatísticas',
@@ -42,20 +31,27 @@ function bridgeConfig(key = '') {
   return BRIDGES[String(key || '').trim()] || null;
 }
 
-function publicMessage(message = {}) {
+function publicMessage(message = {}, botUserId = '') {
+  const source = String(message.source || 'discord');
+  const authorId = String(message.authorId || '');
+  const isBot = Boolean(message.isBot) || Boolean(botUserId && authorId === String(botUserId));
   return {
-    id: message.id,
-    channelId: message.channelId,
-    source: message.source || 'site',
-    authorId: message.authorId || '',
-    authorName: message.authorName || 'Hollow Nexus',
+    id: message.id || message.discordMessageId || '',
+    channelId: message.channelId || '',
+    source,
+    authorId,
+    authorName: message.authorName || (isBot ? 'Hollow Nexus BOT' : 'Discord'),
     authorAvatar: message.authorAvatar || '',
     content: message.content || '',
     attachments: Array.isArray(message.attachments) ? message.attachments : [],
     createdAt: message.createdAt || null,
     updatedAt: message.updatedAt || null,
+    editedAt: message.editedAt || null,
     discordMessageId: message.discordMessageId || '',
-    discordChannelId: message.discordChannelId || ''
+    discordChannelId: message.discordChannelId || '',
+    isBot,
+    isCommand: Boolean(message.isCommand),
+    editable: Boolean(message.editable) || Boolean(message.discordMessageId && (source === 'site' || isBot))
   };
 }
 
@@ -70,9 +66,7 @@ async function callBotWithWake(pathname, options = {}) {
       return await callBot(pathname, options);
     } catch (error) {
       lastError = error;
-      if (attempt === 0) {
-        await callBot('/public/status', { method: 'GET' }).catch(() => null);
-      }
+      if (attempt === 0) await callBot('/public/status', { method: 'GET' }).catch(() => null);
       if (attempt < 2) await wait(700 + attempt * 900);
     }
   }
@@ -85,11 +79,13 @@ async function readChannels() {
     return {
       success: true,
       channels: Array.isArray(data.channels) ? data.channels : [],
+      botUserId: String(data.botUserId || ''),
+      botTag: String(data.botTag || ''),
       message: data.message || '',
       error: ''
     };
   } catch (error) {
-    return { success: false, channels: [], message: '', error: error.message };
+    return { success: false, channels: [], botUserId: '', botTag: '', message: '', error: error.message };
   }
 }
 
@@ -108,40 +104,54 @@ async function readMentions() {
   }
 }
 
-async function importHistory(bridge, settings) {
-  if (!settings?.discordChannelId) {
-    return { success: true, imported: 0, skipped: 0, reason: 'Canal Discord não vinculado.' };
-  }
+async function readDiscordHistory(discordChannelId, { before = '', limit = 250 } = {}) {
+  const channelId = String(discordChannelId || '').trim();
+  if (!channelId) return { success: true, messages: [], before: '', hasMore: false, skipped: true };
   try {
-    return await callBotWithWake('/internal/discord/import-history', {
-      method: 'POST',
-      body: JSON.stringify({
-        discordChannelId: settings.discordChannelId,
-        siteChannelId: bridge.siteChannelId,
-        limit: 100
-      })
+    const params = new URLSearchParams({
+      discordChannelId: channelId,
+      limit: String(Math.max(1, Math.min(1000, Number(limit || 250))))
     });
+    if (before) params.set('before', String(before));
+    const data = await callBotWithWake(`/internal/discord/channel-history?${params.toString()}`, { method: 'GET' });
+    return {
+      success: data.success !== false,
+      messages: Array.isArray(data.messages) ? data.messages : [],
+      before: String(data.before || ''),
+      hasMore: Boolean(data.hasMore),
+      botUserId: String(data.botUserId || ''),
+      error: data.success === false ? (data.message || 'Falha ao consultar histórico.') : ''
+    };
   } catch (error) {
-    return { success: false, imported: 0, skipped: 0, reason: error.message };
+    return { success: false, messages: [], before: '', hasMore: false, botUserId: '', error: error.message };
   }
 }
 
+function findSelectedChannel(channels = [], id = '') {
+  return channels.find((channel) => String(channel.id || '') === String(id || '')) || null;
+}
+
+async function fallbackStoredMessages(bridge, botUserId = '') {
+  const messages = await storage.readChatMessages({ channelId: bridge.siteChannelId, limit: 100 }).catch(() => []);
+  return messages.map((message) => publicMessage(message, botUserId));
+}
+
 function registerBridgeRoutes(app) {
-  app.get('/api/bridge/:key/state', requireSession, async (req, res) => {
+  app.get('/api/bridge/:key/state', requireAdmin, async (req, res) => {
     try {
       const bridge = bridgeConfig(req.params.key);
       if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
 
-      const settings = await bridge.readSettings().catch(() => ({
-        enabled: false,
-        siteChannelId: bridge.siteChannelId,
-        discordChannelId: ''
-      }));
-
+      const settings = await bridge.readSettings().catch(() => ({ enabled: false, siteChannelId: bridge.siteChannelId, discordChannelId: '' }));
       const [channelsData, mentions] = await Promise.all([readChannels(), readMentions()]);
-      const history = await importHistory(bridge, settings);
-      const messages = await storage.readChatMessages({ channelId: bridge.siteChannelId, limit: 120 }).catch(() => []);
-      const errors = [channelsData.error, mentions.error, history.success === false ? history.reason : ''].filter(Boolean);
+      const selected = findSelectedChannel(channelsData.channels, settings.discordChannelId);
+      const history = settings.discordChannelId
+        ? await readDiscordHistory(settings.discordChannelId, { limit: 250 })
+        : { success: true, messages: [], before: '', hasMore: false, botUserId: channelsData.botUserId };
+      const historyMessages = history.success
+        ? history.messages.map((message) => publicMessage(message, history.botUserId || channelsData.botUserId))
+        : await fallbackStoredMessages(bridge, channelsData.botUserId);
+      const errors = [channelsData.error, mentions.error, history.error].filter(Boolean);
 
       return res.json({
         success: true,
@@ -149,16 +159,17 @@ function registerBridgeRoutes(app) {
         settings: {
           enabled: Boolean(settings.enabled),
           siteChannelId: bridge.siteChannelId,
-          discordChannelId: settings.discordChannelId || ''
+          discordChannelId: settings.discordChannelId || '',
+          discordChannelName: selected?.displayName || selected?.name || ''
         },
-        history,
-        messages: messages.map(publicMessage),
+        history: {
+          messages: historyMessages,
+          before: history.before || '',
+          hasMore: history.hasMore
+        },
+        messages: historyMessages,
         channels: channelsData.channels,
-        mentions: {
-          members: mentions.members,
-          roles: mentions.roles,
-          channels: channelsData.channels
-        },
+        mentions: { members: mentions.members, roles: mentions.roles, channels: channelsData.channels },
         diagnostics: {
           botCatalogAvailable: channelsData.success || mentions.success,
           channels: channelsData.channels.length,
@@ -166,16 +177,38 @@ function registerBridgeRoutes(app) {
           roles: mentions.roles.length,
           errors
         },
-        message: errors.length
-          ? `BOT não entregou todo o catálogo: ${errors.join(' | ')}`
-          : (channelsData.message || mentions.message || (history.imported ? `Histórico importado: ${history.imported} mensagem(ns).` : ''))
+        message: errors.length ? `BOT não entregou todo o catálogo: ${errors.join(' | ')}` : 'Painel administrativo conectado em modo manual.'
       });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
   });
 
-  app.get('/api/bridge/:key/mentions', requireSession, async (req, res) => {
+  app.get('/api/bridge/:key/history', requireAdmin, async (req, res) => {
+    try {
+      const bridge = bridgeConfig(req.params.key);
+      if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
+      const settings = await bridge.readSettings().catch(() => ({ discordChannelId: '' }));
+      if (!settings.discordChannelId) return res.status(400).json({ success: false, message: 'Vincule um canal primeiro.' });
+      const history = await readDiscordHistory(settings.discordChannelId, {
+        before: req.query.before || '',
+        limit: req.query.limit || 250
+      });
+      if (!history.success) return res.status(503).json({ success: false, message: history.error || 'Falha ao consultar histórico.' });
+      return res.json({
+        success: true,
+        history: {
+          messages: history.messages.map((message) => publicMessage(message, history.botUserId)),
+          before: history.before || '',
+          hasMore: history.hasMore
+        }
+      });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.get('/api/bridge/:key/mentions', requireAdmin, async (req, res) => {
     try {
       const bridge = bridgeConfig(req.params.key);
       if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
@@ -193,79 +226,106 @@ function registerBridgeRoutes(app) {
     }
   });
 
-  app.put('/api/bridge/:key/link', requireSession, async (req, res) => {
+  app.put('/api/bridge/:key/link', requireAdmin, async (req, res) => {
     try {
       const bridge = bridgeConfig(req.params.key);
       if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
       const discordChannelId = String(req.body?.discordChannelId || '').trim();
-
       if (discordChannelId) {
         const channelsData = await readChannels();
-        if (!channelsData.success) {
-          return res.status(503).json({ success: false, message: channelsData.error || 'Não foi possível consultar os canais do Discord.' });
-        }
-        const selected = channelsData.channels.find((channel) => String(channel.id || '') === discordChannelId);
+        if (!channelsData.success) return res.status(503).json({ success: false, message: channelsData.error || 'Não foi possível consultar os canais do Discord.' });
+        const selected = findSelectedChannel(channelsData.channels, discordChannelId);
         if (!selected || !(selected.canBridge || ['text', 'announcement'].includes(selected.kind))) {
           return res.status(400).json({ success: false, message: 'Selecione um canal de texto ou anúncios válido.' });
         }
       }
-
-      const settings = await bridge.writeSettings({
-        enabled: Boolean(discordChannelId),
-        siteChannelId: bridge.siteChannelId,
-        discordChannelId
-      });
-      const history = discordChannelId ? await importHistory(bridge, settings) : { imported: 0, skipped: 0 };
-      return res.json({
-        success: true,
-        settings: { ...settings, siteChannelId: bridge.siteChannelId, discordChannelId },
-        history
-      });
+      const settings = await bridge.writeSettings({ enabled: Boolean(discordChannelId), siteChannelId: bridge.siteChannelId, discordChannelId });
+      return res.json({ success: true, settings, message: 'Canal vinculado. Nenhuma mensagem foi enviada ou repetida.' });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
   });
 
-  app.post('/api/bridge/:key/messages', requireSession, async (req, res) => {
+  app.post('/api/bridge/:key/messages', requireAdmin, async (req, res) => {
     try {
       const bridge = bridgeConfig(req.params.key);
       if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
-      const content = String(req.body?.content || '').trim().slice(0, 1800);
+      const content = String(req.body?.content || '').trim().slice(0, 2000);
+      const requestId = String(req.body?.requestId || '').trim().slice(0, 120);
       if (!content) return res.status(400).json({ success: false, message: 'Digite uma mensagem.' });
+      if (!requestId) return res.status(400).json({ success: false, message: 'Identificador manual ausente. Atualize a página e tente novamente.' });
 
-      const user = req.bridgeUser || await getSessionUser(req);
+      const user = await getSessionUser(req);
       const settings = await bridge.readSettings().catch(() => ({ discordChannelId: '' }));
+      if (!settings.discordChannelId) return res.status(400).json({ success: false, message: 'Vincule um canal antes de enviar.' });
+
+      const discord = await callBotWithWake('/internal/discord/send-message', {
+        method: 'POST',
+        body: JSON.stringify({
+          discordChannelId: settings.discordChannelId,
+          content,
+          requestId,
+          manual: true,
+          allowedMentions: { parse: ['users', 'roles'], repliedUser: false }
+        })
+      });
+      if (discord.success === false) throw new Error(discord.message || 'O BOT não confirmou o envio.');
+
       const saved = await storage.saveChatMessage({
         channelId: bridge.siteChannelId,
         source: 'site',
-        authorId: user?.id || user?.discordId || '',
-        authorName: user?.profile?.username || user?.name || 'Usuário Hollow Nexus',
-        authorAvatar: user?.avatar || '',
+        authorId: discord.botUserId || user?.discordId || user?.id || '',
+        authorName: discord.botTag || 'Hollow Nexus BOT',
+        authorAvatar: '',
         content,
         attachments: [],
-        createdAt: new Date().toISOString()
+        discordMessageId: discord.discordMessageId || '',
+        discordChannelId: discord.discordChannelId || settings.discordChannelId,
+        createdAt: discord.createdAt || new Date().toISOString()
       });
 
-      let discord = { success: false, skipped: true, message: 'Canal Discord não vinculado.' };
-      if (settings.discordChannelId) {
-        discord = await callBotWithWake('/internal/discord/send-message', {
-          method: 'POST',
-          body: JSON.stringify({
-            discordChannelId: settings.discordChannelId,
-            content: `**${user?.profile?.username || user?.name || 'Hollow Nexus'}:** ${content}`,
-            allowedMentions: { parse: ['users', 'roles'] },
-            manual: true
-          })
-        });
-      }
-
-      return res.json({ success: true, message: publicMessage(saved), discord });
+      return res.json({ success: true, message: publicMessage(saved, discord.botUserId), discord, requestId });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
     }
   });
 
-  console.log('[Chat/Bridge] Catálogo Discord com retry, histórico e menções completas registrado.');
+  app.patch('/api/bridge/:key/messages/:messageId', requireAdmin, async (req, res) => {
+    try {
+      const bridge = bridgeConfig(req.params.key);
+      if (!bridge) return res.status(404).json({ success: false, message: 'Ponte inválida.' });
+      const content = String(req.body?.content || '').trim().slice(0, 2000);
+      const discordMessageId = String(req.body?.discordMessageId || '').trim();
+      const discordChannelId = String(req.body?.discordChannelId || '').trim();
+      const requestId = String(req.body?.requestId || '').trim().slice(0, 120);
+      if (!content) return res.status(400).json({ success: false, message: 'A mensagem não pode ficar vazia.' });
+      if (!discordMessageId || !discordChannelId) return res.status(400).json({ success: false, message: 'Mensagem Discord não identificada.' });
+
+      const discord = await callBotWithWake('/internal/discord/edit-message', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          discordChannelId,
+          discordMessageId,
+          content,
+          requestId,
+          manual: true,
+          allowedMentions: { parse: ['users', 'roles'], repliedUser: false }
+        })
+      });
+      if (discord.success === false) throw new Error(discord.message || 'O BOT não confirmou a edição.');
+
+      const localId = String(req.params.messageId || '').trim();
+      let localMessage = null;
+      if (localId && localId !== discordMessageId) {
+        localMessage = await storage.updateChatMessage(localId, { content }, { channelId: bridge.siteChannelId }).catch(() => null);
+      }
+      return res.json({ success: true, message: localMessage ? publicMessage(localMessage, discord.botUserId) : null, discord });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  console.log('[Chat/Admin] Histórico real, menções completas, envio idempotente e edição de mensagens do BOT registrados para administradores.');
 }
 
 module.exports = { registerBridgeRoutes };
