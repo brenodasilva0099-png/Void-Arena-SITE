@@ -69,6 +69,7 @@ const patches = [
   './patchProfileCollectionRuntime',
   './patchFinalNavigationNoPrefetchRuntime',
   './patchClubIntegrityRuntime',
+  './patchAdminChatNavigationRuntime',
   './patchNexusCupFinalPublicationRuntime'
 ];
 
