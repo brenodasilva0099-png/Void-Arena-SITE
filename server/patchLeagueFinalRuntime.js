@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..');
 const PAGES = path.join(ROOT, 'public', 'pages');
 const VERSION = path.join(ROOT, 'public', 'league-stable-final.json');
 const UPDATES = path.join(PAGES, 'atualizacoes.html');
-const BUILD = '2026-07-19-league-stable-v4';
+const BUILD = '2026-07-26-bracket-limits-v1';
 const LOGO = '/assets/hollow-nexus-official.svg';
 let changed = false;
 
