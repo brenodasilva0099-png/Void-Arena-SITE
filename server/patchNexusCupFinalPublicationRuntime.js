@@ -6,6 +6,8 @@ const storage = require('./storage');
 
 const MARKER = 'hnl-nexus-cup-final-publication-v2-hq';
 const FINAL_IMAGE = '/assets/nexus-cup-final.webp?v=20260726-hq';
+const EXPECTED_BASE64_CHARS = 85928;
+const EXPECTED_BYTES = 64444;
 const assetPath = path.join(__dirname, '..', 'public', 'assets', 'nexus-cup-final.webp');
 const encodedAssetPath = path.join(__dirname, 'assets', 'nexus-cup-final-hq-base64.txt');
 
@@ -23,7 +25,11 @@ function installSharpAsset() {
   const encoded = fs.readFileSync(encodedAssetPath, 'utf8').replace(/\s+/g, '');
   const next = Buffer.from(encoded, 'base64');
   const isWebp = next.length > 12 && next.subarray(0, 4).toString('ascii') === 'RIFF' && next.subarray(8, 12).toString('ascii') === 'WEBP';
-  if (!isWebp || next.length < 50000) throw new Error('Arte nítida inválida ou incompleta.');
+  const declaredBytes = next.length >= 8 ? next.readUInt32LE(4) + 8 : 0;
+  const complete = encoded.length === EXPECTED_BASE64_CHARS && next.length === EXPECTED_BYTES && declaredBytes === next.length;
+  if (!isWebp || !complete) {
+    throw new Error(`Arte nítida inválida ou incompleta: base64=${encoded.length}, bytes=${next.length}, RIFF=${declaredBytes}.`);
+  }
 
   const current = fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
   if (current && sha256(current) === sha256(next)) return { changed: false, bytes: next.length };
