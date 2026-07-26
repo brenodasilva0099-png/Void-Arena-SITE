@@ -88,6 +88,19 @@ registerStableTeamInviteRoutes(app);
 registerChatBridgeAssetRoutes(app);
 registerProfileAssetsStableRoutes(app);
 
+// Última barreira: registra a causa real de qualquer falha HTTP. Para a raiz,
+// mantém a Home acessível mesmo se uma rota antiga de arquivo estático falhar.
+app.use((error, req, res, next) => {
+  console.error(`[HTTP/Error] ${req.method} ${req.originalUrl || req.url}:`, error?.stack || error?.message || error);
+  if (res.headersSent) return next(error);
+  if ((req.method === 'GET' || req.method === 'HEAD') && req.path === '/') {
+    return res.redirect(302, '/pages/dashboard.html');
+  }
+  return res.status(Number(error?.status || error?.statusCode || 500) || 500)
+    .type('text/plain; charset=utf-8')
+    .send('Não foi possível carregar esta rota. O erro foi registrado no servidor.');
+});
+
 const server = http.createServer(app);
 createRealtimeServer(server, { app });
 
@@ -95,6 +108,7 @@ server.listen(PORT, () => {
   console.log(`Site Hollow Nexus League rodando em: http://localhost:${PORT}`);
   console.log(`Domínio público oficial: ${CANONICAL_SITE_URL}`);
   console.log(`Callback Discord oficial: ${CANONICAL_DISCORD_CALLBACK_URL}`);
+  console.log('Home oficial: /pages/dashboard.html');
   console.log('Realtime WebSocket ativo em: /realtime');
 });
 
