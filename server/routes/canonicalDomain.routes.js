@@ -1,5 +1,6 @@
 const CANONICAL_ORIGIN = 'https://hollownexus.com.br';
 const CANONICAL_HOST = 'hollownexus.com.br';
+const HOME_PATH = '/pages/dashboard.html';
 const LEGACY_HOSTS = new Set([
   'hollow-nexus-league.onrender.com',
   'www.hollownexus.com.br'
@@ -35,11 +36,20 @@ function registerCanonicalDomainRoutes(app) {
 
   app.use((req, res, next) => {
     const host = requestHost(req);
-    if (!host || host === CANONICAL_HOST || !LEGACY_HOSTS.has(host)) return next();
+    if (host && host !== CANONICAL_HOST && LEGACY_HOSTS.has(host)) {
+      const target = `${CANONICAL_ORIGIN}${req.originalUrl || '/'}`;
+      res.set('Cache-Control', 'no-store');
+      return res.redirect(308, target);
+    }
 
-    const target = `${CANONICAL_ORIGIN}${req.originalUrl || '/'}`;
-    res.set('Cache-Control', 'no-store');
-    return res.redirect(308, target);
+    // A raiz antiga dependia de public/index.html e podia cair no manipulador
+    // genérico do Express. A Home oficial agora é resolvida explicitamente.
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.path === '/') {
+      res.set('Cache-Control', 'no-store');
+      return res.redirect(302, HOME_PATH);
+    }
+
+    return next();
   });
 
   app.use((_req, res, next) => {
@@ -54,7 +64,7 @@ function registerCanonicalDomainRoutes(app) {
     updatedStack.unshift(...canonicalLayers);
   }
 
-  console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; Host direto tem prioridade e evita loop com o proxy do Render.`);
+  console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; raiz abre ${HOME_PATH} e o Host direto evita loop com o proxy.`);
 }
 
 module.exports = { registerCanonicalDomainRoutes, CANONICAL_ORIGIN };
