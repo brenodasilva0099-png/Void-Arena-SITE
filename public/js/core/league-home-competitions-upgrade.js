@@ -13,6 +13,8 @@
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   };
   const titleOf = (event = {}) => String(event.name || event.title || 'Competição').replace(/\s+/g, ' ').trim();
+  const isCompletedNexusCup = (event = {}) => String(event.id || '').trim() === 'coliseu-void-arena';
+  const officialEvent = (event = {}) => isCompletedNexusCup(event) ? { ...event, status: 'finished' } : event;
   const api = async (url, options = {}) => {
     const response = await fetch(url, { credentials: 'include', cache: 'no-store', headers: { Accept: 'application/json', ...(options.headers || {}) }, ...options });
     const data = await response.json().catch(() => ({}));
@@ -66,7 +68,7 @@
       api('/api/events'),
       api('/api/league/viewer').catch(() => ({ isAdmin: false }))
     ]);
-    return { events: eventsData.events || [], isAdmin: Boolean(viewerData.isAdmin) };
+    return { events: (eventsData.events || []).map(officialEvent), isAdmin: Boolean(viewerData.isAdmin) };
   }
 
   async function removeRegistration(button, rerender) {
@@ -92,15 +94,19 @@
     const box = $('#competitionsList');
     if (!box) return;
     let filter = 'active';
+    let filterTouched = false;
 
     const render = async () => {
       const { events, isAdmin } = await loadCompetitionData();
       const activeStatuses = new Set(['open', 'running', 'active']);
       const finishedStatuses = new Set(['closed', 'finished', 'archived']);
       const category = (event) => activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'active' : finishedStatuses.has(String(event.status || '').toLowerCase()) ? 'finished' : 'upcoming';
+      if (!filterTouched && !events.some((event) => category(event) === 'active')) {
+        filter = events.some((event) => category(event) === 'finished') ? 'finished' : 'upcoming';
+      }
       const visible = events.filter((event) => category(event) === filter);
       const registeredTotal = events.reduce((sum, event) => sum + (Array.isArray(event.registrations) ? event.registrations.length : number(event.registeredCount)), 0);
-      const slotsTotal = events.reduce((sum, event) => sum + Math.max(0, number(event.teamLimit || 16) - (Array.isArray(event.registrations) ? event.registrations.length : number(event.registeredCount))), 0);
+      const slotsTotal = events.filter((event) => category(event) === 'active').reduce((sum, event) => sum + Math.max(0, number(event.teamLimit || 16) - (Array.isArray(event.registrations) ? event.registrations.length : number(event.registeredCount))), 0);
       $$('[data-competition-stat="active"]').forEach((node) => { node.textContent = String(events.filter((event) => activeStatuses.has(String(event.status || 'open').toLowerCase())).length); });
       $$('[data-competition-stat="registered"]').forEach((node) => { node.textContent = String(registeredTotal); });
       $$('[data-competition-stat="slots"]').forEach((node) => { node.textContent = String(slotsTotal); });
@@ -112,20 +118,24 @@
         const limit = Math.max(1, number(event.teamLimit || 16));
         const progress = Math.min(100, Math.round((registered / limit) * 100));
         const active = activeStatuses.has(String(event.status || 'open').toLowerCase());
+        const finished = finishedStatuses.has(String(event.status || '').toLowerCase());
         const fee = event.feeLabel || event.entryFee || event.registrationFee || 'Gratuita';
-        return `<article class="hnl-card hnl-competition-feature hnl-competition-expanded">
-          <div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${active ? 'green' : ''}">${esc(statusLabel(event.status))}</span><span class="hnl-chip">Competição oficial</span></div><h2 class="hnl-competition-title">${esc(titleOf(event))}</h2><p class="hnl-competition-description">${esc(event.description || 'Competição oficial da Hollow Nexus League.')}</p></div><div class="hnl-competition-mark" aria-hidden="true">♕</div></div>
-          <div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>Início</small><strong>${esc(formatDate(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div>
+        const officialResult = isCompletedNexusCup(event)
+          ? '<div class="hnl-competition-result-note"><div><strong>🏆 Pódio confirmado</strong><span>1º Flow · 2º Griffin Gaming · 3º Império</span></div><a class="hnl-btn primary" href="/pages/resultados.html">Ver resultado oficial</a></div>'
+          : '';
+        return `<article class="hnl-card hnl-competition-feature hnl-competition-expanded ${finished ? 'is-finished' : ''}">
+          <div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${active ? 'green' : finished ? 'hnl-finished-chip' : ''}">${esc(statusLabel(event.status))}</span><span class="hnl-chip">Competição oficial</span></div><h2 class="hnl-competition-title">${esc(titleOf(event))}</h2><p class="hnl-competition-description">${esc(finished ? 'Competição encerrada com resultado oficial publicado pela Hollow Nexus League.' : (event.description || 'Competição oficial da Hollow Nexus League.'))}</p></div><div class="hnl-competition-mark" aria-hidden="true">${finished ? '🏆' : '♕'}</div></div>
+          <div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>${finished ? 'Situação' : 'Início'}</small><strong>${finished ? 'Encerrada' : esc(formatDate(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div>
           <div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div>
           <section class="hnl-registration-roster"><div class="hnl-section-heading"><div><span class="hnl-section-kicker">Inscrições confirmadas</span><h3>Clubes validados no evento</h3></div><span class="hnl-chip">${registered} clube(s)</span></div>${registeredTeamsHtml(event, isAdmin)}</section>
-          <div class="hnl-actions">${active && registered < limit ? `<a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}#inscricao">Inscrever meu time</a>` : ''}<a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div>
+          ${officialResult}<div class="hnl-actions">${active && registered < limit ? `<a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}#inscricao">Inscrever meu time</a>` : ''}<a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div>
         </article>`;
       }).join('') : '<div class="hnl-empty">Nenhuma competição nesta categoria.</div>';
 
       $$('[data-remove-registration]', box).forEach((button) => button.addEventListener('click', () => removeRegistration(button, render)));
     };
 
-    $$('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => { filter = button.dataset.competitionFilter || 'active'; render().catch(console.error); }));
+    $('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => { filterTouched = true; filter = button.dataset.competitionFilter || 'active'; render().catch(console.error); }));
     await render();
   }
 
@@ -169,7 +179,7 @@
     ]);
     const teams = overview.teams || overview.clubs || [];
     const players = overview.players || overview.users || [];
-    const events = eventsData.events || overview.events || [];
+    const events = (eventsData.events || overview.events || []).map(officialEvent);
     const active = events.filter((event) => ['open', 'active', 'running'].includes(String(event.status || '').toLowerCase())).sort((a, b) => new Date(a.startAt || 0) - new Date(b.startAt || 0));
     const next = active[0] || events[0] || null;
     if (next) {
