@@ -90,18 +90,48 @@ async function readChannels() {
 }
 
 async function readMentions() {
-  try {
-    const data = await callBotWithWake('/internal/discord/mentions', { method: 'GET' });
-    return {
-      success: true,
-      members: Array.isArray(data.members) ? data.members : [],
-      roles: Array.isArray(data.roles) ? data.roles : [],
-      message: data.message || '',
-      error: ''
-    };
-  } catch (error) {
-    return { success: false, members: [], roles: [], message: '', error: error.message };
+  const [catalogResult, allMembersResult] = await Promise.allSettled([
+    callBotWithWake('/internal/discord/mentions', { method: 'GET' }),
+    callBotWithWake('/internal/discord/members/all?limit=5000', { method: 'GET' })
+  ]);
+
+  const catalog = catalogResult.status === 'fulfilled' ? catalogResult.value : {};
+  const allMembers = allMembersResult.status === 'fulfilled' ? allMembersResult.value : {};
+  const membersById = new Map();
+
+  for (const member of [
+    ...(Array.isArray(catalog.members) ? catalog.members : []),
+    ...(Array.isArray(allMembers.members) ? allMembers.members : [])
+  ]) {
+    const id = String(member?.id || member?.discordId || '').trim();
+    if (!id) continue;
+    const previous = membersById.get(id) || {};
+    membersById.set(id, {
+      ...previous,
+      ...member,
+      id,
+      discordId: id,
+      mention: member.mention || previous.mention || '<@' + id + '>'
+    });
   }
+
+  const members = Array.from(membersById.values())
+    .sort((left, right) => String(left.name || left.username || '').localeCompare(String(right.name || right.username || ''), 'pt-BR'));
+  const roles = Array.isArray(catalog.roles) ? catalog.roles : [];
+  const errors = [
+    catalogResult.status === 'rejected' ? catalogResult.reason?.message : '',
+    allMembersResult.status === 'rejected' ? allMembersResult.reason?.message : ''
+  ].filter(Boolean);
+
+  return {
+    success: catalogResult.status === 'fulfilled' || allMembersResult.status === 'fulfilled',
+    members,
+    roles,
+    memberCount: members.length,
+    roleCount: roles.length,
+    message: catalog.message || allMembers.message || '',
+    error: members.length || roles.length ? '' : errors.join(' · ')
+  };
 }
 
 async function readDiscordHistory(discordChannelId, { before = '', limit = 250 } = {}) {
