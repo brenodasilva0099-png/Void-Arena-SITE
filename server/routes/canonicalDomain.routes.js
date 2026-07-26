@@ -30,6 +30,22 @@ function routerStack(app) {
   return null;
 }
 
+function expressReadyInsertionIndex(stack = []) {
+  const expressInitIndex = stack.findIndex((layer) =>
+    layer?.name === 'expressInit' || layer?.handle?.name === 'expressInit'
+  );
+  if (expressInitIndex >= 0) return expressInitIndex + 1;
+
+  const queryIndex = stack.findIndex((layer) =>
+    layer?.name === 'query' || layer?.handle?.name === 'query'
+  );
+  if (queryIndex >= 0) return queryIndex + 1;
+
+  // Nunca inserir no índice zero: antes do expressInit, res.set/res.status
+  // ainda não existem no ServerResponse nativo.
+  return Math.min(2, stack.length);
+}
+
 function registerCanonicalDomainRoutes(app) {
   const stack = routerStack(app);
   const insertionPoint = stack?.length || 0;
@@ -61,10 +77,11 @@ function registerCanonicalDomainRoutes(app) {
   const updatedStack = routerStack(app);
   if (updatedStack && updatedStack.length > insertionPoint) {
     const canonicalLayers = updatedStack.splice(insertionPoint);
-    updatedStack.unshift(...canonicalLayers);
+    const insertAt = expressReadyInsertionIndex(updatedStack);
+    updatedStack.splice(insertAt, 0, ...canonicalLayers);
   }
 
-  console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; raiz abre ${HOME_PATH} e o Host direto evita loop com o proxy.`);
+  console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; middleware posicionado após expressInit e raiz abre ${HOME_PATH}.`);
 }
 
 module.exports = { registerCanonicalDomainRoutes, CANONICAL_ORIGIN };
