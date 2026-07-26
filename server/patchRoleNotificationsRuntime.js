@@ -93,7 +93,7 @@ function addAppRoutes() {
     "      const senderPublic = rnPublicUser(sender || {});",
     "      const siteEnabled = mode === 'both' || mode === 'site';",
     "      const dmEnabled = mode === 'both' || mode === 'discord';",
-    "      const siteUrl = String(process.env.SITE_PUBLIC_URL || process.env.PUBLIC_SITE_URL || 'https://void-arena-site.onrender.com').replace(/\\/$/, '');",
+    "      const siteUrl = String(process.env.SITE_PUBLIC_URL || process.env.PUBLIC_SITE_URL || 'https://hollownexus.com.br').replace(/\\/$/, '');",
     "      const results = [];",
     "      for (const user of targets) {",
     "        const roles = rolesData.rolesByDiscordId?.[user.discordId] || [];",
