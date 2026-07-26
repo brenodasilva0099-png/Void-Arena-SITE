@@ -1,15 +1,41 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const storage = require('./storage');
 
-const MARKER = 'hnl-nexus-cup-final-publication-v1';
-const FINAL_IMAGE = '/assets/nexus-cup-final.webp?v=20260726';
+const MARKER = 'hnl-nexus-cup-final-publication-v2-hq';
+const FINAL_IMAGE = '/assets/nexus-cup-final.webp?v=20260726-hq';
+const assetPath = path.join(__dirname, '..', 'public', 'assets', 'nexus-cup-final.webp');
+const encodedAssetPath = path.join(__dirname, 'assets', 'nexus-cup-final-hq-base64.txt');
 
 function isNexusCup(event = {}) {
   const label = `${event.name || ''} ${event.title || ''} ${event.slug || ''}`;
   return /nexus\s*cup/i.test(label);
 }
+
+function sha256(buffer) {
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+function installSharpAsset() {
+  if (!fs.existsSync(encodedAssetPath)) throw new Error('Fonte da arte nítida não encontrada.');
+  const encoded = fs.readFileSync(encodedAssetPath, 'utf8').replace(/\s+/g, '');
+  const next = Buffer.from(encoded, 'base64');
+  const isWebp = next.length > 12 && next.subarray(0, 4).toString('ascii') === 'RIFF' && next.subarray(8, 12).toString('ascii') === 'WEBP';
+  if (!isWebp || next.length < 50000) throw new Error('Arte nítida inválida ou incompleta.');
+
+  const current = fs.existsSync(assetPath) ? fs.readFileSync(assetPath) : null;
+  if (current && sha256(current) === sha256(next)) return { changed: false, bytes: next.length };
+
+  fs.mkdirSync(path.dirname(assetPath), { recursive: true });
+  const temp = `${assetPath}.tmp-${process.pid}`;
+  fs.writeFileSync(temp, next);
+  fs.renameSync(temp, assetPath);
+  return { changed: true, bytes: next.length };
+}
+
+const installed = installSharpAsset();
 
 if (!storage.__hnlNexusCupClosedReadV1) {
   const originalReadEvents = storage.readEvents.bind(storage);
@@ -47,8 +73,8 @@ const section = `
       </div>
       <strong style="color:#c084fc;font-size:14px;letter-spacing:.08em">25/07/2026</strong>
     </div>
-    <a href="${FINAL_IMAGE}" target="_blank" rel="noopener" style="display:block;background:#05030d">
-      <img src="${FINAL_IMAGE}" alt="Resultado final da Nexus Cup: Flow Theory campeão, Griffin Gaming vice-campeão e Império do Nordeste em terceiro lugar" loading="eager" style="display:block;width:100%;height:auto;max-height:900px;object-fit:contain;margin:auto">
+    <a href="${FINAL_IMAGE}" target="_blank" rel="noopener" style="display:flex;justify-content:center;background:#05030d">
+      <img src="${FINAL_IMAGE}" width="900" height="675" alt="Resultado final da Nexus Cup: Flow Theory campeão, Griffin Gaming vice-campeão e Império do Nordeste em terceiro lugar" loading="eager" decoding="async" style="display:block;width:min(100%,900px);height:auto;object-fit:contain;image-rendering:auto">
     </a>
     <div style="padding:20px;text-align:center">
       <h3 style="margin:0 0 8px;color:#fff;font-size:24px">Obrigado a todos os times participantes!</h3>
@@ -66,4 +92,4 @@ if (html.includes('id="nexusCupFinalPublication"')) {
 }
 
 fs.writeFileSync(pagePath, html, 'utf8');
-console.log('[Resultados/Nexus Cup] Arte final publicada; evento exibido como Encerrado sem remover times ou inscrições.');
+console.log(`[Resultados/Nexus Cup] Arte nítida instalada (${installed.bytes} bytes); evento permanece Encerrado sem remover times ou inscrições.`);
