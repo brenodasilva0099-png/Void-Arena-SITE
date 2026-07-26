@@ -11,7 +11,7 @@ const BRAND_SYNC_FILE = path.join(PUBLIC_DIR, 'js', 'core', 'discord-brand-sync.
 const BUILD = '2026-07-17-discord-login-brand-data-v2';
 const UPDATE_ID = 'release-2026-07-17-discord-login-brand-panels';
 const UPDATE_ID_AUTH_FIX = 'release-2026-07-17-discord-auth-data-fix';
-const CANONICAL_SITE = 'https://hollow-nexus-league.onrender.com';
+const CANONICAL_SITE = 'https://hollownexus.com.br';
 let changed = false;
 
 function read(file) {
@@ -259,7 +259,7 @@ function patchUpdatesPage() {
             <span class="va-update-dot"></span>
             <div class="va-update-meta"><span>17/07/2026 • 22:05 BRT</span><span>Site + Bot</span><span>Discord/Render</span></div>
             <h3>Login Discord, logo do servidor e painéis públicos ajustados para o novo link</h3>
-            <p class="va-muted">Camada de correção para a migração do Render para https://hollow-nexus-league.onrender.com, mantendo dados vivos e atualizando fluxos que ainda apontavam para o serviço antigo.</p>
+            <p class="va-muted">Camada de correção para o domínio oficial https://hollownexus.com.br, mantendo dados vivos e atualizando fluxos que ainda apontavam para endereços antigos.</p>
             <ul class="va-update-list">
               <li class="site">O callback do Discord passa a ignorar URLs antigas do Render e usar o link público atual da Hollow Nexus League.</li>
               <li class="site">A logo/favico do site agora tenta sincronizar automaticamente com o ícone do servidor retornado pelo bot.</li>
