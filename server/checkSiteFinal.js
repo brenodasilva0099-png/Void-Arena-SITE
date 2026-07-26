@@ -26,7 +26,8 @@ const patches = [
   './patchBracketStylesheetFinalRuntime',
   './patchCanonicalAuthClientRuntime',
   './patchFormsStaticAssetRuntime',
-  './patchFinalNavigationNoPrefetchRuntime'
+  './patchFinalNavigationNoPrefetchRuntime',
+  './patchAdminChatNavigationRuntime'
 ];
 
 require('./auditRuntimeSafety');
@@ -59,6 +60,7 @@ const files = [
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'chaveamento-autosync-fix.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'configuracoes.js'),
+  path.join(ROOT, 'public', 'js', 'pages', 'chat-bridge-stable.js'),
   path.join(ROOT, 'public', 'js', 'permissoes.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'perfil.js')
 ].filter((file, index, list) => fs.existsSync(file) && !file.endsWith('checkSiteFinal.js') && list.indexOf(file) === index);
@@ -127,4 +129,4 @@ for (const file of publicationRoutes) {
 }
 
 if (process.exitCode) process.exit(process.exitCode);
-console.log('[Check Final] Sessão sem 500, ponte HUB removida, calls protegidas no BOT, navegação sem prefetch, formulários recuperáveis, publicações Discord manuais e módulos da League aprovados.');
+console.log('[Check Final] Sessão sem 500, chat administrativo manual, ponte HUB removida, calls protegidas no BOT, navegação sem prefetch, formulários recuperáveis, publicações Discord manuais e módulos da League aprovados.');
