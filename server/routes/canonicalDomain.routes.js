@@ -5,10 +5,22 @@ const LEGACY_HOSTS = new Set([
   'www.hollownexus.com.br'
 ]);
 
+function normalizeHost(value = '') {
+  return String(value || '')
+    .split(',')[0]
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/:\d+$/, '')
+    .toLowerCase();
+}
+
 function requestHost(req) {
-  const forwarded = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
-  const direct = String(req.headers.host || '').trim();
-  return (forwarded || direct).replace(/:\d+$/, '').toLowerCase();
+  // O Host enviado pelo navegador representa o domínio realmente acessado.
+  // No Render, x-forwarded-host pode conter o hostname interno .onrender.com
+  // mesmo quando o usuário abriu o domínio personalizado.
+  const direct = normalizeHost(req.headers.host || req.get?.('host') || '');
+  if (direct) return direct;
+  return normalizeHost(req.headers['x-forwarded-host'] || '');
 }
 
 function routerStack(app) {
@@ -23,7 +35,7 @@ function registerCanonicalDomainRoutes(app) {
 
   app.use((req, res, next) => {
     const host = requestHost(req);
-    if (!LEGACY_HOSTS.has(host)) return next();
+    if (!host || host === CANONICAL_HOST || !LEGACY_HOSTS.has(host)) return next();
 
     const target = `${CANONICAL_ORIGIN}${req.originalUrl || '/'}`;
     res.set('Cache-Control', 'no-store');
@@ -42,7 +54,7 @@ function registerCanonicalDomainRoutes(app) {
     updatedStack.unshift(...canonicalLayers);
   }
 
-  console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; Render e www redirecionam preservando a rota.`);
+  console.log(`[Domain] Domínio oficial ativo: ${CANONICAL_ORIGIN}; Host direto tem prioridade e evita loop com o proxy do Render.`);
 }
 
 module.exports = { registerCanonicalDomainRoutes, CANONICAL_ORIGIN };
