@@ -52,24 +52,21 @@
       medal: '🥇',
       label: 'Campeão',
       name: 'Flow',
-      aliases: ['flow'],
-      reward: 'R$ 35'
+      aliases: ['flow']
     },
     {
       position: 2,
       medal: '🥈',
       label: 'Vice-campeão',
       name: 'Griffin Gaming',
-      aliases: ['griffin gaming', 'grifin gaming'],
-      reward: 'R$ 15'
+      aliases: ['griffin gaming', 'grifin gaming']
     },
     {
       position: 3,
       medal: '🥉',
       label: 'Terceiro colocado',
       name: 'Império',
-      aliases: ['império', 'imperio'],
-      reward: 'Uma patente acima das patentes iniciais na próxima temporada'
+      aliases: ['império', 'imperio']
     }
   ];
 
@@ -113,7 +110,6 @@
         <h3>${esc(teamName)}</h3>
         ${identity ? `<p class="hnl-podium-identity">${identity}</p>` : ''}
         ${leadership ? `<small>Liderança: ${esc(leadership)}</small>` : ''}
-        <div class="hnl-podium-reward"><span>Premiação</span><strong>${esc(placement.reward)}</strong></div>
         ${profile ? `<a class="hnl-btn" href="${esc(profile)}">Ver perfil do time</a>` : ''}
       </article>`;
       return card;
