@@ -21,7 +21,7 @@
   const connectionBadgeEl = $('#bridgeConnectionBadge');
   const composeEl = $('.va-bridge-compose');
 
-  let mentionData = { members: [], roles: [], channels: [] };
+  let mentionData = { members: [], roles: [], channels: [], expectedMemberCount: 0, complete: true };
   let mentionMenu = null;
   let mentionFilter = 'all';
   let mentionQuery = '';
@@ -329,7 +329,10 @@
       <div class="va-mention-head"><strong>Inserir menção</strong><button class="va-mention-close" type="button" data-mention-close aria-label="Fechar">×</button></div>
       <input class="va-mention-search" type="search" data-mention-search value="${esc(mentionQuery)}" placeholder="Buscar membro, cargo, canal ou call..." autocomplete="off">
       <div class="va-mention-tabs">${tabs.map(([value, label]) => {
-        const count = value === 'all' ? allItems.length : allItems.filter((item) => item.category === value).length;
+        const actualCount = value === 'all' ? allItems.length : allItems.filter((item) => item.category === value).length;
+        const count = value === 'members' && mentionData.expectedMemberCount > actualCount
+          ? `${actualCount}/${mentionData.expectedMemberCount}`
+          : actualCount;
         return `<button class="va-mention-tab ${mentionFilter === value ? 'active' : ''}" type="button" data-mention-filter="${value}">${label} · ${count}</button>`;
       }).join('')}</div>
       <div class="va-mention-results">${results}</div>`;
@@ -363,7 +366,9 @@
     mentionData = {
       members: data.members || [],
       roles: data.roles || [],
-      channels: data.channels || mentionData.channels || []
+      channels: data.channels || mentionData.channels || [],
+      expectedMemberCount: Number(data.expectedMemberCount || (data.members || []).length),
+      complete: data.complete !== false
     };
   }
 
@@ -397,7 +402,9 @@
       mentionData = {
         members: data.mentions?.members || [],
         roles: data.mentions?.roles || [],
-        channels: data.channels || data.mentions?.channels || []
+        channels: data.channels || data.mentions?.channels || [],
+        expectedMemberCount: Number(data.diagnostics?.expectedMembers || (data.mentions?.members || []).length),
+        complete: data.diagnostics?.memberCatalogComplete !== false
       };
       if (titleEl) titleEl.textContent = data.bridge?.title || 'Chat Discord';
       selectedDiscordChannelId = data.settings?.discordChannelId || '';
@@ -413,10 +420,15 @@
       hasLoadedOnce = true;
 
       const errors = data.diagnostics?.errors || [];
+      const loadedMembers = Number(data.diagnostics?.members || 0);
+      const expectedMembers = Math.max(Number(data.diagnostics?.expectedMembers || 0), loadedMembers);
+      const memberLabel = expectedMembers > loadedMembers
+        ? `${loadedMembers} de ${expectedMembers} membros`
+        : `${loadedMembers} membros`;
       if (errors.length) setStatus(`❌ ${errors.join(' | ')}`, 'err');
       else if (!silent) {
         setStatus(
-          `Pronto: ${data.diagnostics?.channels || 0} canais/calls, ${data.diagnostics?.roles || 0} cargos, ${data.diagnostics?.members || 0} membros e ${messages.length} mensagens carregadas.`,
+          `Pronto: ${data.diagnostics?.channels || 0} canais/calls, ${data.diagnostics?.roles || 0} cargos, ${memberLabel} e ${messages.length} mensagens carregadas.`,
           selectedDiscordChannelId ? 'ok' : ''
         );
       }
