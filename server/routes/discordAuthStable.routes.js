@@ -19,7 +19,7 @@ const {
   pendingUser
 } = require('../authIdentity');
 
-const CANONICAL_SITE = 'https://hollow-nexus-league.onrender.com';
+const CANONICAL_SITE = 'https://hollownexus.com.br';
 const AUTH_BUILD = 'hnl-canonical-auth-v1';
 
 function safeNext(value = '') {
