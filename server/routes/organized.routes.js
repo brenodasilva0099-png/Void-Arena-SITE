@@ -332,7 +332,7 @@ function registerOrganizedRouteOverrides(app) {
         matchFormat: allowedFormats.has(String(req.body.matchFormat)) ? String(req.body.matchFormat) : 'MD1',
         structure: allowedStructures.has(String(req.body.structure)) ? String(req.body.structure) : 'single_elimination',
         teamLimit: normalizeTeamLimit(req.body.teamLimit || 16),
-        groupCount: [2, 4, 5, 6, 7, 8].includes(Number(req.body.groupCount)) ? Number(req.body.groupCount) : 4,
+        groupCount: [1, 2, 4, 5, 6, 7, 8].includes(Number(req.body.groupCount)) ? Number(req.body.groupCount) : 4,
         autoCreateMatchChannels: req.body.autoCreateMatchChannels !== false,
         discordMatchCategoryId: String(req.body.discordMatchCategoryId || '').trim()
       };
