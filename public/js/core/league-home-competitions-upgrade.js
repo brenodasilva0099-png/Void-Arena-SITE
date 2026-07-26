@@ -135,7 +135,7 @@
       $$('[data-remove-registration]', box).forEach((button) => button.addEventListener('click', () => removeRegistration(button, render)));
     };
 
-    $('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => { filterTouched = true; filter = button.dataset.competitionFilter || 'active'; render().catch(console.error); }));
+    $$('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => { filterTouched = true; filter = button.dataset.competitionFilter || 'active'; render().catch(console.error); }));
     await render();
   }
 
