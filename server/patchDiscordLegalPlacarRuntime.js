@@ -4,9 +4,10 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const BUILD = '2026-07-22-discord-legal-placar-v4';
+const BUILD = '2026-07-27-cafe-prizes-v5';
 const LOGO = '/assets/hollow-nexus-official.svg';
 const RELEASE_ID = 'release-2026-07-21-discord-legal-placar';
+const REWARD_RELEASE_ID = 'release-2026-07-27-cafe-com-leite-premios';
 let changed = false;
 
 function read(file) {
@@ -111,7 +112,7 @@ const termsSections = [
   ['05', 'Clubes, capitães e diretores', '<p>Somente os responsáveis reconhecidos pelo sistema — como capitão, diretor ou proprietário compatível de um clube antigo — podem editar o clube e representar o time. Administradores globais podem moderar registros, mas isso não transfere automaticamente a liderança esportiva do clube.</p><p>O responsável deve manter nome, tag, elenco, redes sociais e demais informações corretas, além de possuir autorização dos integrantes para cadastrá-los.</p>'],
   ['06', 'Inscrições e validação no Discord', '<p>Uma solicitação de inscrição não garante vaga. Ela pode ser enviada ao sistema de validação do Discord e só se torna efetiva após a confirmação da organização, observados limite de clubes, prazo, requisitos, eventual taxa e regras do evento.</p><p>A organização pode pedir correções, recusar dados incompletos ou cancelar inscrições que violem as regras.</p>'],
   ['07', 'Resultados, rankings e Placar Café com Leite', '<p>O Placar representa os rankings individuais 3x3 e 5x5 das partidas realizadas pelo sistema Café com Leite do bot. Filas, patentes, pontos, vitórias, empates, derrotas, gols, assistências, defesas e MVP dependem dos registros recebidos e validados.</p><p>A staff pode corrigir erros evidentes, invalidar partidas, rever provas e aplicar critérios de desempate ou penalidades divulgados previamente.</p>'],
-  ['08', 'Premiações e vantagens', '<p>Quando anunciadas, premiações e vantagens seguem as regras específicas do evento. No Café com Leite informado atualmente, o primeiro colocado recebe R$ 35, o segundo R$ 15 e o terceiro inicia a temporada seguinte uma patente acima das patentes iniciais.</p><p>O pagamento ou benefício depende da confirmação do resultado, elegibilidade, ausência de fraude e fornecimento seguro dos dados necessários pelo canal oficial. Desclassificação ou violação das regras pode cancelar a premiação.</p>'],
+  ['08', 'Premiações e vantagens', '<p>Quando anunciadas, premiações e vantagens seguem as regras específicas do evento. No Café com Leite informado atualmente, o primeiro colocado recebe R$ 50, enquanto o segundo e o terceiro colocados recebem bônus de patente para a temporada seguinte, conforme os critérios divulgados pela organização.</p><p>O pagamento ou benefício depende da confirmação do resultado, elegibilidade, ausência de fraude e fornecimento seguro dos dados necessários pelo canal oficial. Desclassificação ou violação das regras pode cancelar a premiação.</p>'],
   ['09', 'Condutas proibidas e moderação', '<ul><li>Fraudar identidade, inscrição, resultado, prova, ranking, premiação ou vínculo com clube.</li><li>Explorar falhas, contornar permissões, automatizar abuso ou interferir no funcionamento do site e do bot.</li><li>Assediar, ameaçar, discriminar, aplicar golpes, divulgar dados pessoais ou publicar conteúdo ilegal.</li><li>Fingir ser staff, capitão, diretor ou outro membro.</li></ul><p>A organização pode limitar recursos, remover conteúdo, suspender contas, desclassificar participantes e preservar registros necessários à apuração, respeitando o contexto e a gravidade.</p>'],
   ['10', 'Conteúdo enviado', '<p>Você mantém os direitos sobre logos, imagens, textos, links, prints e demais conteúdos que enviar. Ao publicá-los, concede à Hollow Nexus uma autorização não exclusiva e limitada para armazenar, exibir, adaptar ao layout e usar esse material na operação, divulgação e histórico da liga.</p><p>Você declara possuir permissão para utilizar o conteúdo e não deve enviar material que viole direitos de terceiros.</p>'],
   ['11', 'Disponibilidade e alterações do serviço', '<p>O site e o bot podem passar por manutenção, mudanças de integração ou indisponibilidade de serviços externos. Empregamos backups e controles técnicos, mas não prometemos operação ininterrupta nem ausência total de falhas.</p><p>Funções podem ser ajustadas para segurança, estabilidade ou evolução da comunidade, sem apagar deliberadamente dados válidos fora dos processos previstos.</p>'],
@@ -125,15 +126,15 @@ function legalIndex(sections) {
   return sections.map(([number, title]) => `<a href="#sec-${number}">${number}. ${title}</a>`).join('');
 }
 
-function legalBody({ version, summary, sections, policy = false }) {
-  return `<section class="hnl-legal-layout"><aside class="hnl-card hnl-legal-summary"><span class="hnl-legal-version">Versão ${version}</span><h2>${policy ? 'Privacidade em resumo' : 'Termos em resumo'}</h2><p>${summary}</p><div class="hnl-legal-index">${legalIndex(sections)}</div><div class="hnl-legal-links"><a class="hnl-btn primary" href="${policy ? '/pages/termos.html' : '/pages/privacidade.html'}">${policy ? 'Ver Termos' : 'Ver Privacidade'}</a><a class="hnl-btn" href="/pages/suporte.html">Abrir suporte</a></div></aside><div class="hnl-legal-sections">${sections.map(([number, title, content]) => `<article class="hnl-card hnl-legal-section" id="sec-${number}"><h2><span>${number}</span>${title}</h2>${content}</article>`).join('')}<article class="hnl-card hnl-legal-section"><p><strong>Última revisão:</strong> 21/07/2026. Esta redação organiza as práticas atuais da plataforma e deve ser revisada por profissional jurídico quando a operação exigir avaliação formal.</p></article></div></section>`;
+function legalBody({ version, summary, sections, policy = false, reviewDate = '21/07/2026' }) {
+  return `<section class="hnl-legal-layout"><aside class="hnl-card hnl-legal-summary"><span class="hnl-legal-version">Versão ${version}</span><h2>${policy ? 'Privacidade em resumo' : 'Termos em resumo'}</h2><p>${summary}</p><div class="hnl-legal-index">${legalIndex(sections)}</div><div class="hnl-legal-links"><a class="hnl-btn primary" href="${policy ? '/pages/termos.html' : '/pages/privacidade.html'}">${policy ? 'Ver Termos' : 'Ver Privacidade'}</a><a class="hnl-btn" href="/pages/suporte.html">Abrir suporte</a></div></aside><div class="hnl-legal-sections">${sections.map(([number, title, content]) => `<article class="hnl-card hnl-legal-section" id="sec-${number}"><h2><span>${number}</span>${title}</h2>${content}</article>`).join('')}<article class="hnl-card hnl-legal-section"><p><strong>Última revisão:</strong> ${reviewDate}. Esta redação organiza as práticas atuais da plataforma e deve ser revisada por profissional jurídico quando a operação exigir avaliação formal.</p></article></div></section>`;
 }
 
 const termsPage = shell({
   title: 'Termos de Uso',
   page: 'termos',
   heroHtml: hero('Termos de Uso', 'Regras atuais para conta Discord, clubes, competições, Café com Leite, premiações, moderação e integrações.', '§', 'Central legal'),
-  body: legalBody({ version: '2026.07.21', summary: 'Use a plataforma com uma conta Discord legítima, respeite as regras da comunidade e envie somente informações verdadeiras.', sections: termsSections })
+  body: legalBody({ version: '2026.07.27', reviewDate: '27/07/2026', summary: 'Use a plataforma com uma conta Discord legítima, respeite as regras da comunidade e envie somente informações verdadeiras.', sections: termsSections })
 });
 
 const privacySections = [
@@ -207,6 +208,7 @@ const placarPage = shell({
 });
 
 const releaseCard = `<article class="hnl-card va-update-card" id="${RELEASE_ID}"><span class="va-update-dot"></span><div class="va-update-meta"><span>21/07/2026</span><span>Site + Bot</span><span>Discord / Legal / Placar</span></div><h3>Login único pelo Discord, termos revisados e Placar integrado ao visual atual</h3><p class="va-muted">O acesso público foi centralizado no Discord para reconhecer membros, cargos e clubes, enquanto as páginas legais e o ranking Café com Leite foram atualizados.</p><ul class="va-update-list"><li class="site">Google, cadastro local e login por e-mail/senha foram removidos da interface e bloqueados nas rotas públicas.</li><li class="site">A nova tela explica reconhecimento, permissões, clubes, inscrições, notificações e vantagens antes do OAuth.</li><li class="site">Termos e Privacidade agora cobrem login Discord, LGPD, clubes, inscrições, moderação, premiações e conteúdo enviado.</li><li class="bot">O Placar 3x3 e 5x5 agora reúne todos os membros do servidor, preserva as estatísticas reais do Café com Leite e permite organizar por pontos, cargo, atividade ou nome.</li><li class="bot">As regras oficiais da Nexus Cup foram publicadas uma única vez no canal 1524621308682436740 e o formato passou a indicar equipes e tamanho dos grupos como a definir.</li><li class="fix">A lista de jogadores ganhou rolagem vertical própria, cabeçalho fixo e limite de altura para não alongar a página nem afastar a navegação lateral.</li><li class="fix">Placar, Termos, Privacidade e Atualizações foram migrados para a estrutura visual atual e o Placar entrou no menu.</li></ul></article>`;
+const rewardReleaseCard = `<article class="hnl-card va-update-card" id="${REWARD_RELEASE_ID}"><span class="va-update-dot"></span><div class="va-update-meta"><span>27/07/2026</span><span>Site</span><span>Café com Leite</span></div><h3>Premiações da temporada atualizadas</h3><p class="va-muted">A premiação do Café com Leite foi revisada no evento, na página do placar e nos Termos de Uso.</p><ul class="va-update-list"><li class="site">O primeiro colocado passa a receber R$ 50.</li><li class="site">O segundo e o terceiro colocados passam a receber bônus de patente para a temporada seguinte.</li><li class="fix">As mesmas regras agora aparecem de forma consistente em todas as páginas do site.</li></ul></article>`;
 
 function updateCards(html = '') {
   const cards = [];
@@ -214,7 +216,7 @@ function updateCards(html = '') {
   const pattern = /<article\b[^>]*class="[^"]*\bva-update-card\b[^"]*"[^>]*>[\s\S]*?<\/article>/gi;
   for (const match of html.matchAll(pattern)) {
     const id = (match[0].match(/\bid="([^"]+)"/i) || [])[1] || `card-${cards.length}`;
-    if (seen.has(id) || id === RELEASE_ID) continue;
+    if (seen.has(id) || id === RELEASE_ID || id === REWARD_RELEASE_ID) continue;
     seen.add(id);
     cards.push(match[0].replace(/class="([^"]*)"/i, (_all, classes) => {
       const normalized = String(classes).split(/\s+/).filter((name) => name && name !== 'va-card' && name !== 'hnl-card');
@@ -226,7 +228,7 @@ function updateCards(html = '') {
 
 function updatesPage(previousHtml = '') {
   const cards = updateCards(previousHtml);
-  const body = `<section class="hnl-updates-layout"><div class="hnl-update-timeline">${releaseCard}${cards.join('')}</div><aside class="hnl-update-side"><article class="hnl-card"><span class="hnl-section-kicker">Histórico oficial</span><h2>Site e bot</h2><p>Toda mudança relevante deve aparecer aqui marcada como Site, Bot ou Site + Bot.</p></article><article class="hnl-card"><h2>Nesta entrega</h2><p>Login Discord exclusivo, páginas legais revisadas e Placar Café com Leite no shell atual.</p><div class="hnl-legal-links"><a class="hnl-btn" href="/pages/termos.html">Termos</a><a class="hnl-btn" href="/pages/placar.html">Placar</a></div></article></aside></section>`;
+  const body = `<section class="hnl-updates-layout"><div class="hnl-update-timeline">${rewardReleaseCard}${releaseCard}${cards.join('')}</div><aside class="hnl-update-side"><article class="hnl-card"><span class="hnl-section-kicker">Histórico oficial</span><h2>Site e bot</h2><p>Toda mudança relevante deve aparecer aqui marcada como Site, Bot ou Site + Bot.</p></article><article class="hnl-card"><h2>Nesta entrega</h2><p>Premiações do Café com Leite atualizadas no evento, no guia e nos Termos de Uso.</p><div class="hnl-legal-links"><a class="hnl-btn" href="/pages/termos.html">Termos</a><a class="hnl-btn" href="/pages/cafe-com-leite.html">Café com Leite</a></div></article></aside></section>`;
   return shell({
     title: 'Atualizações',
     page: 'atualizacoes',
@@ -275,10 +277,11 @@ write(path.join(PUBLIC, 'discord-legal-placar.json'), JSON.stringify({
   build: BUILD,
   authentication: 'discord-only',
   legacyAuthDisabled: ['google', 'email-password', 'local-registration'],
-  legalVersion: '2026.07.21',
+  legalVersion: '2026.07.27',
+  privacyVersion: '2026.07.21',
   scoreboard: ['cafe-com-leite-3v3', 'cafe-com-leite-5v5'],
   changelogScope: 'site-and-bot',
-  updatedAt: '2026-07-21T23:59:00-03:00'
+  updatedAt: '2026-07-27T17:55:00-03:00'
 }, null, 2));
 
 console.log(changed
