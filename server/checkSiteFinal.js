@@ -96,6 +96,32 @@ for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simul
 const formsPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'formularios.html'), 'utf8');
 const appSource = fs.readFileSync(path.join(ROOT, 'server', 'app.js'), 'utf8');
 const formsScript = fs.readFileSync(path.join(ROOT, 'public', 'js', 'formularios.js'), 'utf8');
+const adminAccessPatch = fs.readFileSync(path.join(ROOT, 'server', 'patchAdminDiscordAccessRuntime.js'), 'utf8');
+const expectedAdminDiscordIds = [
+  '623932415034916865',
+  '544971683157508097',
+  '517113675618975759'
+];
+
+for (const discordId of expectedAdminDiscordIds) {
+  if (!appSource.includes(`'${discordId}'`) || !adminAccessPatch.includes(`'${discordId}'`)) {
+    console.error(`[Check Final] Discord ID administrativo ausente ou não sincronizado: ${discordId}`);
+    process.exit(1);
+  }
+}
+
+for (const marker of [
+  'DEFAULT_ADMIN_DISCORD_IDS',
+  'DEFAULT_ADMIN_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS',
+  "app.get('/api/player-applications', requireAdmin",
+  'isAdmin: isAdminUser(user)'
+]) {
+  if (!appSource.includes(marker)) {
+    console.error(`[Check Final] Proteção administrativa incompleta: ${marker}`);
+    process.exit(1);
+  }
+}
+
 for (const [label, source, marker] of [
   ['página', formsPage, '/js/formularios.js?v=hnl-forms-static-v1'],
   ['servidor', appSource, 'hnl-forms-static-route-v1'],
