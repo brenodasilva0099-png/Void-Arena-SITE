@@ -33,11 +33,11 @@ if (/id="(?:loginForm|registerForm)"|type="password"|auth\/google/i.test(login))
 }
 
 requireMarkers('public/pages/termos.html', [
-  'Versão 2026.07.21',
+  'Versão 2026.07.27',
   'Login exclusivo pelo Discord',
   'Placar Café com Leite',
-  'R$ 35',
-  'R$ 15',
+  'R$ 50',
+  'segundo e o terceiro colocados recebem bônus de patente',
   'Atualizações destes Termos',
   'Lei Geral de Proteção de Dados'
 ]);
@@ -74,6 +74,8 @@ requireMarkers('public/css/discord-legal-placar.css', [
 ]);
 
 requireMarkers('public/pages/atualizacoes.html', [
+  'release-2026-07-27-cafe-com-leite-premios',
+  'Premiações da temporada atualizadas',
   'release-2026-07-21-discord-legal-placar',
   'Site + Bot',
   'Login único pelo Discord',
