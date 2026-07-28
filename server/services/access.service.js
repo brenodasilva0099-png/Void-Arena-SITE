@@ -3,7 +3,11 @@ const { callBot } = require('./botApi.service');
 const { readIdentity, applyIdentityToSession } = require('../authIdentity');
 
 const DEFAULT_OWNER_DISCORD_IDS = ['1235713276277559326'];
-const DEFAULT_ADMIN_DISCORD_IDS = ['623932415034916865'];
+const DEFAULT_ADMIN_DISCORD_IDS = [
+  '623932415034916865',
+  '544971683157508097',
+  '517113675618975759'
+];
 const DEFAULT_OWNER_EMAILS = ['abyss.projectdev@gmail.com', 'brenodasilva0099@gmail.com'];
 const DEFAULT_ADMIN_ROLE_IDS = ['1297731552620576828'];
 
@@ -143,6 +147,7 @@ module.exports = {
   DEFAULT_ADMIN_DISCORD_IDS,
   DEFAULT_ADMIN_ROLE_IDS,
   isOwnerRecord,
+  isAdminIdRecord,
   isAdminRecord,
   hasAdminRole,
   isOwnerSession,
