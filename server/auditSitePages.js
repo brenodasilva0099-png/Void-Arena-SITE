@@ -96,13 +96,13 @@ for (const file of files) {
   }
 
   if (relative === 'public/pages/eventos.html') {
-    for (const marker of ['hnl-cafe-event-card', '☕', 'R$ 35', 'R$ 15', 'Patente elevada']) {
+    for (const marker of ['hnl-cafe-event-card', '☕', 'R$ 50', '🥈 Bônus de patente', '🥉 Bônus de patente']) {
       if (!html.includes(marker)) failures.push(`${relative}: instrução ou premiação do Café com Leite ausente ${marker}`);
     }
   }
 
   if (relative === 'public/pages/cafe-com-leite.html') {
-    for (const marker of ['id="como-funciona"', 'hnl-event-steps', 'hnl-prize-grid', 'R$ 35', 'R$ 15']) {
+    for (const marker of ['id="como-funciona"', 'hnl-event-steps', 'hnl-prize-grid', 'R$ 50', '🥈 Bônus de patente', '🥉 Bônus de patente']) {
       if (!html.includes(marker)) failures.push(`${relative}: guia do evento ausente ${marker}`);
     }
   }
