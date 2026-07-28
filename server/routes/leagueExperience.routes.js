@@ -121,6 +121,7 @@ function publicTeam(team = {}, users = [], viewer = null, isAdmin = false) {
     reserveDetails: roster.filter((player) => player.rosterRole === 'Reserva'),
     rosterCount: roster.length,
     canManage: Boolean(isAdmin || canManageTeam(viewer, team)),
+    canEditLeadership: Boolean(isAdmin || canDeleteTeam(viewer, team)),
     canDelete: Boolean(isAdmin || canDeleteTeam(viewer, team)),
     createdAt: team.createdAt || null,
     updatedAt: team.updatedAt || null

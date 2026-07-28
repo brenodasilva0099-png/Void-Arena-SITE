@@ -6,6 +6,11 @@
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const qs = new URLSearchParams(location.search);
+  const CLUB_REGIONS = [
+    'Brasil', 'Sudeste', 'Sudoeste', 'Sul', 'Norte', 'Nordeste', 'Centro-Oeste',
+    'América do Sul', 'LATAM Sul', 'LATAM Norte', 'América do Norte',
+    'Europa', 'Ásia', 'Oceania', 'Outro'
+  ];
 
   async function api(url, options = {}) {
     const response = await fetch(url, {
@@ -21,6 +26,32 @@
 
   function image(value, fallback = FALLBACK_LOGO) {
     return String(value || fallback);
+  }
+
+  function regionOptions(selected = '') {
+    const current = String(selected || '').trim();
+    const values = current && !CLUB_REGIONS.includes(current) ? [current, ...CLUB_REGIONS] : CLUB_REGIONS;
+    return `<option value="">Selecionar região</option>${values.map((region) => `<option value="${esc(region)}"${region === current ? ' selected' : ''}>${esc(region)}${region === current && !CLUB_REGIONS.includes(current) ? ' (atual)' : ''}</option>`).join('')}`;
+  }
+
+  function leadershipDirectoryPlayers(data = {}) {
+    const seen = new Set();
+    return (Array.isArray(data.players) ? data.players : []).filter((player) => {
+      const value = String(player.userId || '').trim();
+      if (!value || !player.discordId || seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    }).sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR'));
+  }
+
+  function leadershipOptions(players = [], selectedUserId = '', selectedDiscordId = '') {
+    const selected = new Set([selectedUserId, selectedDiscordId].map((value) => String(value || '').trim()).filter(Boolean));
+    return `<option value="">Selecionar usuário</option>${players.map((player) => {
+      const value = String(player.userId || player.id || player.discordId || '').trim();
+      const isSelected = [value, player.discordId].some((candidate) => selected.has(String(candidate || '').trim()));
+      const teamName = player.teamName || player.team?.name || player.teams?.[0]?.name || '';
+      return `<option value="${esc(value)}"${isSelected ? ' selected' : ''}>${esc(player.name || 'Jogador')}${teamName ? ` — ${esc(teamName)}` : ' — sem clube'} · Discord vinculado</option>`;
+    }).join('')}`;
   }
 
   function fmt(value) {
@@ -355,8 +386,13 @@
     if (!box) return;
     const id = qs.get('id');
     if (!id) { box.innerHTML = empty('Clube não informado.'); return; }
-    const data = await api(`/api/league/clubs/${encodeURIComponent(id)}`);
+    const [data, directoryData] = await Promise.all([
+      api(`/api/league/clubs/${encodeURIComponent(id)}`),
+      api('/api/players/directory').catch(() => ({ players: [] }))
+    ]);
     const club = data.club || {};
+    const leadershipPlayers = leadershipDirectoryPlayers(directoryData);
+    const leadershipFields = club.canEditLeadership ? `<div class="hnl-field full"><div class="hnl-console-head"><div><h3>Liderança do clube</h3><p class="frm-muted">Somente administrador ou criador original pode trocar estes responsáveis. A lista usa contas reais com Discord vinculado.</p></div></div></div><div class="hnl-field"><label>Diretor / dono</label><select class="hnl-select" name="directorUserId" required>${leadershipOptions(leadershipPlayers, club.directorUserId, club.directorDiscordId)}</select></div><div class="hnl-field"><label>Capitão</label><select class="hnl-select" name="captainUserId" required>${leadershipOptions(leadershipPlayers, club.captainUserId, club.captainDiscordId)}</select></div>` : '';
     box.innerHTML = `<section class="hnl-card hnl-profile-hero">
       <img src="${esc(image(club.logo))}" alt="Logo de ${esc(club.name || 'clube')}">
       <div><span class="hnl-section-kicker">◈ Clube participante</span><h1>${esc(club.name || 'Clube')} ${club.tag ? `<small>[${esc(club.tag)}]</small>` : ''}</h1><p>${esc(club.description || 'O clube ainda não adicionou uma descrição pública.')}</p></div>
@@ -364,7 +400,7 @@
     </section>
     <section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Direção</h2><p><strong>Diretor:</strong> ${esc(club.directorName || club.ownerName || 'Não definido')}</p><p><strong>Capitão:</strong> ${esc(club.captainName || 'Não definido')}</p></article><article class="hnl-card"><h2>Conexões oficiais</h2>${socials(club.socials || {})}</article></section>
     <section class="hnl-card" style="margin-top:14px"><h2>Elenco (${club.rosterCount || 0})</h2><div class="hnl-grid cols-2">${rosterHtml(club.roster || [])}</div></section>
-    ${club.canManage ? `<section class="hnl-card" id="editar-clube" style="margin-top:14px"><div class="hnl-console-head"><div><h2>Edição do clube</h2><p class="hnl-edit-lock">◌ Área exclusiva de administradores, criador original, diretor e capitão vinculados.</p></div></div><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid"><div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field"><label>Região</label><input class="hnl-input" name="region" value="${esc(club.region || '')}"></div><div class="hnl-field"><label>Logo do clube</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}" placeholder="Cole uma URL, escolha, arraste ou cole uma imagem"><small class="frm-muted">Aceita URL direta, arquivo PNG/JPG/WEBP, arrastar e soltar ou Ctrl+V.</small></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-field full"><h3>Conexões públicas</h3><p class="frm-muted">Preencha somente os canais oficiais do clube. As logos dos aplicativos aparecem no perfil público.</p></div><div class="hnl-field"><label>Discord</label><input class="hnl-input" name="socialDiscord" value="${esc(club.socials?.discord || '')}"></div><div class="hnl-field"><label>Instagram</label><input class="hnl-input" name="socialInstagram" value="${esc(club.socials?.instagram || '')}"></div><div class="hnl-field"><label>X / Twitter</label><input class="hnl-input" name="socialTwitter" value="${esc(club.socials?.twitter || '')}"></div><div class="hnl-field"><label>TikTok</label><input class="hnl-input" name="socialTiktok" value="${esc(club.socials?.tiktok || '')}"></div><div class="hnl-field"><label>YouTube</label><input class="hnl-input" name="socialYoutube" value="${esc(club.socials?.youtube || '')}"></div><div class="hnl-field"><label>Twitch</label><input class="hnl-input" name="socialTwitch" value="${esc(club.socials?.twitch || '')}"></div><div class="hnl-field full"><label>Site</label><input class="hnl-input" name="socialWebsite" value="${esc(club.socials?.website || club.socials?.site || '')}"></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button>${club.canDelete ? '<button class="hnl-btn danger" id="deleteClub" type="button">Excluir clube</button>' : ''}</div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
+    ${club.canManage ? `<section class="hnl-card" id="editar-clube" style="margin-top:14px"><div class="hnl-console-head"><div><h2>Edição do clube</h2><p class="hnl-edit-lock">◌ Área exclusiva de administradores, criador original, diretor e capitão vinculados.</p></div></div><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid">${leadershipFields}<div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field"><label>Região</label><select class="hnl-select" name="region" required>${regionOptions(club.region)}</select></div><div class="hnl-field"><label>Logo do clube</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}" placeholder="Cole uma URL, escolha, arraste ou cole uma imagem"><small class="frm-muted">Aceita URL direta, arquivo PNG/JPG/WEBP, arrastar e soltar ou Ctrl+V.</small></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-field full"><h3>Conexões públicas</h3><p class="frm-muted">Preencha somente os canais oficiais do clube. As logos dos aplicativos aparecem no perfil público.</p></div><div class="hnl-field"><label>Discord</label><input class="hnl-input" name="socialDiscord" value="${esc(club.socials?.discord || '')}"></div><div class="hnl-field"><label>Instagram</label><input class="hnl-input" name="socialInstagram" value="${esc(club.socials?.instagram || '')}"></div><div class="hnl-field"><label>X / Twitter</label><input class="hnl-input" name="socialTwitter" value="${esc(club.socials?.twitter || '')}"></div><div class="hnl-field"><label>TikTok</label><input class="hnl-input" name="socialTiktok" value="${esc(club.socials?.tiktok || '')}"></div><div class="hnl-field"><label>YouTube</label><input class="hnl-input" name="socialYoutube" value="${esc(club.socials?.youtube || '')}"></div><div class="hnl-field"><label>Twitch</label><input class="hnl-input" name="socialTwitch" value="${esc(club.socials?.twitch || '')}"></div><div class="hnl-field full"><label>Site</label><input class="hnl-input" name="socialWebsite" value="${esc(club.socials?.website || club.socials?.site || '')}"></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button>${club.canDelete ? '<button class="hnl-btn danger" id="deleteClub" type="button">Excluir clube</button>' : ''}</div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
 
     if (!club.canManage) return;
     $('#deleteClub')?.addEventListener('click', async () => {
@@ -374,14 +410,15 @@
         location.assign('/pages/clubes.html');
       } catch (error) { $('#clubManageStatus').innerHTML = notice(error.message, 'error'); }
     });
-    const playersData = await api('/api/league/players').catch(() => ({ players: [] }));
+    const playersData = directoryData.players?.length ? directoryData : await api('/api/league/players').catch(() => ({ players: [] }));
     const select = $('#clubInvitePlayer');
     if (select) select.innerHTML = (playersData.players || []).map((player) => `<option value="${esc(player.id || player.discordId || '')}">${esc(player.name || 'Jogador')} ${player.team ? '— ' + esc(player.team.name) : '— Livre'}</option>`).join('');
     $('#clubEditForm')?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
       try {
-        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.get('name'), tag: form.get('tag'), region: form.get('region'), logo: form.get('logo'), description: form.get('description'), socials: { discord: form.get('socialDiscord'), instagram: form.get('socialInstagram'), twitter: form.get('socialTwitter'), tiktok: form.get('socialTiktok'), youtube: form.get('socialYoutube'), twitch: form.get('socialTwitch'), website: form.get('socialWebsite') } }) });
+        const leadership = club.canEditLeadership ? { directorUserId: form.get('directorUserId'), captainUserId: form.get('captainUserId') } : {};
+        await api(`/api/teams/${encodeURIComponent(club.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...leadership, name: form.get('name'), tag: form.get('tag'), region: form.get('region'), logo: form.get('logo'), description: form.get('description'), socials: { discord: form.get('socialDiscord'), instagram: form.get('socialInstagram'), twitter: form.get('socialTwitter'), tiktok: form.get('socialTiktok'), youtube: form.get('socialYoutube'), twitch: form.get('socialTwitch'), website: form.get('socialWebsite') } }) });
         $('#clubManageStatus').innerHTML = notice('Clube atualizado.', 'success');
       } catch (error) { $('#clubManageStatus').innerHTML = notice(error.message, 'error'); }
     });
@@ -396,10 +433,22 @@
   async function createClub() {
     const form = $('#createClubForm');
     if (!form) return;
+    const status = $('#createClubStatus');
+    try {
+      const directory = await api('/api/players/directory');
+      const players = leadershipDirectoryPlayers(directory);
+      const viewerId = directory.viewer?.id || directory.viewer?.userId || directory.viewer?.discordId || '';
+      const director = $('#createClubDirector');
+      const captain = $('#createClubCaptain');
+      if (director) director.innerHTML = leadershipOptions(players, viewerId, directory.viewer?.discordId || '');
+      if (captain) captain.innerHTML = leadershipOptions(players, viewerId, directory.viewer?.discordId || '');
+      if (!players.length) status.innerHTML = notice('Nenhum usuário com Discord vinculado foi encontrado. Atualize o diretório ou entre novamente com Discord.', 'error');
+    } catch (error) {
+      status.innerHTML = notice(`Entre com Discord para carregar Diretor e Capitão: ${error.message}`, 'error');
+    }
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(form).entries());
-      const status = $('#createClubStatus');
       try {
         const result = await api('/api/league/clubs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         status.innerHTML = notice('Clube criado. Abrindo o perfil público...', 'success');

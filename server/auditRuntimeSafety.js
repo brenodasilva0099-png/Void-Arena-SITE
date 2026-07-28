@@ -9,6 +9,8 @@ const teamRouteSource = fs.readFileSync(path.join(__dirname, 'routes', 'publicTe
 const playerRouteSource = fs.readFileSync(path.join(__dirname, 'routes', 'players.routes.js'), 'utf8');
 const experienceRouteSource = fs.readFileSync(path.join(__dirname, 'routes', 'leagueExperience.routes.js'), 'utf8');
 const experienceClientSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'core', 'league-experience.js'), 'utf8');
+const leagueRouteSource = fs.readFileSync(path.join(__dirname, 'routes', 'league.routes.js'), 'utf8');
+const leaguePageBuilderSource = fs.readFileSync(path.join(__dirname, 'patchLeagueExperienceRuntime.js'), 'utf8');
 const tacticalClientSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'core', 'tactical-simulator-v2.js'), 'utf8');
 const logoUploadSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'pages', 'team-logo-upload.js'), 'utf8');
 const packageJson = JSON.parse(fs.readFileSync(packageFile, 'utf8'));
@@ -38,6 +40,14 @@ if (!eventRouteSource.includes("callBot('/internal/event-registration-requests/c
 if (!eventRouteSource.includes('if (!canManageTeam(user, team))')) missing.push('inscrição restrita ao capitão/diretor');
 if (!teamRouteSource.includes('!isAdmin && !canDeleteTeam(user, existing)')) missing.push('exclusão de times restrita a administrador ou criador');
 if (!teamRouteSource.includes('!isAdmin && !canManageTeam(user, existing)')) missing.push('edição de times restrita a administração ou liderança');
+if (!teamRouteSource.includes('Apenas administrador ou o criador original pode trocar Diretor e Capitão.')) missing.push('troca de liderança restrita ao criador ou administrador');
+if (!teamRouteSource.includes('resolveLeader(body, \'director\', users')) missing.push('diretor validado pelo diretório real');
+if (!teamRouteSource.includes('resolveLeader(body, \'captain\', users')) missing.push('capitão validado pelo diretório real');
+if (!leagueRouteSource.includes('resolveRegisteredLeader(users, req.body.directorUserId')) missing.push('cadastro de diretor validado no servidor');
+if (!leagueRouteSource.includes('resolveRegisteredLeader(users, req.body.captainUserId')) missing.push('cadastro de capitão validado no servidor');
+if (!experienceClientSource.includes("api('/api/players/directory')")) missing.push('seletores de liderança ligados ao diretório real');
+if (!experienceClientSource.includes("'Sudeste', 'Sudoeste'")) missing.push('regiões de clube pré-definidas');
+if (!leaguePageBuilderSource.includes('id="createClubDirector"') || !leaguePageBuilderSource.includes('id="createClubCaptain"')) missing.push('cadastro com seletores de diretor e capitão');
 if (!playerRouteSource.includes('if (!await viewerIsAdmin(viewer))')) missing.push('exclusão de jogadores restrita a administrador');
 if (!experienceRouteSource.includes('Apenas a administração pode editar competições.')) missing.push('edição de competição restrita a administrador');
 if (!experienceClientSource.includes('function applyAdminVisibility')) missing.push('opções administrativas ocultas para usuários comuns');

@@ -26,6 +26,20 @@ function nameOf(user = {}) {
   return user?.profile?.username || user?.profile?.displayName || user?.name || user?.username || user?.discordId || 'Jogador';
 }
 
+const CLUB_REGIONS = new Set([
+  'Brasil', 'Sudeste', 'Sudoeste', 'Sul', 'Norte', 'Nordeste', 'Centro-Oeste',
+  'América do Sul', 'LATAM Sul', 'LATAM Norte', 'América do Norte',
+  'Europa', 'Ásia', 'Oceania', 'Outro'
+]);
+
+function resolveRegisteredLeader(users = [], value = '', label = 'Responsável') {
+  const id = clean(value, 100);
+  const user = users.find((candidate) => String(candidate.id || '') === id || String(candidate.discordId || '') === id) || null;
+  if (!user) throw new Error(`${label} precisa ser um usuário real cadastrado no site.`);
+  if (!user.discordId) throw new Error(`${label} precisa ter uma conta do Discord vinculada.`);
+  return user;
+}
+
 function teamName(team = {}) {
   return team?.name || team?.teamName || team?.tag || 'Clube';
 }
@@ -245,17 +259,25 @@ function registerLeagueRoutes(app) {
       const viewer = await getSessionUser(req);
       const name = clean(req.body?.name || req.body?.teamName, 90);
       const tag = clean(req.body?.tag, 12).toUpperCase();
+      const region = clean(req.body?.region, 80);
       if (!name) return res.status(400).json({ success: false, message: 'Informe o nome do clube.' });
-      const teams = await storage.readTeams().catch(() => []);
+      if (!CLUB_REGIONS.has(region)) return res.status(400).json({ success: false, message: 'Selecione uma região válida na lista.' });
+      const [teams, users] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => [])]);
       const exists = teams.some((team) => teamName(team).toLowerCase() === name.toLowerCase() || (tag && String(team.tag || '').toLowerCase() === tag.toLowerCase()));
       if (exists) return res.status(409).json({ success: false, message: 'Já existe clube com esse nome ou sigla.' });
+      const director = req.body?.directorUserId
+        ? resolveRegisteredLeader(users, req.body.directorUserId, 'Diretor')
+        : viewer;
+      const captain = req.body?.captainUserId
+        ? resolveRegisteredLeader(users, req.body.captainUserId, 'Capitão')
+        : viewer;
       const now = new Date().toISOString();
       const team = await storage.saveTeam({
         id: crypto.randomUUID(), name, teamName: name, tag,
-        description: clean(req.body?.description, 600), region: clean(req.body?.region, 80), logo: clean(req.body?.logo, 4000), logoUrl: clean(req.body?.logo, 4000),
+        description: clean(req.body?.description, 600), region, logo: clean(req.body?.logo, 4000), logoUrl: clean(req.body?.logo, 4000),
         ownerUserId: viewer.id || '', ownerName: nameOf(viewer), ownerDiscordId: viewer.discordId || '', ownerAvatar: viewer.avatar || '',
-        captainUserId: viewer.id || '', captainName: nameOf(viewer), captainDiscordId: viewer.discordId || '',
-        directorUserId: viewer.id || '', directorName: nameOf(viewer), directorDiscordId: viewer.discordId || '',
+        captainUserId: captain.id || '', captainName: nameOf(captain), captainDiscordId: captain.discordId || '',
+        directorUserId: director.id || '', directorName: nameOf(director), directorDiscordId: director.discordId || '',
         socials: {
           discord: clean(req.body?.socials?.discord ?? req.body?.socialDiscord, 180),
           instagram: clean(req.body?.socials?.instagram ?? req.body?.socialInstagram, 160),

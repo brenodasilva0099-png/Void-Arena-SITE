@@ -47,6 +47,50 @@ function splitDiscordId(value = '') {
 
 function userDisplay(user = {}) { return user?.profile?.username || user?.name || user?.discordId || 'Jogador'; }
 function publicUser(user = {}) { return { id: user.id || '', name: user.name || '', discordId: user.discordId || '', avatar: user.avatar || '', profile: user.profile || {}, socials: user.socials || {}, provider: user.provider || 'login', createdAt: user.createdAt || null, updatedAt: user.updatedAt || null }; }
+function findRegisteredUser(users = [], { userId = '', discordId = '' } = {}) {
+  const safeUserId = clean(userId, 100);
+  const safeDiscordId = clean(splitDiscordId(discordId) || discordId, 40);
+  return users.find((candidate) => (
+    (safeUserId && String(candidate.id || '') === safeUserId)
+    || (safeDiscordId && String(candidate.discordId || '') === safeDiscordId)
+  )) || null;
+}
+
+function leadershipInput(body = {}, prefix = '') {
+  const nested = body?.[prefix] || {};
+  return {
+    provided: [
+      `${prefix}UserId`,
+      `${prefix}DiscordId`,
+      `${prefix}Name`
+    ].some((key) => Object.prototype.hasOwnProperty.call(body || {}, key))
+      || Object.prototype.hasOwnProperty.call(body || {}, prefix),
+    userId: clean(body?.[`${prefix}UserId`] || nested?.userId || nested?.id || '', 100),
+    discordId: clean(body?.[`${prefix}DiscordId`] || nested?.discordId || '', 40)
+  };
+}
+
+function leadershipChanged(body = {}, existing = {}) {
+  return ['director', 'captain'].some((prefix) => {
+    const incoming = leadershipInput(body, prefix);
+    if (!incoming.provided) return false;
+    const currentUserId = clean(existing?.[`${prefix}UserId`] || '', 100);
+    const currentDiscordId = clean(existing?.[`${prefix}DiscordId`] || '', 40);
+    return Boolean(
+      (incoming.userId && incoming.userId !== currentUserId)
+      || (incoming.discordId && incoming.discordId !== currentDiscordId)
+    );
+  });
+}
+
+function resolveLeader(body = {}, prefix = '', users = [], fallback = null) {
+  const incoming = leadershipInput(body, prefix);
+  if (!incoming.provided) return fallback;
+  const resolved = findRegisteredUser(users, incoming);
+  if (!resolved) throw new Error(`${prefix === 'director' ? 'Diretor' : 'Capitão'} precisa ser um usuário real cadastrado no site com Discord vinculado.`);
+  if (!resolved.discordId) throw new Error(`${prefix === 'director' ? 'Diretor' : 'Capitão'} precisa ter uma conta do Discord vinculada.`);
+  return resolved;
+}
 
 function normalizePlayers(value = []) {
   const source = Array.isArray(value) ? value : [];
@@ -100,10 +144,11 @@ function enrichTeam(team = {}, users = [], viewer = null, { isAdmin = false } = 
   const captainName = captainUser ? userDisplay(captainUser) : (team.captainName || fallbackCaptain?.name || directorName || 'nao definido');
   const captainDiscordId = captainUser?.discordId || team.captainDiscordId || fallbackCaptain?.discordId || '';
 
-  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: normalizedLogo, logoOriginal: team.logo || '', description: team.description || '', region: team.region || '', status: team.status || 'participating', ownerUserId: team.ownerUserId || '', ownerDiscordId: team.ownerDiscordId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || directorName), ownerAvatar: owner?.avatar || team.ownerAvatar || '', directorUserId: team.directorUserId || team.ownerUserId || '', directorName, directorDiscordId, captainUserId: team.captainUserId || '', captainName, captainDiscordId, players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: Boolean(isAdmin || canManageTeam(viewer, team)), canDelete: Boolean(isAdmin || canDeleteTeam(viewer, team)), createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
+  const canEditLeadership = Boolean(isAdmin || canDeleteTeam(viewer, team));
+  return { id: team.id || '', name: team.name || 'Time', tag: team.tag || '', logo: normalizedLogo, logoOriginal: team.logo || '', description: team.description || '', region: team.region || '', status: team.status || 'participating', ownerUserId: team.ownerUserId || '', ownerDiscordId: team.ownerDiscordId || '', ownerName: owner ? userDisplay(owner) : (team.ownerName || directorName), ownerAvatar: owner?.avatar || team.ownerAvatar || '', directorUserId: team.directorUserId || team.ownerUserId || '', directorName, directorDiscordId, captainUserId: team.captainUserId || '', captainName, captainDiscordId, players: Array.isArray(team.players) ? team.players : [], reserves: Array.isArray(team.reserves) ? team.reserves : [], playerAccounts: team.playerAccounts || {}, playerDetails: players, reserveDetails: reserves, socials: team.socials || {}, canManage: Boolean(isAdmin || canManageTeam(viewer, team)), canEditLeadership, canDelete: canEditLeadership, createdAt: team.createdAt || null, updatedAt: team.updatedAt || null };
 }
 
-function buildTeamPayload(body = {}, user = {}, existing = null) {
+function buildTeamPayload(body = {}, user = {}, existing = null, users = []) {
   const hasRosterPayload = ['playerDetails', 'playersDetailed', 'reserveDetails', 'reservesDetailed', 'players', 'reserves']
     .some((key) => Object.prototype.hasOwnProperty.call(body || {}, key));
   const allPlayerDetails = normalizePlayers(body.playerDetails || body.playersDetailed || []);
@@ -143,12 +188,16 @@ function buildTeamPayload(body = {}, user = {}, existing = null) {
   const ownerName = existing?.ownerName || userDisplay(user);
   const incomingLogo = firstLogoValue(body.logo, body.logoUrl, body.logoURL, body.teamLogo, body.teamLogoUrl, body.badge, body.badgeUrl, body.escudo, body.image, body.imageUrl, body.avatar, body.icon);
   const logo = incomingLogo || resolveTeamLogo(existing || {}) || '';
-  const directorName = clean(body.directorName || body.director?.name || existing?.directorName || ownerName, 80);
-  const directorDiscordId = clean(splitDiscordId(body.directorDiscordId || body.director?.discordId || '') || body.directorDiscordId || body.director?.discordId || existing?.directorDiscordId || user.discordId || '', 40);
-  const directorUserId = clean(body.directorUserId || existing?.directorUserId || ownerUserId, 80);
-  const captainName = clean(body.captainName || body.captain?.name || existing?.captainName || players[0] || directorName, 80);
-  const captainDiscordId = clean(splitDiscordId(body.captainDiscordId || body.captain?.discordId || '') || body.captainDiscordId || body.captain?.discordId || existing?.captainDiscordId || playerIds.find(Boolean) || '', 40);
-  const captainUserId = clean(body.captainUserId || existing?.captainUserId || '', 80);
+  const existingDirector = findRegisteredUser(users, { userId: existing?.directorUserId || existing?.ownerUserId, discordId: existing?.directorDiscordId || existing?.ownerDiscordId }) || user;
+  const existingCaptain = findRegisteredUser(users, { userId: existing?.captainUserId, discordId: existing?.captainDiscordId }) || existingDirector;
+  const director = resolveLeader(body, 'director', users, existingDirector);
+  const captain = resolveLeader(body, 'captain', users, existingCaptain);
+  const directorName = clean(userDisplay(director), 80);
+  const directorDiscordId = clean(director?.discordId || '', 40);
+  const directorUserId = clean(director?.id || ownerUserId, 80);
+  const captainName = clean(userDisplay(captain), 80);
+  const captainDiscordId = clean(captain?.discordId || '', 40);
+  const captainUserId = clean(captain?.id || '', 80);
 
   const socialValue = (key, alias, max = 180) => clean(
     body.socials?.[key] !== undefined
@@ -188,30 +237,31 @@ function registerPublicTeamRoutes(app) {
 
   app.post('/api/teams', requireLogin, async (req, res) => {
     try {
-      const user = await getSessionUser(req);
-      const payload = buildTeamPayload(req.body || {}, user || {});
+      const [user, users] = await Promise.all([getSessionUser(req), storage.readUsers().catch(() => [])]);
+      const payload = buildTeamPayload(req.body || {}, user || {}, null, users);
       const inviteRequests = payload.inviteRequests || [];
       delete payload.inviteRequests;
       const saved = await storage.saveTeam(payload);
       const inviteResults = await sendTeamInvites({ viewer: user, team: saved, inviteRequests });
-      const users = await storage.readUsers().catch(() => []);
       return res.status(201).json({ success: true, team: enrichTeam(saved, users, user), inviteResults });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
 
   app.put('/api/teams/:teamId', requireLogin, async (req, res) => {
     try {
-      const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
+      const [user, teams, users] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => []), storage.readUsers().catch(() => [])]);
       const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
       if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
       const isAdmin = await isAdminRecord(user).catch(() => false);
       if (!isAdmin && !canManageTeam(user, existing)) return res.status(403).json({ success: false, message: 'Apenas administrador, criador, diretor ou capitão pode editar esse time.' });
-      const payload = buildTeamPayload({ ...(req.body || {}), id: existing.id }, user || {}, existing);
+      if (!isAdmin && !canDeleteTeam(user, existing) && leadershipChanged(req.body || {}, existing)) {
+        return res.status(403).json({ success: false, message: 'Apenas administrador ou o criador original pode trocar Diretor e Capitão.' });
+      }
+      const payload = buildTeamPayload({ ...(req.body || {}), id: existing.id }, user || {}, existing, users);
       const inviteRequests = payload.inviteRequests || [];
       delete payload.inviteRequests;
       const saved = await storage.saveTeam(payload);
       const inviteResults = await sendTeamInvites({ viewer: user, team: saved, inviteRequests });
-      const users = await storage.readUsers().catch(() => []);
       return res.json({ success: true, team: enrichTeam(saved, users, user, { isAdmin }), inviteResults });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
   });
