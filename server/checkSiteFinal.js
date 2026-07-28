@@ -97,6 +97,8 @@ const formsPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'formulario
 const appSource = fs.readFileSync(path.join(ROOT, 'server', 'app.js'), 'utf8');
 const formsScript = fs.readFileSync(path.join(ROOT, 'public', 'js', 'formularios.js'), 'utf8');
 const adminAccessPatch = fs.readFileSync(path.join(ROOT, 'server', 'patchAdminDiscordAccessRuntime.js'), 'utf8');
+const accessServiceSource = fs.readFileSync(path.join(ROOT, 'server', 'services', 'access.service.js'), 'utf8');
+const accessControlSource = fs.readFileSync(path.join(ROOT, 'server', 'routes', 'accessControl.routes.js'), 'utf8');
 const expectedAdminDiscordIds = [
   '623932415034916865',
   '544971683157508097',
@@ -104,7 +106,11 @@ const expectedAdminDiscordIds = [
 ];
 
 for (const discordId of expectedAdminDiscordIds) {
-  if (!appSource.includes(`'${discordId}'`) || !adminAccessPatch.includes(`'${discordId}'`)) {
+  if (
+    !appSource.includes(`'${discordId}'`)
+    || !adminAccessPatch.includes(`'${discordId}'`)
+    || !accessServiceSource.includes(`'${discordId}'`)
+  ) {
     console.error(`[Check Final] Discord ID administrativo ausente ou não sincronizado: ${discordId}`);
     process.exit(1);
   }
@@ -118,6 +124,16 @@ for (const marker of [
 ]) {
   if (!appSource.includes(marker)) {
     console.error(`[Check Final] Proteção administrativa incompleta: ${marker}`);
+    process.exit(1);
+  }
+}
+
+for (const [label, source, marker] of [
+  ['serviço central', accessServiceSource, 'isAdminIdRecord,'],
+  ['controle de páginas', accessControlSource, 'isOwnerRecord(user) || isAdminIdRecord(user) || hasAdminRoleId(roleIds)']
+]) {
+  if (!source.includes(marker)) {
+    console.error(`[Check Final] Proteção administrativa incompleta em ${label}: ${marker}`);
     process.exit(1);
   }
 }
