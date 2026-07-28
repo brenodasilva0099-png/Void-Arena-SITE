@@ -176,6 +176,11 @@ function normalizeUserProfile(raw = {}) {
 
 const DEFAULT_OWNER_EMAILS = ['abyss.projectdev@gmail.com', 'brenodasilva0099@gmail.com'];
 const DEFAULT_OWNER_DISCORD_IDS = ['1235713276277559326'];
+const DEFAULT_ADMIN_DISCORD_IDS = [
+  '623932415034916865',
+  '544971683157508097',
+  '517113675618975759'
+];
 
 function splitUniqueEnvList(...values) {
   return Array.from(new Set(values.flatMap((value) => Array.isArray(value) ? value : String(value || '').split(',')).map((item) => String(item || '').trim()).filter(Boolean)));
@@ -185,7 +190,7 @@ const OWNER_EMAILS = splitUniqueEnvList(process.env.OWNER_EMAILS, process.env.AD
 const OWNER_DISCORD_IDS = splitUniqueEnvList(process.env.OWNER_DISCORD_IDS, process.env.ADMIN_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
 const OWNER_USER_IDS = splitUniqueEnvList(process.env.OWNER_USER_IDS, process.env.ADMIN_USER_IDS);
 const ADMIN_EMAILS = splitUniqueEnvList(process.env.ADMIN_EMAILS, process.env.OWNER_EMAILS, DEFAULT_OWNER_EMAILS).map((item) => item.toLowerCase());
-const ADMIN_DISCORD_IDS = splitUniqueEnvList(process.env.ADMIN_DISCORD_IDS, process.env.OWNER_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
+const ADMIN_DISCORD_IDS = splitUniqueEnvList(process.env.ADMIN_DISCORD_IDS, process.env.OWNER_DISCORD_IDS, DEFAULT_ADMIN_DISCORD_IDS, DEFAULT_OWNER_DISCORD_IDS);
 const ADMIN_USER_IDS = splitUniqueEnvList(process.env.ADMIN_USER_IDS, process.env.OWNER_USER_IDS);
 
 function isOwnerUser(user) {
