@@ -1,5 +1,10 @@
 const { callBot } = require('../services/botApi.service');
-const { getSessionUser, isOwnerRecord, adminRoleIds } = require('../services/access.service');
+const {
+  getSessionUser,
+  isOwnerRecord,
+  isAdminIdRecord,
+  adminRoleIds
+} = require('../services/access.service');
 
 const PUBLIC_KEYS = new Set(['dashboard', 'inicio', 'perfil', 'terms', 'termos']);
 const ADMIN_ONLY_KEYS = new Set([
@@ -118,7 +123,7 @@ async function readMemberRoles(discordId = '') {
 }
 
 function isAdminLike(user = {}, roleIds = []) {
-  return isOwnerRecord(user) || hasAdminRoleId(roleIds);
+  return isOwnerRecord(user) || isAdminIdRecord(user) || hasAdminRoleId(roleIds);
 }
 
 function isPageAllowed({ pageKey, user, roleIds, permissions }) {
