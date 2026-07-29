@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="title">
+  <title id="title">Bola de futebol estilizada</title>
+  <defs>
+    <radialGradient id="ball" cx="32%" cy="24%" r="76%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".58" stop-color="#edf2fa"/>
+      <stop offset="1" stop-color="#aab4c8"/>
+    </radialGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#20273a"/>
+      <stop offset="1" stop-color="#080b14"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#060812" flood-opacity=".55"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="#9b5cff" flood-opacity=".42"/>
+    </filter>
+    <clipPath id="clip"><circle cx="50" cy="50" r="43"/></clipPath>
+  </defs>
+  <g filter="url(#shadow)">
+    <circle cx="50" cy="50" r="44" fill="url(#ball)" stroke="#f7fbff" stroke-width="3"/>
+    <g clip-path="url(#clip)" stroke="#596277" stroke-width="2.4" stroke-linejoin="round">
+      <path d="M50 28 64 38 59 55 41 55 36 38Z" fill="url(#panel)" stroke="#111625"/>
+      <path d="M50 28 48 8M36 38 18 31M41 55 29 73M59 55 71 73M64 38 82 31" fill="none"/>
+      <path d="M48 8 31 3 20 15 18 31 31 42 36 38Z" fill="#f5f8fc"/>
+      <path d="M48 8 69 4 81 16 82 31 69 42 64 38Z" fill="#dce3ed"/>
+      <path d="M18 31 5 44 9 65 29 73 41 55 31 42Z" fill="#e8edf5"/>
+      <path d="M82 31 95 44 91 65 71 73 59 55 69 42Z" fill="#cbd3df"/>
+      <path d="M29 73 36 94 57 99 71 73 59 55 41 55Z" fill="#d8dfea"/>
+      <path d="M9 65 18 86 36 94 29 73Z" fill="url(#panel)" stroke="#111625"/>
+      <path d="M91 65 82 86 57 99 71 73Z" fill="url(#panel)" stroke="#111625"/>
+      <path d="M20 15 31 3 18 -5 4 7 5 25Z" fill="url(#panel)" stroke="#111625"/>
+      <path d="M81 16 69 4 82 -5 97 9 95 27Z" fill="url(#panel)" stroke="#111625"/>
+    </g>
+    <ellipse cx="37" cy="26" rx="16" ry="9" fill="#fff" opacity=".32" transform="rotate(-25 37 26)"/>
+    <circle cx="50" cy="50" r="43" fill="none" stroke="#8e9bb2" stroke-width="1.5" opacity=".5"/>
+  </g>
+</svg>
