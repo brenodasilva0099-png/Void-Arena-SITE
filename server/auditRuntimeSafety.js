@@ -40,6 +40,8 @@ if (!eventRouteSource.includes("callBot('/internal/event-registration-requests/c
 if (!eventRouteSource.includes('if (!canManageTeam(user, team))')) missing.push('inscrição restrita ao capitão/diretor');
 if (!teamRouteSource.includes('!isAdmin && !canDeleteTeam(user, existing)')) missing.push('exclusão de times restrita a administrador ou criador');
 if (!teamRouteSource.includes('!isAdmin && !canManageTeam(user, existing)')) missing.push('edição de times restrita a administração ou liderança');
+if (!teamRouteSource.includes("app.delete('/api/teams/:teamId/members/:memberKey'")) missing.push('rota de remoção de integrante do elenco');
+if (!teamRouteSource.includes('function memberMatches(')) missing.push('remoção de elenco por identidade persistida');
 if (!teamRouteSource.includes('Apenas administrador ou o criador original pode trocar Diretor e Capitão.')) missing.push('troca de liderança restrita ao criador ou administrador');
 if (!teamRouteSource.includes('resolveLeader(body, \'director\', users')) missing.push('diretor validado pelo diretório real');
 if (!teamRouteSource.includes('resolveLeader(body, \'captain\', users')) missing.push('capitão validado pelo diretório real');
@@ -51,6 +53,7 @@ if (!leaguePageBuilderSource.includes('id="createClubDirector"') || !leaguePageB
 if (!playerRouteSource.includes('if (!await viewerIsAdmin(viewer))')) missing.push('exclusão de jogadores restrita a administrador');
 if (!experienceRouteSource.includes('Apenas a administração pode editar competições.')) missing.push('edição de competição restrita a administrador');
 if (!experienceClientSource.includes('function applyAdminVisibility')) missing.push('opções administrativas ocultas para usuários comuns');
+if (!experienceClientSource.includes("player.discordId || player.userId || player.name || player.id")) missing.push('botão de remover usa identidade enriquecida inválida');
 if (!tacticalClientSource.includes("root?.querySelector?.(selector) || null")) missing.push('simulador protegido contra token sem legenda');
 if (!tacticalClientSource.includes("id=\"addTacticalStep\"") || !tacticalClientSource.includes("id=\"executeTacticalSequence\"")) missing.push('ações do simulador tático');
 if (!logoUploadSource.includes("addEventListener('drop'")) missing.push('upload de logo por arrastar e soltar');
