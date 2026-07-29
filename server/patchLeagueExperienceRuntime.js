@@ -58,8 +58,32 @@ function sideNav(activeHref = '') {
 function footer() {
   return `<footer class="frm-footer"><div><div class="frm-footer-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><strong>the HOLLOW NEXUS <span class="frm-accent">LEAGUE</span></strong><p>Liga Comunitária de Rematch</p></div></div><p>Competições, clubes, jogadores e eventos em uma plataforma comunitária independente.</p></div><div><h4>Liga</h4><div class="hnl-footer-links"><a href="/pages/federacao.html">Sobre a Liga</a><a href="/pages/regulamento.html">Regulamento</a><a href="/pages/atualizacoes.html">Atualizações</a><a href="/pages/suporte.html">Suporte</a></div></div><div><h4>Links rápidos</h4><div class="hnl-footer-links"><a href="/pages/competicoes.html">Competições</a><a href="/pages/clubes.html">Clubes</a><a href="/pages/atletas.html">Jogadores</a><a href="/pages/cafe-com-leite.html">Café com Leite</a></div></div><div><h4>Contato</h4><div class="hnl-footer-links"><a href="/api/discord/server/open" target="_blank" rel="noopener">Discord Oficial</a><a href="/pages/suporte.html">Abrir suporte</a></div></div><div><h4>Legal</h4><p>Liga comunitária independente. Não afiliada, patrocinada ou endossada por Rematch, Sloclap ou Kepler Interactive.</p><p>© 2026 The Hollow Nexus League.</p></div></footer>`;
 }
+function heroSceneKey(title = '') {
+  const value = String(title).replace(/<[^>]+>/g, '').toLowerCase();
+  if (/chaveamento|competiç|competicao|competição/.test(value)) return 'competition';
+  if (/grupo/.test(value)) return 'groups';
+  if (/clube|elenco|cadastrar/.test(value)) return 'clubs';
+  if (/mercado|recrutamento|transfer/.test(value)) return 'transfers';
+  if (/ranking|resultado/.test(value)) return 'ranking';
+  if (/prancheta|tática|tatica/.test(value)) return 'tactics';
+  if (/calend/.test(value)) return 'calendar';
+  if (/café|cafe/.test(value)) return 'cafe';
+  if (/evento/.test(value)) return 'events';
+  if (/permiss|configura|administra/.test(value)) return 'admin';
+  if (/perfil|jogador/.test(value)) return 'players';
+  return 'league';
+}
+function heroSceneLabel(scene = 'league') {
+  return ({
+    competition: 'COMPETITIVO', groups: 'FASE DE GRUPOS', clubs: 'CLUBES',
+    transfers: 'CONEXÕES', ranking: 'DESEMPENHO', tactics: 'TÁTICA',
+    calendar: 'CALENDÁRIO', cafe: 'CAFÉ COM LEITE', events: 'COMUNIDADE',
+    admin: 'CONTROLE', players: 'JOGADORES', league: 'HOLLOW NEXUS'
+  })[scene] || 'HOLLOW NEXUS';
+}
 function hero(title, text, icon, kicker = 'Hollow Nexus League') {
-  return `<section class="frm-page-hero"><div><span class="hnl-section-kicker">${kicker}</span><h1>${title}</h1><p>${text}</p></div><div class="hnl-hero-icon" aria-hidden="true">${icon}</div></section>`;
+  const scene = heroSceneKey(title);
+  return `<section class="frm-page-hero hnl-section-hero" data-hnl-scene="${scene}"><div><span class="hnl-section-kicker">${kicker}</span><h1>${title}</h1><p>${text}</p></div><div class="hnl-hero-icon hnl-section-scene" data-scene="${scene}" aria-hidden="true"><span class="hnl-scene-orbit"></span><span class="hnl-scene-core"></span><span class="hnl-scene-node one"></span><span class="hnl-scene-node two"></span><span class="hnl-scene-node three"></span><strong>${heroSceneLabel(scene)}</strong></div></section>`;
 }
 function rematchHomeHero() {
   return `<section class="frm-page-hero hnl-rematch-hero">
@@ -68,7 +92,16 @@ function rematchHomeHero() {
       <span class="hnl-rematch-goal right"></span>
       <span class="hnl-rematch-midline"></span>
       <span class="hnl-rematch-centre"></span>
-      <span class="hnl-rematch-ball"></span>
+      <span class="hnl-rematch-player ally player-one"><i></i><b>7</b></span>
+      <span class="hnl-rematch-player ally player-two"><i></i><b>10</b></span>
+      <span class="hnl-rematch-player ally player-three"><i></i><b>9</b></span>
+      <span class="hnl-rematch-player rival player-four"><i></i><b>4</b></span>
+      <span class="hnl-rematch-player rival player-five"><i></i><b>2</b></span>
+      <span class="hnl-rematch-player keeper player-six"><i></i><b>1</b></span>
+      <span class="hnl-rematch-pass pass-one"></span>
+      <span class="hnl-rematch-pass pass-two"></span>
+      <span class="hnl-rematch-pass pass-three"></span>
+      <span class="hnl-rematch-ball"><img src="/assets/rematch-football.svg" alt=""></span>
     </div>
     <div class="hnl-rematch-copy">
       <span class="hnl-section-kicker">Bem-vindo à arena</span>
@@ -79,9 +112,9 @@ function rematchHomeHero() {
       </div>
     </div>
     <div class="hnl-hero-icon hnl-rematch-mark" aria-hidden="true">
-      <span class="hnl-rematch-mark-ball"></span>
-      <strong>REMATCH</strong>
-      <small>COMMUNITY LEAGUE</small>
+      <img src="${LOGO}" alt="">
+      <strong>HOLLOW NEXUS</strong>
+      <small>LEAGUE</small>
     </div>
   </section>`;
 }
@@ -89,7 +122,7 @@ function pageKeyForModule(module = '') {
   return ({ bracket: 'chaveamento', groups: 'grupos', results: 'resultados' })[module] || module;
 }
 function shell({ title, tab, href, module, heroHtml, body, extraHead = '', extraScripts = '' }) {
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Hollow Nexus League</title><link rel="icon" href="${LOGO}">${extraHead}<script src="/js/core/league-navigation.js?v=${BUILD}"></script><link rel="stylesheet" href="/css/league-critical.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-polish.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-experience.css?v=${BUILD}"></head><body class="frm-polish-page" data-page="${pageKeyForModule(module)}" data-hnl-module="${module || ''}" data-frm-module="${module || ''}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav">${sideNav(href)}</nav></aside><main class="frm-main"><header class="frm-header">${topNav(tab)}<div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${heroHtml || ''}<div id="pageStatus"></div>${body || ''}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=${BUILD}" onerror="this.onerror=null;this.src='/js/core/'+'social-icons.js?retry='+Date.now()"></script><script src="/js/core/league-experience.js?v=${BUILD}"></script>${extraScripts}<script src="/js/core/league-auth-ui.js?v=${BUILD}"></script><script src="/js/core/league-page-integrity.js?v=${BUILD}"></script></body></html>`;
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Hollow Nexus League</title><link rel="icon" href="${LOGO}"><link rel="stylesheet" href="/css/rematch-motion.css?v=2026-07-29-scenes-v2">${extraHead}<script src="/js/core/league-navigation.js?v=${BUILD}"></script><link rel="stylesheet" href="/css/league-critical.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-polish.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-experience.css?v=${BUILD}"></head><body class="frm-polish-page" data-page="${pageKeyForModule(module)}" data-hnl-module="${module || ''}" data-frm-module="${module || ''}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav">${sideNav(href)}</nav></aside><main class="frm-main"><header class="frm-header">${topNav(tab)}<div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${heroHtml || ''}<div id="pageStatus"></div>${body || ''}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=${BUILD}" onerror="this.onerror=null;this.src='/js/core/'+'social-icons.js?retry='+Date.now()"></script><script src="/js/core/league-experience.js?v=${BUILD}"></script>${extraScripts}<script src="/js/core/league-auth-ui.js?v=${BUILD}"></script><script src="/js/core/league-page-integrity.js?v=${BUILD}"></script></body></html>`;
 }
 
 const profileHead = '<link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/organization.css"><link rel="stylesheet" href="/css/arena-pages.css"><link rel="stylesheet" href="/css/profile-v2.css">';
@@ -254,7 +287,7 @@ const clubRegionOptions = ['Brasil', 'Sudeste', 'Sudoeste', 'Sul', 'Norte', 'Nor
   .join('');
 
 const pages = {
-  'dashboard.html': shell({ title: 'Início', tab: 'inicio', href: '', module: 'dashboard', heroHtml: rematchHomeHero(), extraHead: '<link rel="stylesheet" href="/css/rematch-motion.css?v=2026-07-29-test-v1">', body: `<section class="hnl-grid cols-4"><div class="hnl-stat"><strong data-hnl-stat="clubes">0</strong><span>Clubes participantes</span></div><div class="hnl-stat"><strong data-hnl-stat="jogadores">0</strong><span>Jogadores registrados</span></div><div class="hnl-stat"><strong data-hnl-stat="competicoes">0</strong><span>Competições ativas</span></div><div class="hnl-stat"><strong data-hnl-stat="partidas">0</strong><span>Partidas disputadas</span></div></section><section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Competições em destaque</h2><div class="hnl-grid" id="homeCompetitions"></div></article><article class="hnl-card"><h2>Ranking de clubes</h2><div class="hnl-grid" id="homeClubRanking"></div></article></section>` }),
+  'dashboard.html': shell({ title: 'Início', tab: 'inicio', href: '', module: 'dashboard', heroHtml: rematchHomeHero(), body: `<section class="hnl-grid cols-4"><div class="hnl-stat"><strong data-hnl-stat="clubes">0</strong><span>Clubes participantes</span></div><div class="hnl-stat"><strong data-hnl-stat="jogadores">0</strong><span>Jogadores registrados</span></div><div class="hnl-stat"><strong data-hnl-stat="competicoes">0</strong><span>Competições ativas</span></div><div class="hnl-stat"><strong data-hnl-stat="partidas">0</strong><span>Partidas disputadas</span></div></section><section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Competições em destaque</h2><div class="hnl-grid" id="homeCompetitions"></div></article><article class="hnl-card"><h2>Ranking de clubes</h2><div class="hnl-grid" id="homeClubRanking"></div></article></section>` }),
   'perfil.html': shell({ title: 'Meu Perfil', tab: 'jogadores', href: '', module: 'profile-settings', heroHtml: hero('Meu perfil', 'Seu perfil público, conexões, time atual e configurações em um só lugar.', '👤', 'Área do jogador'), body: profileBody, extraHead: profileHead, extraScripts: profileScripts }),
   'competicoes.html': shell({ title: 'Competições', tab: 'competitivo', href: '/pages/competicoes.html', module: 'competitions', heroHtml: hero('Competições', 'Campeonatos oficiais da liga, inscrições, datas, formatos e detalhes.', '♕'), body: `<section class="hnl-subtabs" id="competitionTabs" aria-label="Filtrar competições"><button class="hnl-subtab active" type="button" data-competition-filter="active">Ativa</button><button class="hnl-subtab" type="button" data-competition-filter="upcoming">Próximas</button><button class="hnl-subtab" type="button" data-competition-filter="finished">Encerradas</button></section><section class="hnl-competition-summary"><div class="hnl-stat"><strong data-competition-stat="active">0</strong><span>Em andamento/inscrições</span></div><div class="hnl-stat"><strong data-competition-stat="registered">0</strong><span>Clubes inscritos</span></div><div class="hnl-stat"><strong data-competition-stat="slots">0</strong><span>Vagas disponíveis</span></div></section><section class="hnl-grid" id="competitionsList"></section>` }),
   'competicao.html': shell({ title: 'Detalhes da Competição', tab: 'competitivo', href: '/pages/competicoes.html', module: 'competition-detail', heroHtml: hero('Detalhes da Competição', 'Informações completas e edição administrativa sem redirecionar para Eventos.', '🎯'), body: '<div id="competitionDetail"></div>' }),
