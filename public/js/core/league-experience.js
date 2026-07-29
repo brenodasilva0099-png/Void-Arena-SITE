@@ -377,8 +377,16 @@
     return id ? `<a href="/pages/perfil-jogador.html?id=${encodeURIComponent(id)}">${label}</a>` : label;
   }
 
-  function rosterHtml(players = []) {
-    return players.length ? players.map((player) => `<div class="hnl-profile-row"><img class="hnl-avatar round" src="${esc(image(player.avatar))}" alt="${esc(player.name || '')}"><div><strong><a href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">${esc(player.name || 'Jogador')}</a></strong><p>${esc(player.rosterRole || 'Jogador')}${player.isCaptain ? ' · Capitão' : ''}</p></div><a class="hnl-btn" href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">Perfil</a></div>`).join('') : empty('Elenco ainda não preenchido.');
+  function rosterHtml(players = [], options = {}) {
+    const canManage = options.canManage === true;
+    const teamId = String(options.teamId || '');
+    return players.length ? players.map((player) => {
+      // O ID enriquecido do perfil pode não existir no registro bruto do time.
+      // Discord ID, userId e nome são chaves persistidas e removíveis pela API.
+      const memberKey = String(player.discordId || player.userId || player.name || player.id || '').trim();
+      const remove = canManage && memberKey && !player.isCaptain ? `<button class="hnl-btn danger mini" type="button" data-remove-club-member="${esc(memberKey)}" data-team-id="${esc(teamId)}" data-member-name="${esc(player.name || 'jogador')}">Remover</button>` : '';
+      return `<div class="hnl-profile-row"><img class="hnl-avatar round" src="${esc(image(player.avatar))}" alt="${esc(player.name || '')}"><div><strong><a href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">${esc(player.name || 'Jogador')}</a></strong><p>${esc(player.rosterRole || 'Jogador')}${player.isCaptain ? ' · Capitão' : ''}</p></div><div class="hnl-actions"><a class="hnl-btn" href="/pages/perfil-jogador.html?id=${encodeURIComponent(player.id || player.discordId || '')}">Perfil</a>${remove}</div></div>`;
+    }).join('') : empty('Elenco ainda não preenchido.');
   }
 
   async function clubProfile() {
@@ -399,9 +407,22 @@
       <span class="hnl-chip">${esc(club.region || 'Região não informada')}</span>
     </section>
     <section class="hnl-grid cols-2" style="margin-top:14px"><article class="hnl-card"><h2>Direção</h2><p><strong>Diretor:</strong> ${esc(club.directorName || club.ownerName || 'Não definido')}</p><p><strong>Capitão:</strong> ${esc(club.captainName || 'Não definido')}</p></article><article class="hnl-card"><h2>Conexões oficiais</h2>${socials(club.socials || {})}</article></section>
-    <section class="hnl-card" style="margin-top:14px"><h2>Elenco (${club.rosterCount || 0})</h2><div class="hnl-grid cols-2">${rosterHtml(club.roster || [])}</div></section>
+    <section class="hnl-card" style="margin-top:14px"><h2>Elenco (${club.rosterCount || 0})</h2><div class="hnl-grid cols-2">${rosterHtml(club.roster || [], { canManage: club.canManage, teamId: club.id })}</div></section>
     ${club.canManage ? `<section class="hnl-card" id="editar-clube" style="margin-top:14px"><div class="hnl-console-head"><div><h2>Edição do clube</h2><p class="hnl-edit-lock">◌ Área exclusiva de administradores, criador original, diretor e capitão vinculados.</p></div></div><div id="clubManageStatus"></div><form id="clubEditForm" class="hnl-form-grid">${leadershipFields}<div class="hnl-field"><label>Nome</label><input class="hnl-input" name="name" value="${esc(club.name || '')}" required></div><div class="hnl-field"><label>Tag</label><input class="hnl-input" name="tag" value="${esc(club.tag || '')}" required></div><div class="hnl-field"><label>Região</label><select class="hnl-select" name="region" required>${regionOptions(club.region)}</select></div><div class="hnl-field"><label>Logo do clube</label><input class="hnl-input" name="logo" value="${esc(club.logo || '')}" placeholder="Cole uma URL, escolha, arraste ou cole uma imagem"><small class="frm-muted">Aceita URL direta, arquivo PNG/JPG/WEBP, arrastar e soltar ou Ctrl+V.</small></div><div class="hnl-field full"><label>Descrição</label><textarea class="hnl-textarea" name="description">${esc(club.description || '')}</textarea></div><div class="hnl-field full"><h3>Conexões públicas</h3><p class="frm-muted">Preencha somente os canais oficiais do clube. As logos dos aplicativos aparecem no perfil público.</p></div><div class="hnl-field"><label>Discord</label><input class="hnl-input" name="socialDiscord" value="${esc(club.socials?.discord || '')}"></div><div class="hnl-field"><label>Instagram</label><input class="hnl-input" name="socialInstagram" value="${esc(club.socials?.instagram || '')}"></div><div class="hnl-field"><label>X / Twitter</label><input class="hnl-input" name="socialTwitter" value="${esc(club.socials?.twitter || '')}"></div><div class="hnl-field"><label>TikTok</label><input class="hnl-input" name="socialTiktok" value="${esc(club.socials?.tiktok || '')}"></div><div class="hnl-field"><label>YouTube</label><input class="hnl-input" name="socialYoutube" value="${esc(club.socials?.youtube || '')}"></div><div class="hnl-field"><label>Twitch</label><input class="hnl-input" name="socialTwitch" value="${esc(club.socials?.twitch || '')}"></div><div class="hnl-field full"><label>Site</label><input class="hnl-input" name="socialWebsite" value="${esc(club.socials?.website || club.socials?.site || '')}"></div><div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar alterações</button>${club.canDelete ? '<button class="hnl-btn danger" id="deleteClub" type="button">Excluir clube</button>' : ''}</div></form><hr style="border-color:rgba(255,255,255,.08);margin:20px 0"><h3>Convidar jogador</h3><div class="hnl-form-grid"><div class="hnl-field"><label>Jogador</label><select class="hnl-select" id="clubInvitePlayer"></select></div><div class="hnl-field"><label>Vaga</label><select class="hnl-select" id="clubInviteSlot"><option value="player">Titular</option><option value="reserve">Reserva</option></select></div><div class="hnl-field full"><label>Mensagem</label><textarea class="hnl-textarea" id="clubInviteNote"></textarea></div><div class="hnl-actions full"><button class="hnl-btn primary" id="sendClubInvite" type="button">Enviar convite</button></div></div></section>` : ''}`;
 
+    $('[data-remove-club-member]', box).forEach((button) => button.addEventListener('click', async () => {
+      const memberName = button.dataset.memberName || 'este integrante';
+      if (!window.confirm(`Remover ${memberName} do elenco?`)) return;
+      button.disabled = true;
+      try {
+        await api(`/api/teams/${encodeURIComponent(button.dataset.teamId || club.id)}/members/${encodeURIComponent(button.dataset.removeClubMember || '')}`, { method: 'DELETE' });
+        $('#clubManageStatus').innerHTML = notice('Integrante removido do elenco.', 'success');
+        setTimeout(() => location.reload(), 450);
+      } catch (error) {
+        button.disabled = false;
+        $('#clubManageStatus').innerHTML = notice(error.message, 'error');
+      }
+    }));
     if (!club.canManage) return;
     $('#deleteClub')?.addEventListener('click', async () => {
       if (!window.confirm(`Excluir o clube ${club.name || ''}? Esta ação não pode ser desfeita.`)) return;
