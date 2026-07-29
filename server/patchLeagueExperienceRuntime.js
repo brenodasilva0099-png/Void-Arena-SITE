@@ -83,7 +83,7 @@ function heroSceneLabel(scene = 'league') {
 }
 function hero(title, text, icon, kicker = 'Hollow Nexus League') {
   const scene = heroSceneKey(title);
-  return `<section class="frm-page-hero hnl-section-hero" data-hnl-scene="${scene}"><div><span class="hnl-section-kicker">${kicker}</span><h1>${title}</h1><p>${text}</p></div><div class="hnl-hero-icon hnl-section-scene" data-scene="${scene}" aria-hidden="true"><span class="hnl-scene-orbit"></span><span class="hnl-scene-core"></span><span class="hnl-scene-node one"></span><span class="hnl-scene-node two"></span><span class="hnl-scene-node three"></span><strong>${heroSceneLabel(scene)}</strong></div></section>`;
+  return `<section class="frm-page-hero hnl-section-hero" data-hnl-scene="${scene}"><div><span class="hnl-section-kicker">${kicker}</span><h1>${title}</h1><p>${text}</p></div><div class="hnl-hero-icon hnl-section-scene" data-scene="${scene}" aria-hidden="true"><span class="hnl-scene-orbit"></span><span class="hnl-scene-core"></span><span class="hnl-scene-node one"></span><span class="hnl-scene-node two"></span><span class="hnl-scene-node three"></span><span class="hnl-scene-trace"></span><span class="hnl-scene-detail"></span><strong>${heroSceneLabel(scene)}</strong></div></section>`;
 }
 function rematchHomeHero() {
   return `<section class="frm-page-hero hnl-rematch-hero">
@@ -101,7 +101,7 @@ function rematchHomeHero() {
       <span class="hnl-rematch-pass pass-one"></span>
       <span class="hnl-rematch-pass pass-two"></span>
       <span class="hnl-rematch-pass pass-three"></span>
-      <span class="hnl-rematch-ball"><img src="/assets/rematch-football.svg" alt=""></span>
+      <span class="hnl-rematch-ball">⚽</span>
     </div>
     <div class="hnl-rematch-copy">
       <span class="hnl-section-kicker">Bem-vindo à arena</span>
@@ -122,7 +122,7 @@ function pageKeyForModule(module = '') {
   return ({ bracket: 'chaveamento', groups: 'grupos', results: 'resultados' })[module] || module;
 }
 function shell({ title, tab, href, module, heroHtml, body, extraHead = '', extraScripts = '' }) {
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Hollow Nexus League</title><link rel="icon" href="${LOGO}"><link rel="stylesheet" href="/css/rematch-motion.css?v=2026-07-29-scenes-v2">${extraHead}<script src="/js/core/league-navigation.js?v=${BUILD}"></script><link rel="stylesheet" href="/css/league-critical.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-polish.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-experience.css?v=${BUILD}"></head><body class="frm-polish-page" data-page="${pageKeyForModule(module)}" data-hnl-module="${module || ''}" data-frm-module="${module || ''}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav">${sideNav(href)}</nav></aside><main class="frm-main"><header class="frm-header">${topNav(tab)}<div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${heroHtml || ''}<div id="pageStatus"></div>${body || ''}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=${BUILD}" onerror="this.onerror=null;this.src='/js/core/'+'social-icons.js?retry='+Date.now()"></script><script src="/js/core/league-experience.js?v=${BUILD}"></script>${extraScripts}<script src="/js/core/league-auth-ui.js?v=${BUILD}"></script><script src="/js/core/league-page-integrity.js?v=${BUILD}"></script></body></html>`;
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Hollow Nexus League</title><link rel="icon" href="${LOGO}"><link rel="stylesheet" href="/css/rematch-motion.css?v=2026-07-29-scenes-v3">${extraHead}<script src="/js/core/league-navigation.js?v=${BUILD}"></script><link rel="stylesheet" href="/css/league-critical.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-polish.css?v=${BUILD}"><link rel="stylesheet" href="/css/league-experience.css?v=${BUILD}"></head><body class="frm-polish-page" data-page="${pageKeyForModule(module)}" data-hnl-module="${module || ''}" data-frm-module="${module || ''}"><div class="frm-shell"><aside class="frm-sidebar"><div class="frm-brand"><img src="${LOGO}" alt="Hollow Nexus League"><div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div></div><nav class="frm-nav">${sideNav(href)}</nav></aside><main class="frm-main"><header class="frm-header">${topNav(tab)}<div class="frm-header-actions"><a class="frm-btn" data-frm-login href="/auth/discord?next=%2Fpages%2Fperfil.html">♟ Entrar / Painel</a><a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">💬 Discord</a><a class="frm-icon" href="/pages/notificacoes.html">🔔<b class="frm-badge" data-frm-unread>0</b></a><a class="frm-icon" href="/pages/correio.html">✉<b class="frm-badge" data-frm-mail>0</b></a></div></header>${heroHtml || ''}<div id="pageStatus"></div>${body || ''}${footer()}</main></div><div class="frm-modal" id="frmModal"><div class="frm-modal-panel" id="frmModalPanel"></div></div><script src="/js/core/social-icons.js?v=${BUILD}" onerror="this.onerror=null;this.src='/js/core/'+'social-icons.js?retry='+Date.now()"></script><script src="/js/core/league-experience.js?v=${BUILD}"></script>${extraScripts}<script src="/js/core/league-auth-ui.js?v=${BUILD}"></script><script src="/js/core/league-page-integrity.js?v=${BUILD}"></script></body></html>`;
 }
 
 const profileHead = '<link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/organization.css"><link rel="stylesheet" href="/css/arena-pages.css"><link rel="stylesheet" href="/css/profile-v2.css">';
@@ -317,19 +317,7 @@ const pages = {
 pages['times.html'] = pages['clubes.html'];
 pages['jogadores.html'] = pages['atletas.html'];
 pages['recrutamento.html'] = pages['mercado.html'];
-const heroEmojis = {
-  'dashboard.html': '✨', 'perfil.html': '👤', 'competicoes.html': '🏆', 'competicao.html': '🏆',
-  'eventos.html': '🎉', 'cafe-com-leite.html': '☕', 'calendario.html': '📅', 'clubes.html': '🛡️',
-  'times.html': '🛡️', 'cadastrar-clube.html': '🏗️', 'elencos.html': '👥', 'perfil-clube.html': '🛡️',
-  'atletas.html': '👥', 'jogadores.html': '👥', 'perfil-jogador.html': '👤', 'mercado.html': '🤝',
-  'recrutamento.html': '🤝', 'transferencias.html': '🔄', 'rankings.html': '📊', 'prancheta-tatica.html': '⚽',
-  'chaveamento.html': '🧩', 'grupos.html': '🗂️', 'resultados.html': '📌', 'permissoes.html': '🔐', 'configuracoes.html': '⚙️', 'administracao.html': '🛠️'
-};
-function applyHeroEmoji(name, html) {
-  const emoji = heroEmojis[name];
-  return emoji ? html.replace(/(<div class="hnl-hero-icon"[^>]*>)[\s\S]*?(<\/div>)/i, `$1${emoji}$2`) : html;
-}
-Object.entries(pages).forEach(([name, html]) => write(path.join(PAGES, name), applyHeroEmoji(name, html)));
+Object.entries(pages).forEach(([name, html]) => write(path.join(PAGES, name), html));
 
 function normalizeExistingPage(file) {
   let html = read(file);
