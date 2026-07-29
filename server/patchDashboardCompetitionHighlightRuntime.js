@@ -21,6 +21,7 @@ function write(file, content) {
 }
 
 function replaceDashboardHeroIcon(source = '') {
+  if (/\bhnl-rematch-mark\b/i.test(source)) return source;
   return source.replace(
     /<div\b[^>]*class=["'][^"']*\bhnl-hero-icon\b[^"']*["'][^>]*>[\s\S]*?<\/div>/i,
     '<div class="hnl-hero-icon" aria-hidden="true">🏟️</div>'
