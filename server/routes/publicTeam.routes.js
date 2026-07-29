@@ -226,8 +226,67 @@ async function sendTeamInvites({ viewer, team, inviteRequests = [] }) {
   return sent;
 }
 
+function normalizedMemberKey(value = '') {
+  return String(value || '').trim().replace(/^<@!?/, '').replace(/>$/, '').toLowerCase();
+}
+
+function memberMatches(key = '', detail = {}, name = '', account = '') {
+  const identities = [detail.id, detail.userId, detail.discordId, detail.account, detail.name, name, account]
+    .map(normalizedMemberKey)
+    .filter(Boolean);
+  return identities.includes(normalizedMemberKey(key));
+}
+
+function removeMemberFromTeam(team = {}, memberKey = '') {
+  const key = normalizedMemberKey(memberKey);
+  if (!key) return { team, removed: false };
+
+  const leadership = [
+    team.ownerUserId, team.ownerDiscordId, team.ownerName,
+    team.directorUserId, team.directorDiscordId, team.directorName,
+    team.captainUserId, team.captainDiscordId, team.captainName
+  ].map(normalizedMemberKey).filter(Boolean);
+  if (leadership.includes(key)) {
+    const error = new Error('Esse integrante ocupa um cargo de liderança. Transfira o cargo antes de removê-lo do elenco.');
+    error.code = 'LEADERSHIP_MEMBER';
+    throw error;
+  }
+
+  const next = { ...team, playerAccounts: { ...(team.playerAccounts || {}) } };
+  let removed = false;
+
+  function filterSlot(detailKey, namesKey, accountKey) {
+    const details = Array.isArray(team[detailKey]) ? team[detailKey] : [];
+    const names = Array.isArray(team[namesKey]) ? team[namesKey] : [];
+    const accounts = Array.isArray(team.playerAccounts?.[accountKey]) ? team.playerAccounts[accountKey] : [];
+    const length = Math.max(details.length, names.length, accounts.length);
+    const kept = [];
+
+    for (let index = 0; index < length; index += 1) {
+      const detail = details[index] && typeof details[index] === 'object' ? details[index] : {};
+      const name = detail.name || names[index] || '';
+      const account = detail.discordId || detail.account || accounts[index] || '';
+      if (memberMatches(key, detail, name, account)) {
+        removed = true;
+        continue;
+      }
+      if (!name && !account && !Object.keys(detail).length) continue;
+      kept.push({ ...detail, name: name || detail.name || '', discordId: account || detail.discordId || '' });
+    }
+
+    next[detailKey] = kept;
+    next[namesKey] = kept.map((item) => item.name).filter(Boolean);
+    next.playerAccounts[accountKey] = kept.map((item) => item.discordId || item.account || '').filter(Boolean);
+  }
+
+  filterSlot('playerDetails', 'players', 'players');
+  filterSlot('reserveDetails', 'reserves', 'reserves');
+  next.updatedAt = new Date().toISOString();
+  return { team: next, removed };
+}
+
 function registerPublicTeamRoutes(app) {
-  removeRoutes(app, [['get', '/api/teams'], ['post', '/api/teams'], ['put', '/api/teams/:teamId'], ['delete', '/api/teams/:teamId'], ['post', '/api/teams/:teamId/invite-player'], ['get', '/api/teams/:teamId/public'], ['get', '/api/users/:userId/public']]);
+  removeRoutes(app, [['get', '/api/teams'], ['post', '/api/teams'], ['put', '/api/teams/:teamId'], ['delete', '/api/teams/:teamId'], ['delete', '/api/teams/:teamId/members/:memberKey'], ['post', '/api/teams/:teamId/invite-player'], ['get', '/api/teams/:teamId/public'], ['get', '/api/users/:userId/public']]);
 
   app.get('/api/teams', async (req, res) => {
     const [teams, users, bracket, viewer] = await Promise.all([storage.readTeams().catch(() => []), storage.readUsers().catch(() => []), storage.readBracket().catch(() => ({})), getSessionUser(req)]);
@@ -278,6 +337,25 @@ function registerPublicTeamRoutes(app) {
       const [result] = await sendTeamInvites({ viewer: user, team, inviteRequests: [invite] });
       return res.json({ success: true, invite: result });
     } catch (error) { return res.status(400).json({ success: false, message: error.message }); }
+  });
+
+  app.delete('/api/teams/:teamId/members/:memberKey', requireLogin, async (req, res) => {
+    try {
+      const [user, teams] = await Promise.all([getSessionUser(req), storage.readTeams().catch(() => [])]);
+      const existing = teams.find((item) => String(item.id || '') === String(req.params.teamId || ''));
+      if (!existing) return res.status(404).json({ success: false, message: 'Time nao encontrado.' });
+      const isAdmin = await isAdminRecord(user).catch(() => false);
+      if (!isAdmin && !canManageTeam(user, existing)) {
+        return res.status(403).json({ success: false, message: 'Apenas administrador, criador, diretor ou capitão pode remover membros.' });
+      }
+      const result = removeMemberFromTeam(existing, req.params.memberKey || '');
+      if (!result.removed) return res.status(404).json({ success: false, message: 'Integrante não encontrado no elenco.' });
+      const saved = await storage.saveTeam(result.team);
+      const users = await storage.readUsers().catch(() => []);
+      return res.json({ success: true, message: 'Integrante removido do elenco.', team: enrichTeam(saved, users, user, { isAdmin }) });
+    } catch (error) {
+      return res.status(error.code === 'LEADERSHIP_MEMBER' ? 409 : 400).json({ success: false, message: error.message });
+    }
   });
 
   app.delete('/api/teams/:teamId', requireLogin, async (req, res) => {
