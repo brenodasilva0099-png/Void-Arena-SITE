@@ -35,17 +35,8 @@ function userIdentities(user = {}) {
   ].map(normalizeIdentity).filter(Boolean));
 }
 
-function teamIdentityValues(team = {}) {
+function teamRosterIdentityValues(team = {}) {
   return [
-    team.ownerUserId,
-    team.ownerDiscordId,
-    team.ownerName,
-    team.directorUserId,
-    team.directorDiscordId,
-    team.directorName,
-    team.captainUserId,
-    team.captainDiscordId,
-    team.captainName,
     ...(Array.isArray(team.players) ? team.players : []),
     ...(Array.isArray(team.reserves) ? team.reserves : []),
     ...(Array.isArray(team.playerAccounts?.players) ? team.playerAccounts.players : []),
@@ -59,9 +50,31 @@ function teamIdentityValues(team = {}) {
   ].map(normalizeIdentity).filter(Boolean);
 }
 
+function teamLeadershipIdentityValues(team = {}) {
+  return [
+    team.ownerUserId,
+    team.ownerDiscordId,
+    team.ownerName,
+    team.directorUserId,
+    team.directorDiscordId,
+    team.directorName,
+    team.captainUserId,
+    team.captainDiscordId,
+    team.captainName
+  ].map(normalizeIdentity).filter(Boolean);
+}
+
+function teamRosterContainsUser(team = {}, user = {}) {
+  const identities = userIdentities(user);
+  return teamRosterIdentityValues(team).some((value) => identities.has(value));
+}
+
 function teamContainsUser(team = {}, user = {}) {
   const identities = userIdentities(user);
-  return teamIdentityValues(team).some((value) => identities.has(value));
+  return [
+    ...teamLeadershipIdentityValues(team),
+    ...teamRosterIdentityValues(team)
+  ].some((value) => identities.has(value));
 }
 
 function inviteHash(token = '') {
@@ -89,7 +102,10 @@ function findInvite(teams = [], token = '') {
 }
 
 function addUserToTeam(team = {}, user = {}, rosterSlot = 'player') {
-  if (teamContainsUser(team, user)) return { team, added: false };
+  // Liderança e elenco são vínculos diferentes. Um criador, diretor ou
+  // capitão que não esteja escalado ainda precisa poder aceitar o convite
+  // para entrar como titular/reserva.
+  if (teamRosterContainsUser(team, user)) return { team, added: false };
 
   const next = {
     ...team,
