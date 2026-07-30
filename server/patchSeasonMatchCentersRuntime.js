@@ -3,7 +3,7 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PAGES_DIR = path.join(ROOT, "public", "pages");
-const BUILD = "2026-07-30-season-match-centers-v1";
+const BUILD = "2026-07-30-season-match-centers-v2";
 
 const CSS_TAG = `<link rel="stylesheet" href="/css/season-match-centers.css?v=${BUILD}" data-season-match-centers-style="1">`;
 const JS_TAG = `<script src="/js/core/season-match-centers.js?v=${BUILD}" defer data-season-match-centers-script="1"></script>`;
@@ -149,4 +149,3 @@ function run() {
 }
 
 run();
-
