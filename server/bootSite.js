@@ -70,7 +70,8 @@ const patches = [
   './patchFinalNavigationNoPrefetchRuntime',
   './patchClubIntegrityRuntime',
   './patchAdminChatNavigationRuntime',
-  './patchNexusCupFinalPublicationRuntime'
+  './patchNexusCupFinalPublicationRuntime',
+  './patchSeasonMatchCentersRuntime'
 ];
 
 const patchFailures = [];
