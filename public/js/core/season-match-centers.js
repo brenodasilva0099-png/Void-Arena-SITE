@@ -136,7 +136,7 @@
           teamName(club),
           teamTag(club),
           pick(club, ["slug"], "")
-        ].map(normalize);
+        ].map(normalize).filter(Boolean);
         return wanted.some((alias) => names.some((name) => name === alias || name.includes(alias) || alias.includes(name)));
       }) || null
     );
