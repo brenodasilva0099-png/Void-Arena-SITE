@@ -69,12 +69,20 @@
   };
 
   const api = async (url) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
     try {
-      const response = await fetch(url, { credentials: "include", cache: "no-store" });
+      const response = await fetch(url, {
+        credentials: "include",
+        cache: "no-store",
+        signal: controller.signal
+      });
       if (!response.ok) return {};
       return await response.json();
     } catch (_) {
       return {};
+    } finally {
+      window.clearTimeout(timeout);
     }
   };
 
@@ -467,41 +475,6 @@
     target.innerHTML = matchCard(match, true);
   }
 
-  function podiumData() {
-    return [
-      { rank: 2, label: "Vice-campeão", club: findClub("Griffin Gaming", "Grifin Gaming") || { name: "Griffin Gaming", tag: "GG" } },
-      { rank: 1, label: "Campeão", club: findClub("Flow") || { name: "Flow", tag: "FLOW" } },
-      { rank: 3, label: "Terceiro colocado", club: findClub("Imperio", "Império") || { name: "Império", tag: "IMP" } }
-    ];
-  }
-
-  function renderPodium() {
-    const target = $("#officialSeasonPodium");
-    if (!target) return;
-    target.innerHTML = `
-      <div class="hnl-podium-heading">
-        <div>
-          <span class="hnl-center-kicker">Resultado oficial</span>
-          <h3>Nexus Cup — 1ª edição</h3>
-        </div>
-        <span class="hnl-state-chip is-closed">Competição encerrada</span>
-      </div>
-      <div class="hnl-podium">
-        ${podiumData()
-          .map(({ rank, label, club }) => {
-            const safeClub = { logo: FALLBACK_LOGO, ...club };
-            return `
-              <a class="hnl-podium-card${rank === 1 ? " is-first" : ""}" href="${esc(teamHref(safeClub))}">
-                <span class="hnl-podium-rank">${rank}º · ${esc(label)}</span>
-                ${image(teamLogo(safeClub), `Escudo ${teamName(safeClub)}`)}
-                <strong>${esc(teamName(safeClub))}</strong>
-                <small>${esc(teamTag(safeClub) || "Clube participante")}</small>
-              </a>`;
-          })
-          .join("")}
-      </div>`;
-  }
-
   function renderMatchSpotlight() {
     const target = $("#matchCenterSpotlight");
     const badge = $("#matchCenterBadge");
@@ -603,7 +576,6 @@
     renderSeasonLeaders();
     renderSeasonAction();
     renderHomeMatch();
-    renderPodium();
     renderMatchSpotlight();
     renderPipeline();
     renderHistory();
@@ -631,5 +603,9 @@
     renderAll();
   }
 
-  document.addEventListener("DOMContentLoaded", load, { once: true });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", load, { once: true });
+  } else {
+    load();
+  }
 })();

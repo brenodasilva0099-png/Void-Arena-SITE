@@ -3,7 +3,7 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const PAGES_DIR = path.join(ROOT, "public", "pages");
-const BUILD = "2026-07-30-season-match-centers-v2";
+const BUILD = "2026-07-30-season-match-centers-v3";
 
 const CSS_TAG = `<link rel="stylesheet" href="/css/season-match-centers.css?v=${BUILD}" data-season-match-centers-style="1">`;
 const JS_TAG = `<script src="/js/core/season-match-centers.js?v=${BUILD}" defer data-season-match-centers-script="1"></script>`;
@@ -53,9 +53,6 @@ const matchCenterMarkup = `
       <p>Acompanhe o confronto, os participantes, a comprovação da súmula e o resultado oficial.</p>
     </div>
     <span class="hnl-state-chip is-loading" id="matchCenterBadge">Carregando partidas</span>
-  </div>
-  <div class="hnl-official-podium-wrap" id="officialSeasonPodium" aria-live="polite">
-    <div class="hnl-center-skeleton"></div>
   </div>
   <div class="hnl-match-spotlight" id="matchCenterSpotlight" aria-live="polite">
     <div class="hnl-center-skeleton"></div>
