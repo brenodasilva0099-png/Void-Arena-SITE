@@ -1,5 +1,4 @@
 const path = require('node:path');
-const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
 const express = require('express');
@@ -44,7 +43,7 @@ const {
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
-const BOT_API_URL = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || 'http://localhost:3002').replace(/\/$/, '');
+const BOT_API_URL = String(process.env.BOT_API_URL || 'http://localhost:3002').replace(/\/$/, '');
 const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
 
 async function callBotInternalApi(pathname, options = {}) {
@@ -421,28 +420,6 @@ function createServer({ client }) {
     })
   );
 
-  // hnl-forms-static-route-v1
-  app.get('/js/formularios.js', (_req, res) => {
-    const scriptFile = path.join(PUBLIC_DIR, 'js', 'formularios.js');
-    fs.readFile(scriptFile, (error, data) => {
-      if (error) {
-        console.error('[Formularios/Asset] Falha ao ler o JavaScript:', error.message);
-        if (res.headersSent) return res.end();
-        return res.status(500).type('text/plain; charset=utf-8').send('Falha ao carregar o módulo de formulários.');
-      }
-
-      res.status(200);
-      res.set('Content-Type', 'application/javascript; charset=utf-8');
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
-      res.set('X-Content-Type-Options', 'nosniff');
-      res.set('X-HNL-Forms-Asset', 'hnl-forms-static-v1');
-      res.set('Content-Length', String(data.length));
-      return res.end(data);
-    });
-  });
-
   app.get(/^\/(?:css|js|assets|uploads|images|img)\/.+/, (req, res) => {
     const cleanPath = path.normalize(String(req.path || '').replace(/^\/+/, ''));
     const fullPath = path.resolve(PUBLIC_DIR, cleanPath);
@@ -583,7 +560,7 @@ function createServer({ client }) {
   }
 
   async function fetchDiscordGuildBrandFromBot() {
-    const botUrl = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || 'https://void-arena-bot.onrender.com').replace(/\/$/, '');
+    const botUrl = String(process.env.BOT_API_URL || 'https://void-arena-bot.onrender.com').replace(/\/$/, '');
 
     try {
       const response = await fetch(`${botUrl}/public/guild-brand?t=${Date.now()}`, {
