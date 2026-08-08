@@ -1648,6 +1648,9 @@ function createServer({ client }) {
       }))
       .filter((registration) => registration.team);
 
+    const entryFee = String(event.entryFee || event.registrationFee || '').trim();
+    const status = String(event.status || 'open').toLowerCase();
+
     return {
       id: event.id,
       name: event.name || event.title || 'Campeonato',
@@ -1658,8 +1661,15 @@ function createServer({ client }) {
       teamLimit: Number(event.teamLimit || 16),
       minimumTeams: Number(event.minimumTeams || 4),
       startAt: event.startAt || '',
-      status: event.status || 'open',
+      status,
       description: event.description || '',
+      reward: event.reward || event.prize || '',
+      prize: event.prize || event.reward || '',
+      entryFee,
+      registrationFee: entryFee,
+      isFree: event.isFree === true || (!entryFee && status !== 'upcoming'),
+      feeLabel: entryFee || (status === 'upcoming' ? 'A definir' : 'F2P'),
+      paymentInstructions: event.paymentInstructions || '',
       logo: event.logo || '',
       banner: event.banner || '',
       accentColor: event.accentColor || '#8b5cf6',
@@ -2718,9 +2728,11 @@ function createServer({ client }) {
 
   function normalizeEventPayload(body = {}, existing = {}) {
     const title = String(body.title || body.name || existing.title || existing.name || 'Novo evento').trim().slice(0, 80);
-    const allowedStatuses = new Set(['open', 'closed', 'running', 'finished']);
+    const allowedStatuses = new Set(['upcoming', 'open', 'closed', 'running', 'finished']);
     const teamLimit = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].includes(Number(body.teamLimit)) ? Number(body.teamLimit) : Number(existing.teamLimit || 16) || 16;
     const minimumTeams = Math.max(2, Math.min(teamLimit, Number(body.minimumTeams || existing.minimumTeams || 4) || 4));
+    const reward = String(body.reward ?? body.prize ?? existing.reward ?? existing.prize ?? '').trim().slice(0, 180);
+    const entryFee = String(body.entryFee ?? body.registrationFee ?? existing.entryFee ?? existing.registrationFee ?? '').trim().slice(0, 80);
     return {
       id: String(body.id || existing.id || '').trim() || undefined,
       name: title,
@@ -2733,6 +2745,12 @@ function createServer({ client }) {
       startAt: String(body.startAt || existing.startAt || '').trim().slice(0, 40),
       status: allowedStatuses.has(String(body.status || existing.status || 'open')) ? String(body.status || existing.status || 'open') : 'open',
       description: String(body.description || existing.description || '').trim().slice(0, 260),
+      reward,
+      prize: reward,
+      entryFee,
+      registrationFee: entryFee,
+      isFree: body.isFree === true || (!entryFee && String(body.status || existing.status || 'open').toLowerCase() !== 'upcoming'),
+      paymentInstructions: String(body.paymentInstructions || existing.paymentInstructions || '').trim().slice(0, 420),
       registrations: Array.isArray(existing.registrations) ? existing.registrations : []
     };
   }
@@ -2768,9 +2786,18 @@ function createServer({ client }) {
   });
 
   app.post('/api/events/:eventId/register', requireAuth, async (req, res) => {
-    const [teams, user] = await Promise.all([readTeams(), findUserById(req.session.userId)]);
+    const [teams, user, events] = await Promise.all([readTeams(), findUserById(req.session.userId), readEvents()]);
     const teamId = String(req.body.teamId || '').trim();
     const team = teams.find((item) => item.id === teamId);
+    const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
+
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Evento não encontrado.' });
+    }
+
+    if (!['open', 'active'].includes(String(event.status || 'open').toLowerCase())) {
+      return res.status(409).json({ success: false, message: 'As inscrições deste evento estão encerradas.' });
+    }
 
     if (!team) {
       return res.status(404).json({ success: false, message: 'Time não encontrado para inscrição.' });
