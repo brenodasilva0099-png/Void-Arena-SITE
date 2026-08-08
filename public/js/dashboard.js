@@ -856,7 +856,7 @@ async function registerTeamInMainEvent(teamId) {
 
 
 function openEventEditorModal(eventData = null) {
-  if (!eventEditorModal || !eventEditorForm || !isAdminUser()) return;
+  if (!eventEditorModal || !eventEditorForm) return;
   const form = eventEditorForm;
   form.reset();
   form.elements.eventId.value = eventData?.id || '';
@@ -867,6 +867,7 @@ function openEventEditorModal(eventData = null) {
   form.elements.teamLimit.value = String(eventData?.teamLimit || 16);
   form.elements.minimumTeams.value = String(eventData?.minimumTeams || 4);
   form.elements.startAt.value = eventData?.startAt || '';
+  form.elements.reward.value = eventData?.reward || eventData?.prize || '';
   form.elements.structure.value = eventData?.structure || '';
   injectEventMediaFields();
   form.elements.description.value = eventData?.description || '';
@@ -900,6 +901,7 @@ async function saveEventEditor(event) {
     teamLimit: Number(form.get('teamLimit') || 16),
     minimumTeams: Number(form.get('minimumTeams') || 4),
     startAt: String(form.get('startAt') || '').trim(),
+    reward: String(form.get('reward') || '').trim(),
     structure: String(form.get('structure') || '').trim(),
     description: String(form.get('description') || '').trim(),
     logo: String(form.get('logo') || '').trim(),
