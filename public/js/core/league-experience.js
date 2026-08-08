@@ -641,7 +641,7 @@
     $$('[data-competition-filter]').forEach((button) => button.addEventListener('click', () => render(button.dataset.competitionFilter || 'active')));
     const initialFilter = events.some((event) => category(event) === 'active')
       ? 'active'
-      : events.some((event) => category(event) === 'finished') ? 'finished' : 'upcoming';
+      : events.some((event) => category(event) === 'upcoming') ? 'upcoming' : 'finished';
     render(initialFilter);
   }
 
