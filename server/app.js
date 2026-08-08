@@ -1,4 +1,5 @@
 const path = require('node:path');
+const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
 const express = require('express');
@@ -43,7 +44,7 @@ const {
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
-const BOT_API_URL = String(process.env.BOT_API_URL || 'http://localhost:3002').replace(/\/$/, '');
+const BOT_API_URL = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || 'http://localhost:3002').replace(/\/$/, '');
 const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
 
 async function callBotInternalApi(pathname, options = {}) {
@@ -420,6 +421,28 @@ function createServer({ client }) {
     })
   );
 
+  // hnl-forms-static-route-v1
+  app.get('/js/formularios.js', (_req, res) => {
+    const scriptFile = path.join(PUBLIC_DIR, 'js', 'formularios.js');
+    fs.readFile(scriptFile, (error, data) => {
+      if (error) {
+        console.error('[Formularios/Asset] Falha ao ler o JavaScript:', error.message);
+        if (res.headersSent) return res.end();
+        return res.status(500).type('text/plain; charset=utf-8').send('Falha ao carregar o módulo de formulários.');
+      }
+
+      res.status(200);
+      res.set('Content-Type', 'application/javascript; charset=utf-8');
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.set('X-HNL-Forms-Asset', 'hnl-forms-static-v1');
+      res.set('Content-Length', String(data.length));
+      return res.end(data);
+    });
+  });
+
   app.get(/^\/(?:css|js|assets|uploads|images|img)\/.+/, (req, res) => {
     const cleanPath = path.normalize(String(req.path || '').replace(/^\/+/, ''));
     const fullPath = path.resolve(PUBLIC_DIR, cleanPath);
@@ -560,7 +583,7 @@ function createServer({ client }) {
   }
 
   async function fetchDiscordGuildBrandFromBot() {
-    const botUrl = String(process.env.BOT_API_URL || 'https://void-arena-bot.onrender.com').replace(/\/$/, '');
+    const botUrl = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || 'https://void-arena-bot.onrender.com').replace(/\/$/, '');
 
     try {
       const response = await fetch(`${botUrl}/public/guild-brand?t=${Date.now()}`, {
@@ -1648,6 +1671,9 @@ function createServer({ client }) {
       }))
       .filter((registration) => registration.team);
 
+    const entryFee = String(event.entryFee || event.registrationFee || '').trim();
+    const status = String(event.status || 'open').toLowerCase();
+
     return {
       id: event.id,
       name: event.name || event.title || 'Campeonato',
@@ -1658,8 +1684,15 @@ function createServer({ client }) {
       teamLimit: Number(event.teamLimit || 16),
       minimumTeams: Number(event.minimumTeams || 4),
       startAt: event.startAt || '',
-      status: event.status || 'open',
+      status,
       description: event.description || '',
+      reward: event.reward || event.prize || '',
+      prize: event.prize || event.reward || '',
+      entryFee,
+      registrationFee: entryFee,
+      isFree: event.isFree === true || (!entryFee && status !== 'upcoming'),
+      feeLabel: entryFee || (status === 'upcoming' ? 'A definir' : 'F2P'),
+      paymentInstructions: event.paymentInstructions || '',
       logo: event.logo || '',
       banner: event.banner || '',
       accentColor: event.accentColor || '#8b5cf6',
@@ -2718,9 +2751,11 @@ function createServer({ client }) {
 
   function normalizeEventPayload(body = {}, existing = {}) {
     const title = String(body.title || body.name || existing.title || existing.name || 'Novo evento').trim().slice(0, 80);
-    const allowedStatuses = new Set(['open', 'closed', 'running', 'finished']);
+    const allowedStatuses = new Set(['upcoming', 'open', 'closed', 'running', 'finished']);
     const teamLimit = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].includes(Number(body.teamLimit)) ? Number(body.teamLimit) : Number(existing.teamLimit || 16) || 16;
     const minimumTeams = Math.max(2, Math.min(teamLimit, Number(body.minimumTeams || existing.minimumTeams || 4) || 4));
+    const reward = String(body.reward ?? body.prize ?? existing.reward ?? existing.prize ?? '').trim().slice(0, 180);
+    const entryFee = String(body.entryFee ?? body.registrationFee ?? existing.entryFee ?? existing.registrationFee ?? '').trim().slice(0, 80);
     return {
       id: String(body.id || existing.id || '').trim() || undefined,
       name: title,
@@ -2733,6 +2768,12 @@ function createServer({ client }) {
       startAt: String(body.startAt || existing.startAt || '').trim().slice(0, 40),
       status: allowedStatuses.has(String(body.status || existing.status || 'open')) ? String(body.status || existing.status || 'open') : 'open',
       description: String(body.description || existing.description || '').trim().slice(0, 260),
+      reward,
+      prize: reward,
+      entryFee,
+      registrationFee: entryFee,
+      isFree: body.isFree === true || (!entryFee && String(body.status || existing.status || 'open').toLowerCase() !== 'upcoming'),
+      paymentInstructions: String(body.paymentInstructions || existing.paymentInstructions || '').trim().slice(0, 420),
       registrations: Array.isArray(existing.registrations) ? existing.registrations : []
     };
   }
@@ -2768,9 +2809,18 @@ function createServer({ client }) {
   });
 
   app.post('/api/events/:eventId/register', requireAuth, async (req, res) => {
-    const [teams, user] = await Promise.all([readTeams(), findUserById(req.session.userId)]);
+    const [teams, user, events] = await Promise.all([readTeams(), findUserById(req.session.userId), readEvents()]);
     const teamId = String(req.body.teamId || '').trim();
     const team = teams.find((item) => item.id === teamId);
+    const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
+
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Evento não encontrado.' });
+    }
+
+    if (!['open', 'active'].includes(String(event.status || 'open').toLowerCase())) {
+      return res.status(409).json({ success: false, message: 'As inscrições deste evento estão encerradas.' });
+    }
 
     if (!team) {
       return res.status(404).json({ success: false, message: 'Time não encontrado para inscrição.' });
