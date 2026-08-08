@@ -102,7 +102,7 @@
       const finishedStatuses = new Set(['closed', 'finished', 'archived']);
       const category = (event) => activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'active' : finishedStatuses.has(String(event.status || '').toLowerCase()) ? 'finished' : 'upcoming';
       if (!filterTouched && !events.some((event) => category(event) === 'active')) {
-        filter = events.some((event) => category(event) === 'finished') ? 'finished' : 'upcoming';
+        filter = events.some((event) => category(event) === 'upcoming') ? 'upcoming' : 'finished';
       }
       const visible = events.filter((event) => category(event) === filter);
       const registeredTotal = events.reduce((sum, event) => sum + (Array.isArray(event.registrations) ? event.registrations.length : number(event.registeredCount)), 0);
