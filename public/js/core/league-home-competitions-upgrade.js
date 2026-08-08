@@ -120,6 +120,7 @@
         const active = activeStatuses.has(String(event.status || 'open').toLowerCase());
         const finished = finishedStatuses.has(String(event.status || '').toLowerCase());
         const fee = event.feeLabel || event.entryFee || event.registrationFee || 'Gratuita';
+        const reward = event.reward || event.prize || 'A definir';
         const officialResult = isCompletedNexusCup(event)
           ? '<div class="hnl-competition-result-note"><div><strong>🏆 Pódio confirmado</strong><span>1º Flow · 2º Griffin Gaming · 3º Império</span></div><a class="hnl-btn primary" href="/pages/resultados.html">Ver resultado oficial</a></div>'
           : '';
@@ -127,6 +128,7 @@
           <div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${active ? 'green' : finished ? 'hnl-finished-chip' : ''}">${esc(statusLabel(event.status))}</span><span class="hnl-chip">Competição oficial</span></div><h2 class="hnl-competition-title">${esc(titleOf(event))}</h2><p class="hnl-competition-description">${esc(finished ? 'Competição encerrada com resultado oficial publicado pela Hollow Nexus League.' : (event.description || 'Competição oficial da Hollow Nexus League.'))}</p></div><div class="hnl-competition-mark" aria-hidden="true">${finished ? '🏆' : '♕'}</div></div>
           <div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>${finished ? 'Situação' : 'Início'}</small><strong>${finished ? 'Encerrada' : esc(formatDate(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div>
           <div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div>
+          <p><strong>Premiação:</strong> ${esc(reward)}</p>
           <section class="hnl-registration-roster"><div class="hnl-section-heading"><div><span class="hnl-section-kicker">Inscrições confirmadas</span><h3>Clubes validados no evento</h3></div><span class="hnl-chip">${registered} clube(s)</span></div>${registeredTeamsHtml(event, isAdmin)}</section>
           ${officialResult}<div class="hnl-actions">${active && registered < limit ? `<a class="hnl-btn primary" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}#inscricao">Inscrever meu time</a>` : ''}<a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div>
         </article>`;
@@ -154,6 +156,15 @@
       section.dataset.hnlRegistrationDetail = '1';
       section.innerHTML = `<div class="hnl-section-heading"><div><span class="hnl-section-kicker">Clubes confirmados</span><h2>Times validados e inscritos</h2><p>Somente inscrições aprovadas pela staff aparecem nesta relação.</p></div><span class="hnl-chip green">${event.registrations?.length || 0}/${event.teamLimit || 16}</span></div>${registeredTeamsHtml(event, isAdmin)}`;
       const firstCard = box.querySelector(':scope > section');
+      const statusValue = firstCard?.querySelectorAll('.hnl-stat')?.[3]?.querySelector('strong');
+      if (statusValue) statusValue.textContent = statusLabel(event.status);
+      const startLine = Array.from(firstCard?.querySelectorAll(':scope > p') || []).find((node) => node.querySelector('strong')?.textContent?.trim() === 'Início:');
+      if (startLine && !firstCard.querySelector('[data-hnl-competition-reward]')) {
+        const rewardLine = document.createElement('p');
+        rewardLine.dataset.hnlCompetitionReward = '1';
+        rewardLine.innerHTML = `<strong>Premiação:</strong> ${esc(event.reward || event.prize || 'A definir')}`;
+        startLine.insertAdjacentElement('afterend', rewardLine);
+      }
       firstCard?.insertAdjacentElement('afterend', section);
       $$('[data-remove-registration]', section).forEach((button) => button.addEventListener('click', () => removeRegistration(button, render)));
       if (location.hash === '#inscricao') document.getElementById('detailRegisterTeam')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
