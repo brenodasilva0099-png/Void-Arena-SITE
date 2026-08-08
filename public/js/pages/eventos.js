@@ -20,9 +20,9 @@
   function setRegisterStatus(message, type = '') { registerStatus.textContent = message; registerStatus.className = `va-status ${type}`.trim(); }
   function setSettingsStatus(message, type = '') { settingsStatus.textContent = message; settingsStatus.className = `va-status ${type}`.trim(); }
   function count(event) { return Array.isArray(event.registrations) ? event.registrations.filter((r) => !['rejected', 'cancelled'].includes(String(r.status || '').toLowerCase())).length : Number(event.registeredCount || 0) || 0; }
-  function statusLabel(status = '') { return ({ open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado', approved: 'Validado', accepted: 'Validado', pending: 'Pendente' })[status] || status || 'Pendente'; }
+  function statusLabel(status = '') { return ({ upcoming: 'Em breve', open: 'Aberto', closed: 'Fechado', running: 'Em andamento', finished: 'Finalizado', approved: 'Validado', accepted: 'Validado', pending: 'Pendente' })[status] || status || 'Pendente'; }
   function statusClass(status = '') { if (['open', 'approved', 'accepted'].includes(status)) return 'ok'; if (status === 'running' || status === 'pending') return 'warn'; if (status === 'finished' || status === 'rejected') return 'err'; return ''; }
-  function feeText(event) { return event.isFree || !String(event.entryFee || event.registrationFee || '').trim() ? 'F2P' : String(event.entryFee || event.registrationFee); }
+  function feeText(event) { return event.feeLabel || (event.isFree || !String(event.entryFee || event.registrationFee || '').trim() ? 'F2P' : String(event.entryFee || event.registrationFee)); }
   function formatEventDate(value = '') { const raw = String(value || '').trim(); if (!raw) return 'a definir'; return raw.replace('T', ' ').replace(/:00$/, '').slice(0, 16); }
   function dtToInput(value = '') { if (!value) return ''; const date = new Date(value); if (Number.isNaN(date.getTime())) return String(value).slice(0, 16); const pad = (n) => String(n).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`; }
   function teamById(id = '') { return teams.find((team) => String(team.id || '') === String(id || '')) || null; }

@@ -562,7 +562,7 @@ function renderMainEventSummary(event = mainEvent()) {
     editMainEventBtn.hidden = !isAdminUser();
     editMainEventBtn.dataset.eventId = event?.id || '';
   }
-  if (homeJoinEventBtn) homeJoinEventBtn.disabled = !event || event.status === 'closed' || event.status === 'finished';
+  if (homeJoinEventBtn) homeJoinEventBtn.disabled = !event || !['open', 'active'].includes(String(event.status || '').toLowerCase());
 }
 
 function renderEventsShowcase() {
@@ -5476,4 +5476,3 @@ function connectVoidArenaRealtime() {
 loadRolePermissionsForDashboard();
 connectVoidArenaRealtime();
 setInterval(loadRolePermissionsForDashboard, 30000);
-
