@@ -302,6 +302,19 @@ async function notifyDiscord(report = {}) {
     };
   }
 }
+
+async function resolveDiscordProof(report = {}) {
+  if (!report.discordChannelId || !report.discordMessageId) return '';
+  const data = await callBot('/internal/discord/resolve-match-report-attachment', {
+    method: 'POST',
+    body: JSON.stringify({
+      discordChannelId: report.discordChannelId,
+      discordMessageId: report.discordMessageId
+    })
+  });
+  return safeImage(data.proofUrl || '', 5000);
+}
+
 async function loadBootstrap(req) {
   const [user, teams, users, events, results] = await Promise.all([
     getSessionUser(req),
@@ -361,6 +374,24 @@ function registerMatchReportRoutes(app) {
     }
   });
 
+  app.get('/api/match-reports/:reportId/proof', requireSession, async (req, res) => {
+    try {
+      const reports = await readReports();
+      const report = reports.find((item) => (
+        String(item.id || '') === String(req.params.reportId) ||
+        String(item.messageId || '') === String(req.params.reportId) ||
+        String(item.hubId || '') === String(req.params.reportId)
+      ));
+      if (!report) return res.status(404).send('Súmula não encontrada.');
+      const proofUrl = await resolveDiscordProof(report);
+      if (!proofUrl) return res.status(404).send('Comprovante não encontrado.');
+      res.set('Cache-Control', 'private, no-store');
+      return res.redirect(302, proofUrl);
+    } catch (error) {
+      return res.status(502).send(error.message || 'Não foi possível abrir o comprovante.');
+    }
+  });
+
   app.post('/api/match-reports', requireSession, async (req, res) => {
     try {
       const data = await loadBootstrap(req);
@@ -395,6 +426,14 @@ function registerMatchReportRoutes(app) {
       const participants = normalizeParticipants(body.participantIds, [teamAPublic.roster, teamBPublic.roster]);
       if (!participants.length) {
         return res.status(400).json({ success: false, message: 'Selecione ao menos um jogador que participou da partida.' });
+      }
+      const teamAPlayerIds = new Set(teamAPublic.roster.map(reportPlayerId));
+      const teamBPlayerIds = new Set(teamBPublic.roster.map(reportPlayerId));
+      if (
+        !participants.some((player) => teamAPlayerIds.has(reportPlayerId(player))) ||
+        !participants.some((player) => teamBPlayerIds.has(reportPlayerId(player)))
+      ) {
+        return res.status(400).json({ success: false, message: 'Selecione ao menos um participante de cada clube.' });
       }
 
       const mvp = participantFromId(body.mvpId, [participants]);
