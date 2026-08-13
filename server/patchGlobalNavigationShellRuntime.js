@@ -207,6 +207,7 @@ function writeNavScript() {
 function patchHtml(file) {
   if (!file.endsWith('.html')) return;
   const before = fs.readFileSync(file, 'utf8');
+  if (before.includes('class="frm-shell"') || before.includes("class='frm-shell'")) return;
   if (before.includes('/js/core/global-navigation-shell.js')) return;
   let after = before;
   const tag = '  <script src="/js/core/global-navigation-shell.js"></script>\n';

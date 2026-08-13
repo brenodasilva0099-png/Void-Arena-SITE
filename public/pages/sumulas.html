@@ -5,36 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Central de Súmulas da Hollow Nexus League: envie resultados, participantes, estatísticas e a print do fim da partida." />
   <title>Central de Súmulas | Hollow Nexus League</title>
-  <link rel="icon" href="/assets/hollow-nexus.png" />
-  <link rel="stylesheet" href="/css/style.css" />
-  <link rel="stylesheet" href="/css/organization.css" />
-  <link rel="stylesheet" href="/css/match-reports.css?v=hnl-sumulas-v1" />
+  <link rel="icon" href="/assets/hollow-nexus-official.svg" />
+  <script src="/js/core/league-navigation.js?v=2026-07-22-page-integrity-v8"></script>
+  <link rel="stylesheet" href="/css/league-critical.css?v=2026-07-22-page-integrity-v8">
+  <link rel="stylesheet" href="/css/league-polish.css?v=2026-07-22-page-integrity-v8">
+  <link rel="stylesheet" href="/css/league-experience.css?v=2026-07-22-page-integrity-v8">
+  <link rel="stylesheet" href="/css/match-reports.css?v=hnl-sumulas-current-shell-v2" />
+  <meta name="page-integrity-build" content="2026-07-22-page-integrity-v8">
 </head>
-<body class="va-organized-body" data-page="sumulas">
-  <div class="va-shell">
-    <aside class="va-sidebar">
-      <div class="va-brand">
-        <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-        <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+<body class="frm-polish-page" data-page="sumulas" data-hnl-module="sumulas" data-frm-module="sumulas">
+  <div class="frm-shell">
+    <aside class="frm-sidebar">
+      <div class="frm-brand">
+        <img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus League" />
+        <div><small>the</small><strong>HOLLOW NEXUS <span>LEAGUE</span></strong><p>Liga Comunitária</p></div>
       </div>
-      <nav class="va-nav">
-        <div class="va-nav-title">Principal</div>
-        <a data-nav-key="dashboard" href="/pages/dashboard.html">Início</a>
-        <a data-nav-key="resultados" href="/pages/resultados.html">Resultados</a>
-        <a data-nav-key="sumulas" href="/pages/sumulas.html">Súmulas</a>
+      <nav class="frm-nav">
+        <div class="frm-nav-title">Competitivo</div>
+        <a href="/pages/competicoes.html"><i>♕</i><b>Competições</b></a>
+        <a href="/pages/eventos.html"><i>◇</i><b>Eventos</b></a>
+        <a href="/pages/chaveamento.html"><i>⌘</i><b>Chaveamento</b></a>
+        <a href="/pages/grupos.html"><i>≡</i><b>Grupos</b></a>
+        <a href="/pages/resultados.html"><i>◎</i><b>Resultados</b></a>
+        <a class="active" href="/pages/sumulas.html"><i>▤</i><b>Súmulas</b></a>
+        <a href="/pages/rankings.html"><i>▥</i><b>Rankings</b></a>
+        <a href="/pages/calendario.html"><i>□</i><b>Calendário</b></a>
+        <div class="frm-nav-title">Clubes</div>
+        <a href="/pages/clubes.html"><i>◈</i><b>Clubes Participantes</b></a>
+        <a href="/pages/cadastrar-clube.html"><i>+</i><b>Cadastrar Clube</b></a>
+        <a href="/pages/elencos.html"><i>▱</i><b>Elencos</b></a>
+        <a href="/pages/prancheta-tatica.html"><i>▣</i><b>Prancheta Tática</b></a>
+        <a href="/pages/transferencias.html"><i>↔</i><b>Transferências</b></a>
+        <div class="frm-nav-title">Jogadores</div>
+        <a href="/pages/atletas.html"><i>♙</i><b>Jogadores Registrados</b></a>
+        <a href="/pages/mercado.html"><i>✦</i><b>Mercado / Recrutamento</b></a>
+        <a href="/pages/rankings.html"><i>▥</i><b>Ranking de Jogadores</b></a>
+        <a href="/pages/placar.html"><i>⌗</i><b>Placar Café com Leite</b></a>
+        <div class="frm-nav-title" data-admin-section hidden>Administração</div>
+        <a href="/pages/chat.html" data-admin-only hidden><i>💬</i><b>Chat Discord</b></a>
+        <a href="/pages/formularios.html" data-admin-only hidden><i>▤</i><b>Formulários</b></a>
+        <a href="/pages/permissoes.html" data-admin-only hidden><i>ⓘ</i><b>Permissões</b></a>
+        <a href="/pages/configuracoes.html" data-admin-only hidden><i>⚙</i><b>Configurações</b></a>
+        <a href="/pages/analise-partidas.html" data-admin-only hidden><i>◉</i><b>Análise de Partidas</b></a>
       </nav>
     </aside>
 
-    <main class="va-main sumulas-main">
-      <header class="va-topbar sumulas-topbar">
-        <div>
-          <p class="va-eyebrow">Organização competitiva</p>
-          <h1 class="va-title">Central de Súmulas</h1>
-          <p class="va-subtitle">O mesmo fluxo guiado do Discord, agora no site: confronto, participantes, MVP, estatísticas e comprovante em uma única tela.</p>
+    <main class="frm-main sumulas-main">
+      <header class="frm-header">
+        <nav class="frm-tabs"><a class="" href="/pages/dashboard.html">Início</a><a class="active" href="/pages/competicoes.html">Competitivo</a><a class="" href="/pages/clubes.html">Clubes</a><a class="" href="/pages/atletas.html">Jogadores</a><a class="" href="/pages/cafe-com-leite.html">Café com Leite</a><a class="" href="/pages/administracao.html" data-admin-only hidden>Administração</a></nav>
+        <div class="frm-header-actions">
+          <a class="frm-btn" data-frm-login href="/pages/login.html?next=%2Fpages%2Fsumulas.html"><span aria-hidden="true">◉</span> Entrar com Discord</a>
+          <a class="frm-btn discord" href="/api/discord/server/open" target="_blank" rel="noopener">Discord</a>
+          <a class="frm-icon" href="/pages/notificacoes.html" aria-label="Notificações">●<b class="frm-badge" data-frm-unread>0</b></a>
+          <a class="frm-icon" href="/pages/correio.html" aria-label="Correio">✉<b class="frm-badge" data-frm-mail>0</b></a>
         </div>
-        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil">
-          <span class="va-user-pill-avatar">?</span>
-        </a>
       </header>
 
       <section class="sumulas-hero" aria-labelledby="sumulasHeroTitle">
@@ -43,8 +67,8 @@
           <h2 id="sumulasHeroTitle">Envie uma vez. Acompanhe até a validação.</h2>
           <p>A Central reconhece os clubes que você administra, carrega os jogadores reais dos elencos e impede adversário ou MVP digitado errado.</p>
           <div class="sumulas-hero-actions">
-            <button class="va-btn primary" type="button" data-open-view="new">Criar nova súmula</button>
-            <button class="va-btn" type="button" data-open-view="history">Ver todos os envios</button>
+            <button class="hnl-btn primary" type="button" data-open-view="new">Criar nova súmula</button>
+            <button class="hnl-btn" type="button" data-open-view="history">Ver todos os envios</button>
           </div>
         </div>
         <div class="sumulas-pipeline" aria-label="Fluxo da súmula">
@@ -213,8 +237,8 @@
                 <span>Observação para a organização</span>
                 <textarea id="notes" name="notes" maxlength="800" placeholder="Opcional: explique WO, substituição, revisão ou outro detalhe relevante."></textarea>
               </label>
-              <div id="submitStatus" class="va-status" aria-live="polite"></div>
-              <button id="submitReportBtn" class="va-btn primary sumulas-submit" type="submit" disabled>
+              <div id="submitStatus" class="sumulas-submit-status" aria-live="polite"></div>
+              <button id="submitReportBtn" class="hnl-btn primary sumulas-submit" type="submit" disabled>
                 Enviar para validação
               </button>
               <p class="sumulas-safe-note">O ranking não muda no envio. A organização confere a print antes de validar.</p>
@@ -231,7 +255,7 @@
               <h2>Todos os envios</h2>
               <p>Consulte súmulas enviadas pelo site ou pelo fluxo competitivo, com status e comprovante.</p>
             </div>
-            <button id="reloadReportsBtn" class="va-btn" type="button">Atualizar histórico</button>
+            <button id="reloadReportsBtn" class="hnl-btn" type="button">Atualizar histórico</button>
           </header>
           <div class="sumulas-filters">
             <label>
@@ -265,8 +289,11 @@
     </main>
   </div>
 
-  <script src="/js/core/api.js"></script>
-  <script src="/js/core/global-navigation-shell.js"></script>
-  <script src="/js/pages/sumulas.js?v=hnl-sumulas-v1"></script>
+  <script src="/js/core/api.js?v=hnl-canonical-auth-client-v1"></script>
+  <script src="/js/core/social-icons.js?v=hnl-sumulas-current-shell-v2"></script>
+  <script src="/js/core/league-experience.js?v=2026-07-22-page-integrity-v8"></script>
+  <script src="/js/pages/sumulas.js?v=hnl-sumulas-current-shell-v2"></script>
+  <script src="/js/core/league-auth-ui.js?v=hnl-canonical-auth-client-v1"></script>
+  <script src="/js/core/league-page-integrity.js?v=2026-07-22-page-integrity-v8"></script>
 </body>
 </html>

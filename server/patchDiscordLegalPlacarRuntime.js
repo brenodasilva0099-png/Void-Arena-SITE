@@ -48,6 +48,7 @@ const sideGroups = [
     ['⌘', 'Chaveamento', '/pages/chaveamento.html'],
     ['≡', 'Grupos', '/pages/grupos.html'],
     ['◎', 'Resultados', '/pages/resultados.html'],
+    ['▤', 'Súmulas', '/pages/sumulas.html'],
     ['▥', 'Rankings', '/pages/rankings.html'],
     ['□', 'Calendário', '/pages/calendario.html']
   ]],
@@ -246,7 +247,7 @@ function activeHrefFor(file) {
 function activeTabFor(file) {
   const name = path.basename(file);
   if (name === 'dashboard.html') return 'inicio';
-  if (['competicoes.html', 'competicao.html', 'eventos.html', 'chaveamento.html', 'grupos.html', 'resultados.html', 'rankings.html', 'calendario.html'].includes(name)) return 'competitivo';
+  if (['competicoes.html', 'competicao.html', 'eventos.html', 'chaveamento.html', 'grupos.html', 'resultados.html', 'sumulas.html', 'rankings.html', 'calendario.html'].includes(name)) return 'competitivo';
   if (['clubes.html', 'times.html', 'cadastrar-clube.html', 'elencos.html', 'perfil-clube.html', 'prancheta-tatica.html', 'transferencias.html'].includes(name)) return 'clubes';
   if (['atletas.html', 'jogadores.html', 'perfil-jogador.html', 'perfil.html', 'mercado.html', 'recrutamento.html'].includes(name)) return 'jogadores';
   if (['cafe-com-leite.html', 'placar.html'].includes(name)) return 'cafe';
