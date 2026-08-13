@@ -267,52 +267,41 @@ function discordSubmissionText(report = {}) {
 
 async function notifyDiscord(report = {}) {
   if (!DISCORD_RESULTS_CHANNEL_ID) return { sent: false, reason: 'channel_not_configured' };
+  const withoutDuplicateProof = {
+    ...report,
+    submissions: (report.submissions || []).map((item) => ({ ...item, proof: '' })),
+    games: (report.games || []).map((game) => ({
+      ...game,
+      proof: '',
+      submissions: (game.submissions || []).map((item) => ({ ...item, proof: '' }))
+    }))
+  };
   try {
     const data = await callBot('/internal/discord/send-match-report', {
       method: 'POST',
       body: JSON.stringify({
         discordChannelId: DISCORD_RESULTS_CHANNEL_ID,
-        report
+        report: withoutDuplicateProof
       })
     });
+    const proofUrl = safeImage(data.proofUrl || '', 5000);
+    if (!proofUrl || !/^https:\/\//i.test(proofUrl)) {
+      throw new Error('O BOT não retornou a URL segura do comprovante.');
+    }
     return {
       sent: true,
+      proofUrl,
       channelId: data.discordChannelId || DISCORD_RESULTS_CHANNEL_ID,
       messageId: data.discordMessageId || ''
     };
-  } catch (richError) {
-    try {
-      const data = await callBot('/internal/discord/send-message', {
-        method: 'POST',
-        body: JSON.stringify({
-          discordChannelId: DISCORD_RESULTS_CHANNEL_ID,
-          content: discordSubmissionText(report),
-          allowedMentions: {
-            parse: [],
-            users: [
-              report.submittedBy?.discordId,
-              report.mvp?.discordId,
-              ...(report.participants || []).map((item) => item.discordId)
-            ].filter(Boolean)
-          }
-        })
-      });
-      return {
-        sent: true,
-        fallback: true,
-        channelId: data.discordChannelId || DISCORD_RESULTS_CHANNEL_ID,
-        messageId: data.discordMessageId || ''
-      };
-    } catch (fallbackError) {
-      return {
-        sent: false,
-        reason: 'discord_unavailable',
-        error: fallbackError.message || richError.message
-      };
-    }
+  } catch (error) {
+    return {
+      sent: false,
+      reason: 'discord_unavailable',
+      error: error.message || 'O BOT não conseguiu publicar a súmula.'
+    };
   }
 }
-
 async function loadBootstrap(req) {
   const [user, teams, users, events, results] = await Promise.all([
     getSessionUser(req),
@@ -408,7 +397,7 @@ function registerMatchReportRoutes(app) {
         return res.status(400).json({ success: false, message: 'Selecione ao menos um jogador que participou da partida.' });
       }
 
-      const mvp = participantFromId(body.mvpId, [teamAPublic.roster, teamBPublic.roster]);
+      const mvp = participantFromId(body.mvpId, [participants]);
       if (!mvp) {
         return res.status(400).json({ success: false, message: 'Selecione o MVP entre os jogadores dos dois clubes.' });
       }
@@ -494,15 +483,32 @@ function registerMatchReportRoutes(app) {
         updatedAt: now
       };
 
+      const discord = await notifyDiscord(report);
+      if (!discord.sent || !discord.proofUrl) {
+        return res.status(503).json({
+          success: false,
+          message: 'Não foi possível publicar a print no canal de resultados. Nenhuma súmula incompleta foi salva; tente novamente em instantes.',
+          detail: discord.error || discord.reason || ''
+        });
+      }
+
+      const proofUrl = discord.proofUrl;
+      const savedSubmission = { ...submission, proof: proofUrl };
+      report = {
+        ...report,
+        proof: proofUrl,
+        submissions: [savedSubmission],
+        games: report.games.map((game) => ({
+          ...game,
+          proof: proofUrl,
+          submissions: [savedSubmission]
+        })),
+        discordChannelId: discord.channelId,
+        discordMessageId: discord.messageId,
+        updatedAt: new Date().toISOString()
+      };
       const saved = await saveReport(report);
       report.messageId = saved.id || '';
-      const discord = await notifyDiscord(report);
-      if (discord.sent) {
-        report.discordChannelId = discord.channelId;
-        report.discordMessageId = discord.messageId;
-        report.updatedAt = new Date().toISOString();
-        await saveReport(report).catch(() => null);
-      }
 
       req.app.locals.realtime?.broadcast?.({
         type: 'match-report:create',
@@ -514,9 +520,7 @@ function registerMatchReportRoutes(app) {
         success: true,
         report: publicHistoryResult(report),
         discord,
-        message: discord.sent
-          ? 'Súmula enviada para validação e publicada no canal da organização.'
-          : 'Súmula salva para validação. O Discord está sincronizando e o envio será mantido no histórico do site.'
+        message: 'Súmula enviada para validação, comprovante publicado no Discord e histórico atualizado.'
       });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
