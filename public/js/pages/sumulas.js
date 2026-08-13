@@ -241,7 +241,15 @@
       match: Boolean(teamA && teamB && Number.isInteger(scoreA) && Number.isInteger(scoreB) && scoreA !== scoreB),
       players: selectedPlayerRecords().length > 0,
       mvp: Boolean($('mvpId')?.value && state.selectedPlayers.has($('mvpId').value)),
-      proof: Boolean(state.proof?.dataUrl)
+      proof: Boolean(state.proof?.dataUrl),
+      bothTeams: (() => {
+        const { teamA, teamB } = currentTeams();
+        const selected = selectedPlayerRecords().map(playerId);
+        return Boolean(
+          teamA?.roster?.some((player) => selected.includes(playerId(player))) &&
+          teamB?.roster?.some((player) => selected.includes(playerId(player)))
+        );
+      })()
     };
   }
 
@@ -457,8 +465,11 @@
     const status = normalizeStatus(report.status);
     const [statusLabel, statusClass] = STATUS[status];
     const proof = imageUrl(typeof report.proof === 'string' ? report.proof : report.proof?.url, '');
-    const proofMarkup = proof
-      ? `<a href="${escapeHtml(proof)}" target="_blank" rel="noopener"><img src="${escapeHtml(proof)}" alt="Comprovante da partida" loading="lazy" /></a>`
+    const stableProof = report.discordChannelId && report.discordMessageId && report.id
+      ? `/api/match-reports/${encodeURIComponent(report.id)}/proof`
+      : proof;
+    const proofMarkup = stableProof
+      ? `<a href="${escapeHtml(stableProof)}" target="_blank" rel="noopener"><img src="${escapeHtml(stableProof)}" alt="Comprovante da partida" loading="lazy" /></a>`
       : '<span>Comprovante indisponível para este registro antigo.</span>';
     return `<article class="sumulas-history-card" data-report-card>
       <header class="sumulas-history-card-head">
