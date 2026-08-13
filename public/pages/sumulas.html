@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Central de Súmulas da Hollow Nexus League: envie resultados, participantes, estatísticas e a print do fim da partida." />
+  <title>Central de Súmulas | Hollow Nexus League</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/match-reports.css?v=hnl-sumulas-v1" />
+</head>
+<body class="va-organized-body" data-page="sumulas">
+  <div class="va-shell">
+    <aside class="va-sidebar">
+      <div class="va-brand">
+        <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
+        <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
+      </div>
+      <nav class="va-nav">
+        <div class="va-nav-title">Principal</div>
+        <a data-nav-key="dashboard" href="/pages/dashboard.html">Início</a>
+        <a data-nav-key="resultados" href="/pages/resultados.html">Resultados</a>
+        <a data-nav-key="sumulas" href="/pages/sumulas.html">Súmulas</a>
+      </nav>
+    </aside>
+
+    <main class="va-main sumulas-main">
+      <header class="va-topbar sumulas-topbar">
+        <div>
+          <p class="va-eyebrow">Organização competitiva</p>
+          <h1 class="va-title">Central de Súmulas</h1>
+          <p class="va-subtitle">O mesmo fluxo guiado do Discord, agora no site: confronto, participantes, MVP, estatísticas e comprovante em uma única tela.</p>
+        </div>
+        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil">
+          <span class="va-user-pill-avatar">?</span>
+        </a>
+      </header>
+
+      <section class="sumulas-hero" aria-labelledby="sumulasHeroTitle">
+        <div class="sumulas-hero-copy">
+          <span class="sumulas-kicker">Resultado verificável</span>
+          <h2 id="sumulasHeroTitle">Envie uma vez. Acompanhe até a validação.</h2>
+          <p>A Central reconhece os clubes que você administra, carrega os jogadores reais dos elencos e impede adversário ou MVP digitado errado.</p>
+          <div class="sumulas-hero-actions">
+            <button class="va-btn primary" type="button" data-open-view="new">Criar nova súmula</button>
+            <button class="va-btn" type="button" data-open-view="history">Ver todos os envios</button>
+          </div>
+        </div>
+        <div class="sumulas-pipeline" aria-label="Fluxo da súmula">
+          <div><span>1</span><strong>Confronto</strong><small>times e placar</small></div>
+          <i></i>
+          <div><span>2</span><strong>Elenco</strong><small>participantes e MVP</small></div>
+          <i></i>
+          <div><span>3</span><strong>Comprovante</strong><small>print obrigatória</small></div>
+          <i></i>
+          <div><span>4</span><strong>Validação</strong><small>histórico oficial</small></div>
+        </div>
+      </section>
+
+      <section class="sumulas-metrics" aria-label="Resumo das súmulas">
+        <article><small>Todos os envios</small><strong id="metricTotal">—</strong><span>registrados no histórico</span></article>
+        <article><small>Aguardando análise</small><strong id="metricPending">—</strong><span>sem alterar o ranking</span></article>
+        <article><small>Validadas</small><strong id="metricValidated">—</strong><span>confirmadas pela organização</span></article>
+        <article><small>Com comprovante</small><strong id="metricProof">—</strong><span>print disponível para conferência</span></article>
+      </section>
+
+      <div class="sumulas-tabs" role="tablist" aria-label="Áreas da Central de Súmulas">
+        <button id="newReportTab" class="is-active" type="button" role="tab" aria-selected="true" data-view-tab="new">
+          <span>Nova súmula</span><small>Enviar resultado</small>
+        </button>
+        <button id="historyTab" type="button" role="tab" aria-selected="false" data-view-tab="history">
+          <span>Todos os envios</span><small>Histórico da comunidade</small>
+        </button>
+      </div>
+
+      <section id="newReportView" class="sumulas-view" data-view="new">
+        <div id="reportPermissionNotice" class="sumulas-notice" hidden></div>
+        <form id="matchReportForm" class="sumulas-workspace" novalidate>
+          <div class="sumulas-form-column">
+            <article class="sumulas-panel">
+              <header class="sumulas-panel-head">
+                <span class="sumulas-step">01</span>
+                <div><h3>Confronto</h3><p>Escolha apenas dados cadastrados para reduzir erros.</p></div>
+              </header>
+              <div class="sumulas-field-grid">
+                <label>
+                  <span>Competição</span>
+                  <select id="competitionId" name="competitionId" required>
+                    <option value="">Selecione a competição</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Rodada / fase</span>
+                  <select id="round" name="round" required>
+                    <option value="">Selecione a fase</option>
+                    <option>Fase de grupos</option>
+                    <option>Rodada 1</option>
+                    <option>Rodada 2</option>
+                    <option>Rodada 3</option>
+                    <option>Oitavas de final</option>
+                    <option>Quartas de final</option>
+                    <option>Semifinal</option>
+                    <option>Final</option>
+                    <option>Disputa de 3º lugar</option>
+                    <option>Amistoso / teste</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Seu clube</span>
+                  <select id="teamAId" name="teamAId" required>
+                    <option value="">Selecione seu clube</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Adversário</span>
+                  <select id="teamBId" name="teamBId" required disabled>
+                    <option value="">Selecione o adversário</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Jogo / confronto</span>
+                  <input id="game" name="game" maxlength="100" placeholder="Ex.: Jogo 1 da MD3" />
+                </label>
+                <div class="sumulas-score-field">
+                  <span>Placar final</span>
+                  <div>
+                    <input id="scoreA" name="scoreA" type="number" min="0" max="999" inputmode="numeric" aria-label="Gols do seu clube" required />
+                    <b>×</b>
+                    <input id="scoreB" name="scoreB" type="number" min="0" max="999" inputmode="numeric" aria-label="Gols do adversário" required />
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="sumulas-panel">
+              <header class="sumulas-panel-head">
+                <span class="sumulas-step">02</span>
+                <div><h3>Quem participou</h3><p>Selecione todos os jogadores dos dois times que entraram em campo.</p></div>
+              </header>
+              <div class="sumulas-roster-columns">
+                <section>
+                  <div class="sumulas-roster-title">
+                    <div><span id="teamALogo" class="sumulas-team-mark">A</span><strong id="teamAName">Seu clube</strong></div>
+                    <button id="selectAllTeamA" class="sumulas-text-btn" type="button">Selecionar todos</button>
+                  </div>
+                  <div id="teamARoster" class="sumulas-roster-list"><p class="sumulas-empty">Escolha seu clube.</p></div>
+                </section>
+                <section>
+                  <div class="sumulas-roster-title">
+                    <div><span id="teamBLogo" class="sumulas-team-mark">B</span><strong id="teamBName">Adversário</strong></div>
+                    <button id="selectAllTeamB" class="sumulas-text-btn" type="button">Selecionar todos</button>
+                  </div>
+                  <div id="teamBRoster" class="sumulas-roster-list"><p class="sumulas-empty">Escolha o adversário.</p></div>
+                </section>
+              </div>
+              <div class="sumulas-mvp-field">
+                <label>
+                  <span>MVP da partida</span>
+                  <select id="mvpId" name="mvpId" required disabled>
+                    <option value="">Selecione entre os jogadores dos dois clubes</option>
+                  </select>
+                </label>
+                <small>O MVP pode ser do time derrotado. A lista usa os elencos reais cadastrados.</small>
+              </div>
+            </article>
+
+            <article class="sumulas-panel">
+              <header class="sumulas-panel-head">
+                <span class="sumulas-step">03</span>
+                <div><h3>Estatísticas individuais</h3><p>Preencha só o que aconteceu; os campos começam em zero.</p></div>
+              </header>
+              <div class="sumulas-stat-legend">
+                <span>G gols</span><span>A assistências</span><span>I interceptações</span><span>D defesas</span><span>P passes</span>
+              </div>
+              <div id="playerStatsList" class="sumulas-stats-list">
+                <p class="sumulas-empty">Selecione os participantes para liberar as estatísticas.</p>
+              </div>
+            </article>
+          </div>
+
+          <aside class="sumulas-proof-column">
+            <article class="sumulas-panel sumulas-proof-panel">
+              <header class="sumulas-panel-head">
+                <span class="sumulas-step">04</span>
+                <div><h3>Print do fim da partida</h3><p>Obrigatória para validar placar e participantes.</p></div>
+              </header>
+              <input id="proofFile" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+              <button id="proofDropzone" class="sumulas-dropzone" type="button">
+                <span class="sumulas-upload-icon" aria-hidden="true">↥</span>
+                <strong>Solte, selecione ou cole a print</strong>
+                <small>PNG, JPG ou WEBP · a imagem será otimizada antes do envio</small>
+              </button>
+              <div id="proofPreview" class="sumulas-proof-preview" hidden>
+                <img id="proofImage" alt="Pré-visualização do comprovante" />
+                <div><strong id="proofName"></strong><small id="proofMeta"></small></div>
+                <button id="removeProof" class="sumulas-text-btn danger" type="button">Remover</button>
+              </div>
+              <p class="sumulas-paste-tip"><kbd>Ctrl</kbd> + <kbd>V</kbd> também funciona nesta página.</p>
+            </article>
+
+            <article class="sumulas-panel sumulas-review-panel">
+              <span class="sumulas-kicker">Revisão rápida</span>
+              <h3>Antes de enviar</h3>
+              <ul id="reviewChecklist">
+                <li data-review="match">Defina os dois clubes e o placar.</li>
+                <li data-review="players">Selecione quem participou.</li>
+                <li data-review="mvp">Informe o MVP.</li>
+                <li data-review="proof">Anexe a print do fim da partida.</li>
+              </ul>
+              <label class="sumulas-notes">
+                <span>Observação para a organização</span>
+                <textarea id="notes" name="notes" maxlength="800" placeholder="Opcional: explique WO, substituição, revisão ou outro detalhe relevante."></textarea>
+              </label>
+              <div id="submitStatus" class="va-status" aria-live="polite"></div>
+              <button id="submitReportBtn" class="va-btn primary sumulas-submit" type="submit" disabled>
+                Enviar para validação
+              </button>
+              <p class="sumulas-safe-note">O ranking não muda no envio. A organização confere a print antes de validar.</p>
+            </article>
+          </aside>
+        </form>
+      </section>
+
+      <section id="historyView" class="sumulas-view" data-view="history" hidden>
+        <article class="sumulas-history-shell">
+          <header class="sumulas-history-head">
+            <div>
+              <span class="sumulas-kicker">Transparência da liga</span>
+              <h2>Todos os envios</h2>
+              <p>Consulte súmulas enviadas pelo site ou pelo fluxo competitivo, com status e comprovante.</p>
+            </div>
+            <button id="reloadReportsBtn" class="va-btn" type="button">Atualizar histórico</button>
+          </header>
+          <div class="sumulas-filters">
+            <label>
+              <span>Buscar</span>
+              <input id="reportSearch" type="search" placeholder="Time, competição, jogador ou responsável" />
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="reportStatusFilter">
+                <option value="">Todos</option>
+                <option value="pending">Aguardando validação</option>
+                <option value="validated">Validada</option>
+                <option value="conflict">Divergência</option>
+                <option value="rejected">Rejeitada</option>
+              </select>
+            </label>
+            <label>
+              <span>Ordem</span>
+              <select id="reportOrder">
+                <option value="newest">Mais recentes</option>
+                <option value="oldest">Mais antigas</option>
+              </select>
+            </label>
+            <span id="historyCount" class="sumulas-count">0 envios</span>
+          </div>
+          <div id="reportsHistory" class="sumulas-history-list" aria-live="polite">
+            <div class="sumulas-loading"><i></i><span>Carregando súmulas...</span></div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/core/api.js"></script>
+  <script src="/js/core/global-navigation-shell.js"></script>
+  <script src="/js/pages/sumulas.js?v=hnl-sumulas-v1"></script>
+</body>
+</html>
