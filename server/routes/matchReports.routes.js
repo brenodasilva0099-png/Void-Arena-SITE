@@ -176,6 +176,16 @@ function publicTeam(team = {}, users = []) {
   };
 }
 
+function compactTeam(team = {}) {
+  return {
+    id: text(team.id, 120),
+    name: text(team.name || 'Clube', 100),
+    tag: text(team.tag, 24),
+    logo: safeImage(team.logo || '', 5000) || '/assets/hollow-nexus-official.svg',
+    region: text(team.region, 80)
+  };
+}
+
 function publicEvent(event = {}) {
   return {
     id: text(event.id, 120),
@@ -423,6 +433,8 @@ function registerMatchReportRoutes(app) {
 
       const teamAPublic = publicTeam(teamA, data.users);
       const teamBPublic = publicTeam(teamB, data.users);
+      const teamARecord = compactTeam(teamAPublic);
+      const teamBRecord = compactTeam(teamBPublic);
       const participants = normalizeParticipants(body.participantIds, [teamAPublic.roster, teamBPublic.roster]);
       if (!participants.length) {
         return res.status(400).json({ success: false, message: 'Selecione ao menos um jogador que participou da partida.' });
@@ -458,9 +470,8 @@ function registerMatchReportRoutes(app) {
         proof,
         isStaff: data.isAdmin,
         source: 'site',
-        participants,
-        playerStats,
-        mvp,
+        participantCount: participants.length,
+        mvpId: reportPlayerId(mvp),
         createdAt: now
       };
       let report = {
@@ -477,11 +488,11 @@ function registerMatchReportRoutes(app) {
           roundKey: 'site-reports',
           matchIndex: 0,
           matchFormat: text(event?.matchFormat || body.matchFormat || 'MD1', 20),
-          teamA: teamAPublic,
-          teamB: teamBPublic
+          teamA: teamARecord,
+          teamB: teamBRecord
         },
-        teamA: teamAPublic,
-        teamB: teamBPublic,
+        teamA: teamARecord,
+        teamB: teamBRecord,
         scoreA,
         scoreB,
         finalScoreA: scoreA,
