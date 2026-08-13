@@ -177,11 +177,12 @@ function publicTeam(team = {}, users = []) {
 }
 
 function compactTeam(team = {}) {
+  const logo = safeImage(team.logo || '', 5000);
   return {
     id: text(team.id, 120),
     name: text(team.name || 'Clube', 100),
     tag: text(team.tag, 24),
-    logo: safeImage(team.logo || '', 5000) || '/assets/hollow-nexus-official.svg',
+    logo: logo && !logo.startsWith('data:image/') ? logo : '/assets/hollow-nexus-official.svg',
     region: text(team.region, 80)
   };
 }
@@ -524,7 +525,10 @@ function registerMatchReportRoutes(app) {
           id: text(data.user.id, 100),
           discordId: text(data.user.discordId || data.user.id, 40),
           name: text(data.user.profile?.username || data.user.name || 'Capitão', 120),
-          avatar: safeImage(data.user.avatar || '', 4000)
+          avatar: (() => {
+            const avatar = safeImage(data.user.avatar || '', 4000);
+            return avatar && !avatar.startsWith('data:image/') ? avatar : '';
+          })()
         },
         winnerTeamId: scoreA > scoreB ? String(teamA.id) : String(teamB.id),
         validatedBy: null,
