@@ -32,7 +32,7 @@ const topItems = [
 ];
 const sideGroups = [
   ['Competitivo', [
-    ['♕', 'Competições', '/pages/competicoes.html'], ['◇', 'Eventos', '/pages/eventos.html'], ['⌘', 'Chaveamento', '/pages/chaveamento.html'], ['≡', 'Grupos', '/pages/grupos.html'], ['◎', 'Resultados', '/pages/resultados.html'], ['▥', 'Rankings', '/pages/rankings.html'], ['□', 'Calendário', '/pages/calendario.html']
+    ['♕', 'Competições', '/pages/competicoes.html'], ['◇', 'Eventos', '/pages/eventos.html'], ['⌘', 'Chaveamento', '/pages/chaveamento.html'], ['≡', 'Grupos', '/pages/grupos.html'], ['◎', 'Resultados', '/pages/resultados.html'], ['▤', 'Súmulas', '/pages/sumulas.html'], ['▥', 'Rankings', '/pages/rankings.html'], ['□', 'Calendário', '/pages/calendario.html']
   ]],
   ['Clubes', [
     ['◈', 'Clubes Participantes', '/pages/clubes.html'], ['+', 'Cadastrar Clube', '/pages/cadastrar-clube.html'], ['▱', 'Elencos', '/pages/elencos.html'], ['▣', 'Prancheta Tática', '/pages/prancheta-tatica.html'], ['↔', 'Transferências', '/pages/transferencias.html']

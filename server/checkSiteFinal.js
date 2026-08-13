@@ -27,7 +27,8 @@ const patches = [
   './patchCanonicalAuthClientRuntime',
   './patchFormsStaticAssetRuntime',
   './patchFinalNavigationNoPrefetchRuntime',
-  './patchAdminChatNavigationRuntime'
+  './patchAdminChatNavigationRuntime',
+  './patchCurrentSumulasNavigationRuntime'
 ];
 
 require('./auditRuntimeSafety');

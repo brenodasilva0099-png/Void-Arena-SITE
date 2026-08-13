@@ -83,7 +83,7 @@
     const target = $('submitStatus');
     if (!target) return;
     target.textContent = message;
-    target.className = `va-status${type ? ` ${type}` : ''}`;
+    target.className = `sumulas-submit-status${type ? ` ${type}` : ''}`;
   }
 
   function formatBytes(bytes = 0) {
@@ -454,9 +454,9 @@
     if (!state.isAdmin) return '';
     const id = escapeHtml(report.id || report.messageId || report.hubId || '');
     return `<div class="sumulas-admin-actions">
-      <button class="va-btn primary" type="button" data-report-status="validated" data-report-id="${id}">Validar súmula</button>
-      <button class="va-btn danger" type="button" data-report-status="rejected" data-report-id="${id}">Rejeitar</button>
-      <button class="va-btn" type="button" data-report-status="pending" data-report-id="${id}">Voltar para análise</button>
+      <button class="hnl-btn primary" type="button" data-report-status="validated" data-report-id="${id}">Validar súmula</button>
+      <button class="hnl-btn danger" type="button" data-report-status="rejected" data-report-id="${id}">Rejeitar</button>
+      <button class="hnl-btn" type="button" data-report-status="pending" data-report-id="${id}">Voltar para análise</button>
     </div>`;
   }
 

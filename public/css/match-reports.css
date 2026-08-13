@@ -1,5 +1,16 @@
-.sumulas-main { display: grid; gap: 18px; align-content: start; }
-.sumulas-topbar { margin-bottom: 0; }
+.sumulas-main {
+  --va-border: var(--hnl-border, rgba(159, 104, 255, .26));
+  --va-green: var(--hnl-green, #45d483);
+  --va-red: var(--hnl-red, #ff6b83);
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.sumulas-main .frm-header { margin-bottom: -2px; }
+.sumulas-main .hnl-btn { border-radius: 12px; }
+.sumulas-submit-status { margin-top: 12px; color: var(--hnl-muted, #bcc5d8); font-weight: 750; line-height: 1.45; }
+.sumulas-submit-status.ok { color: var(--hnl-green, #45d483); }
+.sumulas-submit-status.err { color: var(--hnl-red, #ff6b83); }
 .sumulas-hero {
   position: relative;
   overflow: hidden;

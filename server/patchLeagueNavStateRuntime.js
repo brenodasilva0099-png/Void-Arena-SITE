@@ -18,6 +18,7 @@ const pageState = {
   'chaveamento.html': ['competitivo', '/pages/chaveamento.html'],
   'grupos.html': ['competitivo', '/pages/grupos.html'],
   'resultados.html': ['competitivo', '/pages/resultados.html'],
+  'sumulas.html': ['competitivo', '/pages/sumulas.html'],
   'rankings.html': ['competitivo', '/pages/rankings.html'],
   'calendario.html': ['competitivo', '/pages/calendario.html'],
   'clubes.html': ['clubes', '/pages/clubes.html'],

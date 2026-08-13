@@ -61,6 +61,12 @@ for (const file of files) {
       if (!html.includes(required)) failures.push(`${relative}: referência obrigatória ausente ${required}`);
       if (count(html, required) > 1) failures.push(`${relative}: referência duplicada ${required}`);
     }
+
+    const currentNav = html.match(/<nav class=["']frm-nav["']>([\s\S]*?)<\/nav>/i)?.[1] || '';
+    if (currentNav) {
+      const sumulasLinks = count(currentNav, 'href="/pages/sumulas.html"');
+      if (sumulasLinks !== 1) failures.push(`${relative}: menu atual deve conter exatamente um botão de Súmulas`);
+    }
   }
 
   if (/discord-brand-sync\.js|discord-auth-avatar\.(?:js|css)/i.test(html)) {
@@ -147,6 +153,15 @@ for (const file of files) {
     }
     for (const marker of ['hnl-permission-console', 'id="roleSearch"', 'id="roleFilter"', 'id="permissionRows"', '/js/permissoes.js']) {
       if (!html.includes(marker)) failures.push(`${relative}: central de permissões incompleta ${marker}`);
+    }
+  }
+
+  if (relative === 'public/pages/sumulas.html') {
+    if (!html.includes('class="frm-shell"') || html.includes('class="va-shell"') || html.includes('/js/core/global-navigation-shell.js')) {
+      failures.push(`${relative}: súmulas ainda usa a estrutura visual antiga`);
+    }
+    for (const marker of ['href="/pages/sumulas.html"', 'class="active" href="/pages/sumulas.html"', 'id="matchReportForm"', 'id="proofFile"', '/js/pages/sumulas.js']) {
+      if (!html.includes(marker)) failures.push(`${relative}: central de súmulas incompleta ${marker}`);
     }
   }
 
