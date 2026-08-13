@@ -21,6 +21,7 @@ const NAV_SCRIPT = String.raw`(function () {
       ['grupos', '/pages/grupos.html', '🧬 Grupos'],
       ['chaveamento', '/pages/chaveamento.html', '🧩 Chaveamento'],
       ['resultados', '/pages/resultados.html', '📌 Resultados'],
+      ['sumulas', '/pages/sumulas.html', '▤ Súmulas'],
       ['rankings', '/pages/rankings.html', '📊 Rankings']
     ]],
     ['Jogadores', [
