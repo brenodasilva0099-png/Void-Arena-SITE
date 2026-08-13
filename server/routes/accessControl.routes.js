@@ -42,6 +42,8 @@ const PAGE_TO_PERMISSION = {
   groupstage: 'bracket',
   resultados: 'results',
   results: 'results',
+  sumulas: 'results',
+  'match-reports': 'results',
   rankings: 'rankings',
   jogadores: 'players',
   players: 'players',
