@@ -543,16 +543,34 @@ function registerMatchReportRoutes(app) {
       }
 
       const proofUrl = discord.proofUrl;
-      const savedSubmission = { ...submission, proof: proofUrl };
+      const savedSubmission = {
+        authorDiscordId: submission.authorDiscordId,
+        authorName: submission.authorName,
+        scoreA,
+        scoreB,
+        proof: proofUrl,
+        isStaff: submission.isStaff,
+        source: 'site',
+        participantCount: participants.length,
+        mvpId: reportPlayerId(mvp),
+        createdAt: now
+      };
       report = {
         ...report,
         proof: proofUrl,
         submissions: [savedSubmission],
-        games: report.games.map((game) => ({
-          ...game,
+        games: [{
+          id: `${hubId}_game_1`,
+          gameNumber: 1,
+          status: 'pending',
+          finalScoreA: scoreA,
+          finalScoreB: scoreB,
+          winnerTeamId: scoreA > scoreB ? teamA.id : teamB.id,
           proof: proofUrl,
-          submissions: [savedSubmission]
-        })),
+          submissions: [savedSubmission],
+          createdAt: now,
+          updatedAt: now
+        }],
         discordChannelId: discord.channelId,
         discordMessageId: discord.messageId,
         updatedAt: new Date().toISOString()
