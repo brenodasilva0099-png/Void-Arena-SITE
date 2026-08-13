@@ -62,7 +62,8 @@ const files = [
   path.join(ROOT, 'public', 'js', 'pages', 'configuracoes.js'),
   path.join(ROOT, 'public', 'js', 'pages', 'chat-bridge-stable.js'),
   path.join(ROOT, 'public', 'js', 'permissoes.js'),
-  path.join(ROOT, 'public', 'js', 'pages', 'perfil.js')
+  path.join(ROOT, 'public', 'js', 'pages', 'perfil.js'),
+  path.join(ROOT, 'public', 'js', 'pages', 'sumulas.js')
 ].filter((file, index, list) => fs.existsSync(file) && !file.endsWith('checkSiteFinal.js') && list.indexOf(file) === index);
 
 const failures = [];
@@ -89,6 +90,27 @@ const tacticalPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'pranche
 for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simulator-v2.js']) {
   if (!tacticalPage.includes(marker)) {
     console.error(`[Check Final] Prancheta sem recurso obrigatório: ${marker}`);
+    process.exit(1);
+  }
+}
+
+const sumulasPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'sumulas.html'), 'utf8');
+const sumulasClient = fs.readFileSync(path.join(ROOT, 'public', 'js', 'pages', 'sumulas.js'), 'utf8');
+const sumulasRoutes = fs.readFileSync(path.join(ROOT, 'server', 'routes', 'matchReports.routes.js'), 'utf8');
+for (const [label, source, marker] of [
+  ['página', sumulasPage, 'Central de Súmulas'],
+  ['página', sumulasPage, 'Todos os envios'],
+  ['página', sumulasPage, 'proofFile'],
+  ['cliente', sumulasClient, 'async function optimizeProof'],
+  ['cliente', sumulasClient, "VA.request('/api/match-reports'"],
+  ['servidor', sumulasRoutes, "app.post('/api/match-reports'"],
+  ['servidor', sumulasRoutes, "callBot('/internal/discord/send-match-report'"],
+  ['servidor', sumulasRoutes, 'discord.proofUrl'],
+  ['servidor', sumulasRoutes, "app.get('/api/match-reports/:reportId/proof'"],
+  ['servidor', sumulasRoutes, 'resolve-match-report-attachment']
+]) {
+  if (!source.includes(marker)) {
+    console.error(`[Check Final] Central de Súmulas incompleta em ${label}: ${marker}`);
     process.exit(1);
   }
 }

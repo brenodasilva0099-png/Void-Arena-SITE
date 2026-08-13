@@ -48,6 +48,7 @@ const { registerHubResultBridgeDisabledRoutes } = require('../server/routes/hubR
 const { registerFinalRuntimeStabilityRoutes } = require('../server/routes/finalRuntimeStability.routes');
 const { registerChatBridgeAssetRoutes } = require('../server/routes/chatBridgeAssets.routes');
 const { registerProfileAssetsStableRoutes } = require('../server/routes/profileAssetsStable.routes');
+const { registerMatchReportRoutes } = require('../server/routes/matchReports.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -79,6 +80,7 @@ registerLeagueExperienceRoutes(app);
 registerCafeRankingRoutes(app);
 registerRouteAuditRoutes(app);
 registerLeagueStableRoutes(app);
+registerMatchReportRoutes(app);
 registerNexusCupRulesPublicationRoutes(app);
 registerTeamRegistrationGuidancePublicationRoutes(app);
 // Registros finais: removem rotas antigas e impedem que outra camada as sobrescreva.
