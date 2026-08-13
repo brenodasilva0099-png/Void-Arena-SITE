@@ -290,6 +290,8 @@ async function notifyDiscord(report = {}) {
   try {
     const data = await callBot('/internal/discord/send-match-report', {
       method: 'POST',
+      retryCount: 2,
+      retryDelayMs: 2500,
       body: JSON.stringify({
         discordChannelId: DISCORD_RESULTS_CHANNEL_ID,
         report: withoutDuplicateProof

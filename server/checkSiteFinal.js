@@ -98,6 +98,7 @@ for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simul
 const sumulasPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'sumulas.html'), 'utf8');
 const sumulasClient = fs.readFileSync(path.join(ROOT, 'public', 'js', 'pages', 'sumulas.js'), 'utf8');
 const sumulasRoutes = fs.readFileSync(path.join(ROOT, 'server', 'routes', 'matchReports.routes.js'), 'utf8');
+const botApiService = fs.readFileSync(path.join(ROOT, 'server', 'services', 'botApi.service.js'), 'utf8');
 for (const [label, source, marker] of [
   ['página', sumulasPage, 'Central de Súmulas'],
   ['página', sumulasPage, 'Todos os envios'],
@@ -112,6 +113,17 @@ for (const [label, source, marker] of [
 ]) {
   if (!source.includes(marker)) {
     console.error(`[Check Final] Central de Súmulas incompleta em ${label}: ${marker}`);
+    process.exit(1);
+  }
+}
+
+for (const marker of [
+  'process.env.SITE_REALTIME_TOKEN',
+  'BOT_NON_JSON_RESPONSE',
+  'RETRYABLE_STATUS_CODES'
+]) {
+  if (!botApiService.includes(marker)) {
+    console.error(`[Check Final] Ponte SITE → BOT sem tolerância obrigatória: ${marker}`);
     process.exit(1);
   }
 }

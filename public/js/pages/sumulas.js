@@ -377,7 +377,7 @@
       const data = await VA.request('/api/match-reports', {
         method: 'POST',
         body: JSON.stringify(payload),
-        timeoutMs: 45000
+        timeoutMs: 75000
       });
       state.results.unshift(data.report);
       setStatus(data.message || 'Súmula enviada com sucesso.', 'success');
