@@ -31,6 +31,7 @@ const EXPECTED_ROUTES = [
   ['get', '/api/match-results'],
   ['get', '/api/match-reports/bootstrap'],
   ['get', '/api/match-reports'],
+  ['get', '/api/match-reports/:reportId/proof'],
   ['post', '/api/match-reports'],
   ['patch', '/api/match-reports/:reportId/status'],
   ['get', '/api/notifications'],
