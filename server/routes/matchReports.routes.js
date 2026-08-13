@@ -1,0 +1,573 @@
+const storage = require('../storage');
+const { getSessionUser, isAdminRecord, requireAdmin } = require('../services/access.service');
+const { canManageTeam } = require('../services/teamAccess.service');
+const { callBot } = require('../services/botApi.service');
+
+const RESULT_CHANNEL = 'results-main';
+const DISCORD_RESULTS_CHANNEL_ID = String(
+  process.env.CAPTAIN_STATS_RESULTS_CHANNEL_ID || '1518441859519877120'
+).trim();
+const MAX_PROOF_CHARACTERS = 2600000;
+const STAT_KEYS = ['goals', 'assists', 'interceptions', 'defenses', 'passes'];
+const ALLOWED_STATUSES = new Set(['pending', 'validated', 'rejected']);
+
+function text(value = '', max = 180) {
+  return String(value || '').trim().slice(0, max);
+}
+
+function key(value = '') {
+  return text(value, 180).toLocaleLowerCase('pt-BR');
+}
+
+function safeImage(value = '', max = 5000) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=]+$/i.test(raw)) {
+    return raw.length <= MAX_PROOF_CHARACTERS ? raw : '';
+  }
+  if (/^https?:\/\//i.test(raw)) return raw.slice(0, max);
+  if (/^\/(?:assets|uploads|images|img)\//i.test(raw)) return raw.slice(0, max);
+  return '';
+}
+
+function requireSession(req, res, next) {
+  if (!req.session?.userId && !req.session?.discordId) {
+    return res.status(401).json({ success: false, message: 'Entre com o Discord para abrir a Central de Súmulas.' });
+  }
+  return next();
+}
+
+function parseResultRecord(message = {}) {
+  try {
+    const raw = String(message.content || '');
+    if (!raw.startsWith('RESULT_JSON:')) return null;
+    const data = JSON.parse(raw.slice('RESULT_JSON:'.length));
+    return {
+      ...data,
+      messageId: message.id || data.messageId || '',
+      createdAt: data.createdAt || message.createdAt || null,
+      updatedAt: data.updatedAt || message.updatedAt || message.createdAt || null
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function readReports() {
+  const messages = await storage.readChatMessages({ channelId: RESULT_CHANNEL, limit: 500 }).catch(() => []);
+  return messages
+    .map(parseResultRecord)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+}
+
+async function saveReport(report = {}) {
+  const content = `RESULT_JSON:${JSON.stringify(report)}`;
+  if (report.messageId) {
+    return storage.updateChatMessage(report.messageId, { content }, { channelId: RESULT_CHANNEL, source: 'system' });
+  }
+  return storage.saveChatMessage({
+    channelId: RESULT_CHANNEL,
+    source: 'system',
+    authorId: 'void-arena-sumulas',
+    authorName: 'Central de Súmulas',
+    content,
+    attachments: [],
+    createdAt: report.createdAt || new Date().toISOString()
+  });
+}
+
+function userMaps(users = []) {
+  const byId = new Map();
+  const byLabel = new Map();
+  for (const user of users) {
+    for (const value of [user.id, user.discordId]) {
+      if (value) byId.set(String(value), user);
+    }
+    for (const value of [user.name, user.username, user.profile?.username, user.profile?.displayName]) {
+      if (value) byLabel.set(key(value), user);
+    }
+  }
+  return { byId, byLabel };
+}
+
+function resolveUser(value = '', maps = {}) {
+  const raw = text(value, 180);
+  if (!raw) return null;
+  const mention = raw.match(/^<@!?(\d{16,22})>$/);
+  const id = mention ? mention[1] : raw;
+  return maps.byId?.get(id) || maps.byLabel?.get(key(raw)) || null;
+}
+
+function publicPlayer(user = {}, fallback = {}, rosterRole = 'Titular', index = 0) {
+  const id = text(user.id || fallback.userId || fallback.id || '', 100);
+  const discordId = text(user.discordId || fallback.discordId || '', 40);
+  const name = text(
+    user.profile?.username ||
+    user.profile?.displayName ||
+    user.name ||
+    fallback.name ||
+    fallback.playerName ||
+    `Jogador ${index + 1}`,
+    100
+  );
+  const avatar = safeImage(user.avatar || fallback.avatar || '', 4000);
+  return {
+    id: id || discordId || `${key(name)}-${index}`,
+    userId: id,
+    discordId,
+    name,
+    avatar,
+    rosterRole
+  };
+}
+
+function teamRoster(team = {}, users = []) {
+  const maps = userMaps(users);
+  const result = [];
+  const add = (detail, storedName, account, rosterRole, index) => {
+    const source = detail && typeof detail === 'object' ? detail : {};
+    const linked = [
+      source.userId,
+      source.id,
+      source.discordId,
+      account,
+      storedName,
+      typeof detail === 'string' ? detail : ''
+    ].map((value) => resolveUser(value, maps)).find(Boolean) || {};
+    const player = publicPlayer(linked, {
+      ...source,
+      name: source.name || source.playerName || (typeof detail === 'string' ? detail : storedName),
+      discordId: source.discordId || account
+    }, rosterRole, index);
+    const identity = player.discordId || player.userId || key(player.name);
+    if (!identity || result.some((item) => (item.discordId || item.userId || key(item.name)) === identity)) return;
+    result.push(player);
+  };
+
+  const playerDetails = Array.isArray(team.playerDetails) ? team.playerDetails : [];
+  const reserveDetails = Array.isArray(team.reserveDetails) ? team.reserveDetails : [];
+  const players = Array.isArray(team.players) ? team.players : [];
+  const reserves = Array.isArray(team.reserves) ? team.reserves : [];
+  const playerAccounts = Array.isArray(team.playerAccounts?.players) ? team.playerAccounts.players : [];
+  const reserveAccounts = Array.isArray(team.playerAccounts?.reserves) ? team.playerAccounts.reserves : [];
+
+  for (let i = 0; i < Math.max(playerDetails.length, players.length, playerAccounts.length); i += 1) {
+    add(playerDetails[i], players[i], playerAccounts[i], 'Titular', i);
+  }
+  for (let i = 0; i < Math.max(reserveDetails.length, reserves.length, reserveAccounts.length); i += 1) {
+    add(reserveDetails[i], reserves[i], reserveAccounts[i], 'Reserva', i);
+  }
+  return result.slice(0, 30);
+}
+
+function publicTeam(team = {}, users = []) {
+  return {
+    id: text(team.id, 120),
+    name: text(team.name || team.teamName || 'Clube', 100),
+    tag: text(team.tag, 24),
+    logo: safeImage(
+      team.logo || team.logoUrl || team.logoURL || team.badge || team.badgeUrl ||
+      team.escudo || team.image || team.imageUrl || team.avatar || team.icon || '',
+      900000
+    ) || '/assets/hollow-nexus-official.svg',
+    region: text(team.region, 80),
+    roster: teamRoster(team, users)
+  };
+}
+
+function publicEvent(event = {}) {
+  return {
+    id: text(event.id, 120),
+    name: text(event.name || event.title || 'Competição', 100),
+    title: text(event.title || event.name || 'Competição', 100),
+    status: text(event.status || 'open', 40),
+    matchFormat: text(event.matchFormat || 'MD1', 20)
+  };
+}
+
+function allowedTeamIds(user = {}, teams = [], isAdmin = false) {
+  if (isAdmin) return new Set(teams.map((team) => String(team.id || '')).filter(Boolean));
+  return new Set(
+    teams
+      .filter((team) => canManageTeam(user, team))
+      .map((team) => String(team.id || ''))
+      .filter(Boolean)
+  );
+}
+
+function reportPlayerId(player = {}) {
+  return String(player.discordId || player.userId || player.id || key(player.name));
+}
+
+function cleanStats(raw = {}) {
+  return Object.fromEntries(STAT_KEYS.map((stat) => {
+    const value = Number(raw?.[stat] || 0);
+    return [stat, Number.isInteger(value) && value >= 0 && value <= 999 ? value : 0];
+  }));
+}
+
+function participantFromId(id = '', rosters = []) {
+  const target = String(id || '');
+  for (const roster of rosters) {
+    const found = roster.find((player) => reportPlayerId(player) === target);
+    if (found) return found;
+  }
+  return null;
+}
+
+function normalizeParticipants(ids = [], rosters = []) {
+  const selected = [];
+  for (const id of Array.isArray(ids) ? ids : []) {
+    const player = participantFromId(id, rosters);
+    if (!player) continue;
+    const identity = reportPlayerId(player);
+    if (!selected.some((item) => reportPlayerId(item) === identity)) selected.push(player);
+  }
+  return selected.slice(0, 30);
+}
+
+function publicHistoryResult(result = {}) {
+  const proof = safeImage(
+    typeof result.proof === 'string'
+      ? result.proof
+      : result.proof?.url || result.proof?.dataUrl || result.screenshot || '',
+    MAX_PROOF_CHARACTERS
+  );
+  return {
+    ...result,
+    proof,
+    proofMeta: result.proofMeta || null
+  };
+}
+
+function discordSubmissionText(report = {}) {
+  const participants = Array.isArray(report.participants) ? report.participants : [];
+  const stats = Array.isArray(report.playerStats) ? report.playerStats : [];
+  const statsLines = stats.map((item) => (
+    `• ${item.name}: G ${item.goals || 0} · A ${item.assists || 0} · I ${item.interceptions || 0} · D ${item.defenses || 0} · P ${item.passes || 0}`
+  ));
+  return [
+    '📨 **Nova súmula enviada pelo site**',
+    '',
+    `**Competição:** ${report.competitionName || 'Amistoso / teste'}`,
+    `**Rodada/fase:** ${report.round || 'Não informada'}${report.game ? ` • ${report.game}` : ''}`,
+    `**Partida:** ${report.match?.teamA?.name || 'Time A'} ${report.scoreA} x ${report.scoreB} ${report.match?.teamB?.name || 'Time B'}`,
+    `**MVP:** ${report.mvp?.discordId ? `<@${report.mvp.discordId}>` : report.mvp?.name || 'Não informado'}`,
+    `**Enviado por:** ${report.submittedBy?.discordId ? `<@${report.submittedBy.discordId}>` : report.submittedBy?.name || 'Capitão'}`,
+    `**Participantes selecionados:** ${participants.length}`,
+    '',
+    '**Estatísticas individuais**',
+    ...(statsLines.length ? statsLines : ['• Nenhuma estatística individual informada.']),
+    '',
+    '⏳ Aguardando validação da organização. O ranking ainda não foi alterado.',
+    '🔗 https://hollownexus.com.br/pages/sumulas.html'
+  ].join('\n').slice(0, 2000);
+}
+
+async function notifyDiscord(report = {}) {
+  if (!DISCORD_RESULTS_CHANNEL_ID) return { sent: false, reason: 'channel_not_configured' };
+  try {
+    const data = await callBot('/internal/discord/send-match-report', {
+      method: 'POST',
+      body: JSON.stringify({
+        discordChannelId: DISCORD_RESULTS_CHANNEL_ID,
+        report
+      })
+    });
+    return {
+      sent: true,
+      channelId: data.discordChannelId || DISCORD_RESULTS_CHANNEL_ID,
+      messageId: data.discordMessageId || ''
+    };
+  } catch (richError) {
+    try {
+      const data = await callBot('/internal/discord/send-message', {
+        method: 'POST',
+        body: JSON.stringify({
+          discordChannelId: DISCORD_RESULTS_CHANNEL_ID,
+          content: discordSubmissionText(report),
+          allowedMentions: {
+            parse: [],
+            users: [
+              report.submittedBy?.discordId,
+              report.mvp?.discordId,
+              ...(report.participants || []).map((item) => item.discordId)
+            ].filter(Boolean)
+          }
+        })
+      });
+      return {
+        sent: true,
+        fallback: true,
+        channelId: data.discordChannelId || DISCORD_RESULTS_CHANNEL_ID,
+        messageId: data.discordMessageId || ''
+      };
+    } catch (fallbackError) {
+      return {
+        sent: false,
+        reason: 'discord_unavailable',
+        error: fallbackError.message || richError.message
+      };
+    }
+  }
+}
+
+async function loadBootstrap(req) {
+  const [user, teams, users, events, results] = await Promise.all([
+    getSessionUser(req),
+    storage.readTeams(),
+    storage.readUsers(),
+    storage.readEvents().catch(() => []),
+    readReports()
+  ]);
+  if (!user) return null;
+  const isAdmin = await isAdminRecord(user).catch(() => false);
+  const managedIds = allowedTeamIds(user, teams, isAdmin);
+  return {
+    user,
+    isAdmin,
+    teams,
+    users,
+    events,
+    results,
+    managedIds
+  };
+}
+
+function registerMatchReportRoutes(app) {
+  app.get('/api/match-reports/bootstrap', requireSession, async (req, res) => {
+    try {
+      const data = await loadBootstrap(req);
+      if (!data) return res.status(401).json({ success: false, message: 'Sessão Discord inválida.' });
+      const teams = data.teams.map((team) => publicTeam(team, data.users));
+      const managedTeams = teams.filter((team) => data.managedIds.has(String(team.id)));
+      return res.json({
+        success: true,
+        isAdmin: data.isAdmin,
+        canSubmit: managedTeams.length > 0,
+        currentUser: publicPlayer(data.user, {}, 'Responsável', 0),
+        managedTeams,
+        teams,
+        events: data.events.map(publicEvent),
+        results: data.results.map(publicHistoryResult),
+        stats: {
+          total: data.results.length,
+          pending: data.results.filter((item) => ['pending', 'partial', 'conflict'].includes(String(item.status || 'pending'))).length,
+          validated: data.results.filter((item) => String(item.status || '') === 'validated').length,
+          withProof: data.results.filter((item) => Boolean(safeImage(typeof item.proof === 'string' ? item.proof : item.proof?.url || ''))).length
+        }
+      });
+    } catch (error) {
+      return res.status(503).json({ success: false, message: `Não foi possível carregar a Central de Súmulas: ${error.message}` });
+    }
+  });
+
+  app.get('/api/match-reports', requireSession, async (_req, res) => {
+    try {
+      const results = await readReports();
+      return res.json({ success: true, results: results.map(publicHistoryResult) });
+    } catch (error) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/match-reports', requireSession, async (req, res) => {
+    try {
+      const data = await loadBootstrap(req);
+      if (!data) return res.status(401).json({ success: false, message: 'Sessão Discord inválida.' });
+
+      const body = req.body || {};
+      const teamA = data.teams.find((team) => String(team.id) === String(body.teamAId || ''));
+      const teamB = data.teams.find((team) => String(team.id) === String(body.teamBId || ''));
+      if (!teamA || !teamB || String(teamA.id) === String(teamB.id)) {
+        return res.status(400).json({ success: false, message: 'Selecione dois clubes cadastrados e diferentes.' });
+      }
+      if (!data.managedIds.has(String(teamA.id))) {
+        return res.status(403).json({ success: false, message: 'Você só pode enviar súmula por um clube em que seja criador, diretor ou capitão.' });
+      }
+
+      const scoreA = Number(body.scoreA);
+      const scoreB = Number(body.scoreB);
+      if (![scoreA, scoreB].every((value) => Number.isInteger(value) && value >= 0 && value <= 999)) {
+        return res.status(400).json({ success: false, message: 'Informe um placar válido, usando números inteiros de 0 a 999.' });
+      }
+      if (scoreA === scoreB) {
+        return res.status(400).json({ success: false, message: 'O resultado não pode terminar empatado.' });
+      }
+
+      const proof = safeImage(body.proof, MAX_PROOF_CHARACTERS);
+      if (!proof || !proof.startsWith('data:image/')) {
+        return res.status(400).json({ success: false, message: 'A print do fim da partida é obrigatória. Envie PNG, JPG ou WEBP.' });
+      }
+
+      const teamAPublic = publicTeam(teamA, data.users);
+      const teamBPublic = publicTeam(teamB, data.users);
+      const participants = normalizeParticipants(body.participantIds, [teamAPublic.roster, teamBPublic.roster]);
+      if (!participants.length) {
+        return res.status(400).json({ success: false, message: 'Selecione ao menos um jogador que participou da partida.' });
+      }
+
+      const mvp = participantFromId(body.mvpId, [teamAPublic.roster, teamBPublic.roster]);
+      if (!mvp) {
+        return res.status(400).json({ success: false, message: 'Selecione o MVP entre os jogadores dos dois clubes.' });
+      }
+
+      const submittedStats = body.playerStats && typeof body.playerStats === 'object' ? body.playerStats : {};
+      const playerStats = participants.map((player) => ({
+        ...player,
+        ...cleanStats(submittedStats[reportPlayerId(player)])
+      }));
+      const event = data.events.find((item) => String(item.id) === String(body.competitionId || '')) || null;
+      const now = new Date().toISOString();
+      const suffix = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const hubId = `site_sumula_${suffix}`;
+      const submission = {
+        authorDiscordId: text(data.user.discordId || data.user.id, 40),
+        authorName: text(data.user.profile?.username || data.user.name || 'Capitão', 120),
+        scoreA,
+        scoreB,
+        proof,
+        isStaff: data.isAdmin,
+        source: 'site',
+        participants,
+        playerStats,
+        mvp,
+        createdAt: now
+      };
+      let report = {
+        id: `result_${hubId}`,
+        hubId,
+        source: 'site',
+        reportType: 'captain-match-report',
+        competitionId: text(event?.id || body.competitionId || '__test__', 120),
+        competitionName: text(event?.name || event?.title || body.competitionName || 'Amistoso / teste', 120),
+        round: text(body.round || 'Não informada', 100),
+        game: text(body.game || '', 100),
+        notes: text(body.notes || '', 800),
+        match: {
+          roundKey: 'site-reports',
+          matchIndex: 0,
+          matchFormat: text(event?.matchFormat || body.matchFormat || 'MD1', 20),
+          teamA: teamAPublic,
+          teamB: teamBPublic
+        },
+        teamA: teamAPublic,
+        teamB: teamBPublic,
+        scoreA,
+        scoreB,
+        finalScoreA: scoreA,
+        finalScoreB: scoreB,
+        participants,
+        playerStats,
+        mvp,
+        submissions: [submission],
+        games: [{
+          id: `${hubId}_game_1`,
+          gameNumber: 1,
+          status: 'pending',
+          finalScoreA: scoreA,
+          finalScoreB: scoreB,
+          winnerTeamId: scoreA > scoreB ? teamA.id : teamB.id,
+          proof,
+          submissions: [submission],
+          createdAt: now,
+          updatedAt: now
+        }],
+        status: 'pending',
+        proof,
+        proofMeta: {
+          name: text(body.proofName || 'comprovante-da-partida', 160),
+          contentType: text(body.proofType || 'image/webp', 80),
+          size: Number(body.proofSize || 0) || 0
+        },
+        submittedBy: {
+          id: text(data.user.id, 100),
+          discordId: text(data.user.discordId || data.user.id, 40),
+          name: text(data.user.profile?.username || data.user.name || 'Capitão', 120),
+          avatar: safeImage(data.user.avatar || '', 4000)
+        },
+        winnerTeamId: scoreA > scoreB ? String(teamA.id) : String(teamB.id),
+        validatedBy: null,
+        validationNote: '',
+        createdAt: now,
+        updatedAt: now
+      };
+
+      const saved = await saveReport(report);
+      report.messageId = saved.id || '';
+      const discord = await notifyDiscord(report);
+      if (discord.sent) {
+        report.discordChannelId = discord.channelId;
+        report.discordMessageId = discord.messageId;
+        report.updatedAt = new Date().toISOString();
+        await saveReport(report).catch(() => null);
+      }
+
+      req.app.locals.realtime?.broadcast?.({
+        type: 'match-report:create',
+        payload: { report: publicHistoryResult(report) },
+        source: 'site'
+      });
+
+      return res.status(201).json({
+        success: true,
+        report: publicHistoryResult(report),
+        discord,
+        message: discord.sent
+          ? 'Súmula enviada para validação e publicada no canal da organização.'
+          : 'Súmula salva para validação. O Discord está sincronizando e o envio será mantido no histórico do site.'
+      });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.patch('/api/match-reports/:reportId/status', requireAdmin, async (req, res) => {
+    try {
+      const status = text(req.body?.status, 30).toLowerCase();
+      if (!ALLOWED_STATUSES.has(status)) {
+        return res.status(400).json({ success: false, message: 'Status de validação inválido.' });
+      }
+      const reports = await readReports();
+      const report = reports.find((item) => (
+        String(item.id || '') === String(req.params.reportId) ||
+        String(item.messageId || '') === String(req.params.reportId) ||
+        String(item.hubId || '') === String(req.params.reportId)
+      ));
+      if (!report) return res.status(404).json({ success: false, message: 'Súmula não encontrada.' });
+
+      const user = await getSessionUser(req);
+      report.status = status;
+      report.validationNote = text(req.body?.note || '', 500);
+      report.validatedBy = status === 'pending' ? null : {
+        id: text(user?.id, 100),
+        discordId: text(user?.discordId || user?.id, 40),
+        name: text(user?.profile?.username || user?.name || 'Organização', 120)
+      };
+      report.validatedAt = status === 'validated' ? new Date().toISOString() : null;
+      report.rejectedAt = status === 'rejected' ? new Date().toISOString() : null;
+      report.updatedAt = new Date().toISOString();
+      await saveReport(report);
+
+      req.app.locals.realtime?.broadcast?.({
+        type: 'match-report:update',
+        payload: { report: publicHistoryResult(report) },
+        source: 'site'
+      });
+      return res.json({ success: true, report: publicHistoryResult(report) });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  console.log('[Súmulas] Central do site, comprovante obrigatório, histórico e validação registrados.');
+}
+
+module.exports = {
+  registerMatchReportRoutes,
+  parseResultRecord,
+  publicHistoryResult,
+  teamRoster,
+  DISCORD_RESULTS_CHANNEL_ID
+};
