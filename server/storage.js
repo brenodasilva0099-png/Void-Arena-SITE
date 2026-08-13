@@ -1,5 +1,5 @@
 const BOT_API_URL = String(process.env.BOT_API_URL || process.env.BOT_PUBLIC_URL || 'http://localhost:3002').replace(/\/$/, '');
-const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN || '';
+const BOT_API_KEY = process.env.BOT_API_KEY || process.env.INTERNAL_API_TOKEN || process.env.SITE_REALTIME_TOKEN || '';
 const STORAGE_TIMEOUT_MS = Number(process.env.SITE_BOT_STORAGE_TIMEOUT_MS || process.env.SITE_BOT_FETCH_TIMEOUT_MS || 8500) || 8500;
 const STORAGE_READ_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_READ_RETRIES || 2) || 2);
 const STORAGE_WRITE_RETRIES = Math.max(1, Number(process.env.SITE_BOT_STORAGE_WRITE_RETRIES || 4) || 4);
