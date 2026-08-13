@@ -105,7 +105,9 @@ for (const [label, source, marker] of [
   ['cliente', sumulasClient, "VA.request('/api/match-reports'"],
   ['servidor', sumulasRoutes, "app.post('/api/match-reports'"],
   ['servidor', sumulasRoutes, "callBot('/internal/discord/send-match-report'"],
-  ['servidor', sumulasRoutes, 'discord.proofUrl']
+  ['servidor', sumulasRoutes, 'discord.proofUrl'],
+  ['servidor', sumulasRoutes, "app.get('/api/match-reports/:reportId/proof'"],
+  ['servidor', sumulasRoutes, 'resolve-match-report-attachment']
 ]) {
   if (!source.includes(marker)) {
     console.error(`[Check Final] Central de Súmulas incompleta em ${label}: ${marker}`);
