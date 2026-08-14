@@ -4,7 +4,7 @@ const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service
 const { callBot } = require('../services/botApi.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 const { normalizeBracketForResponse } = require('../services/bracket.service');
-const { isVisibleCompetition, publicSeason } = require('../services/season.service');
+const { publicSeason, withSeasonCompetitions } = require('../services/season.service');
 
 const RESULT_CHANNEL = 'results-main';
 const RANKING_CHANNELS = ['frm-ranking-settings', 'league-ranking-settings'];
@@ -198,7 +198,7 @@ async function snapshot(req = null) {
   return {
     teams: teamsResult.value,
     users: usersResult.value,
-    events: eventsResult.value.filter(isVisibleCompetition),
+    events: withSeasonCompetitions(eventsResult.value),
     bracket: bracketResult.value,
     settings: settingsResult.value,
     viewer: viewerResult.value,
@@ -378,14 +378,14 @@ function registerLeagueStableRoutes(app) {
 
   app.get('/api/league/competitions', async (_req, res) => {
     const eventsResult = await safeRead('competições', () => storage.readEvents(), []);
-    const competitions = eventsResult.value.filter(isVisibleCompetition);
+    const competitions = withSeasonCompetitions(eventsResult.value);
     const season = publicSeason(competitions);
     return res.json({ success: true, degraded: Boolean(eventsResult.error), errors: eventsResult.error ? [eventsResult.error] : [], season, seasons: [season], competitions, events: competitions });
   });
 
   app.get('/api/league/seasons', async (_req, res) => {
     const eventsResult = await safeRead('competições', () => storage.readEvents(), []);
-    const competitions = eventsResult.value.filter(isVisibleCompetition);
+    const competitions = withSeasonCompetitions(eventsResult.value);
     const season = publicSeason(competitions);
     return res.json({ success: true, degraded: Boolean(eventsResult.error), errors: eventsResult.error ? [eventsResult.error] : [], currentSeason: season, seasons: [season], competitions: competitions.filter((event) => String(event.seasonId || '') === season.id) });
   });

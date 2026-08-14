@@ -3,7 +3,13 @@ const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
-const { SEASON_ONE, isVisibleCompetition } = require('../services/season.service');
+const {
+  SEASON_ONE,
+  HNL_CAMP_ONE,
+  isHnlCampOne,
+  isVisibleCompetition,
+  withSeasonCompetitions
+} = require('../services/season.service');
 
 const CALENDAR_CHANNEL = 'league-calendar-settings';
 const CAFE_CHANNELS = ['league-cafe-com-leite-queue', 'cafe-com-leite-queue'];
@@ -296,7 +302,7 @@ function registerLeagueExperienceRoutes(app) {
   });
 
   app.get('/api/league/competitions/:eventId', async (req, res) => {
-    const events = await storage.readEvents().catch(() => []);
+    const events = withSeasonCompetitions(await storage.readEvents().catch(() => []));
     const id = decodeURIComponent(String(req.params.eventId || '')).trim().toLowerCase();
     const event = events.find((item) => [item.id, item.name, item.title].some((value) => String(value || '').trim().toLowerCase() === id));
     if (!event || !isVisibleCompetition(event)) return res.status(404).json({ success: false, message: 'Competição não encontrada.' });
@@ -308,20 +314,39 @@ function registerLeagueExperienceRoutes(app) {
     if (!viewer || !(await isAdminRecord(viewer).catch(() => false))) return res.status(403).json({ success: false, message: 'Apenas a administração pode editar competições.' });
     try {
       const events = await storage.readEvents().catch(() => []);
-      const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
+      const requestedId = String(req.params.eventId || '');
+      const event = events.find((item) => String(item.id || '') === requestedId)
+        || (requestedId === HNL_CAMP_ONE.id ? events.find(isHnlCampOne) || { ...HNL_CAMP_ONE } : null);
       if (!event || !isVisibleCompetition(event)) return res.status(404).json({ success: false, message: 'Competição não encontrada.' });
+      const allowedStatuses = new Set(['upcoming', 'open', 'closed', 'running', 'finished']);
+      const allowedFormats = new Set(['A definir', 'MD1', 'MD2', 'MD3', 'MD5']);
+      const allowedStructures = new Set(['tbd', 'single_elimination', 'groups', 'groups_playoffs']);
+      const allowedLimits = new Set([4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]);
+      const requestedFormat = clean(req.body?.matchFormat ?? event.matchFormat ?? 'A definir', 20);
+      const requestedStructure = clean(req.body?.structure ?? event.structure ?? 'tbd', 80);
+      const requestedStatus = clean(req.body?.status ?? event.status ?? 'upcoming', 32);
+      const requestedLimit = number(req.body?.teamLimit ?? event.teamLimit ?? 8);
       const next = {
         ...event,
+        id: event.id || HNL_CAMP_ONE.id,
         name: clean(req.body?.name || req.body?.title || event.name || event.title, 100),
         title: clean(req.body?.title || req.body?.name || event.title || event.name, 100),
-        seasonId: clean(req.body?.seasonId ?? event.seasonId ?? '', 80),
+        seasonId: clean(req.body?.seasonId ?? event.seasonId ?? SEASON_ONE.id, 80) || SEASON_ONE.id,
         description: clean(req.body?.description ?? event.description, 1200),
-        matchFormat: clean(req.body?.matchFormat || event.matchFormat, 20),
-        mode: clean(req.body?.mode || event.mode, 80),
-        structure: clean(req.body?.structure || event.structure, 80),
-        teamLimit: Math.max(2, number(req.body?.teamLimit || event.teamLimit || 16)),
-        startAt: clean(req.body?.startAt || event.startAt, 48),
-        status: clean(req.body?.status || event.status, 32),
+        matchFormat: allowedFormats.has(requestedFormat) ? requestedFormat : 'A definir',
+        mode: clean(req.body?.mode ?? event.mode ?? 'A definir', 80),
+        structure: allowedStructures.has(requestedStructure) ? requestedStructure : 'tbd',
+        teamLimit: allowedLimits.has(requestedLimit) ? requestedLimit : 8,
+        minimumTeams: Math.max(2, Math.min(requestedLimit || 8, number(req.body?.minimumTeams ?? event.minimumTeams ?? 4))),
+        startAt: clean(req.body?.startAt ?? event.startAt ?? '', 48),
+        status: allowedStatuses.has(requestedStatus) ? requestedStatus : 'upcoming',
+        reward: clean(req.body?.reward ?? req.body?.prize ?? event.reward ?? event.prize ?? '', 180),
+        prize: clean(req.body?.prize ?? req.body?.reward ?? event.prize ?? event.reward ?? '', 180),
+        entryFee: clean(req.body?.entryFee ?? req.body?.registrationFee ?? event.entryFee ?? event.registrationFee ?? '', 80),
+        registrationFee: clean(req.body?.registrationFee ?? req.body?.entryFee ?? event.registrationFee ?? event.entryFee ?? '', 80),
+        registrations: Array.isArray(event.registrations) ? event.registrations : [],
+        isSeasonDraft: false,
+        createdAt: event.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
       const saved = await storage.saveTournamentEvent(next);
