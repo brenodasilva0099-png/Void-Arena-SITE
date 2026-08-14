@@ -63,6 +63,13 @@
     return Array.isArray(event.registrations) ? event.registrations.length : number(event.registeredCount);
   }
 
+  function isRetiredCompetition(event = {}) {
+    const identity = [event.id, event.slug, event.name, event.title]
+      .map((value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+      .join(' ');
+    return identity.includes('rota ao abismo');
+  }
+
   function eventOrder(event = {}) {
     const status = String(event.status || '').toLowerCase();
     const activeOrder = ACTIVE_STATUSES.has(status) ? 0 : status === 'upcoming' ? 1 : 2;
@@ -77,7 +84,7 @@
       if (!key) return;
       map.set(key, { ...(map.get(key) || {}), ...event });
     });
-    return Array.from(map.values()).sort((a, b) => {
+    return Array.from(map.values()).filter((event) => !isRetiredCompetition(event)).sort((a, b) => {
       const left = eventOrder(a);
       const right = eventOrder(b);
       return left[0] - right[0] || left[1] - right[1];

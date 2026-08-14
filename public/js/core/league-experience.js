@@ -594,7 +594,13 @@
     const box = $('#competitionsList');
     if (!box) return;
     const data = await api('/api/league/competitions');
-    const events = (data.competitions || []).map(officialCompetition);
+    const season = data.season || data.seasons?.[0] || {
+      id: 'hollow-nexus-t1', title: 'Temporada 1', name: 'Hollow Nexus T1', shortName: 'HN T1', statusLabel: 'Em preparação'
+    };
+    const retiredCompetition = (event = {}) => [event.id, event.slug, event.name, event.title]
+      .map((value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+      .some((value) => value.includes('rota ao abismo'));
+    const events = (data.competitions || []).filter((event) => !retiredCompetition(event)).map(officialCompetition);
     const activeStatuses = new Set(['open', 'running', 'active']);
     const finishedStatuses = new Set(['closed', 'finished', 'archived']);
     const statusLabel = (status) => ({ open: 'Inscrições abertas', running: 'Em andamento', active: 'Ativa', closed: 'Inscrições encerradas', finished: 'Finalizada', upcoming: 'Em breve' })[String(status || '').toLowerCase()] || 'Em breve';
@@ -603,6 +609,14 @@
     const totalSlots = events
       .filter((event) => activeStatuses.has(String(event.status || '').toLowerCase()))
       .reduce((sum, event) => sum + Math.max(0, Number(event.teamLimit || 16) - Number(event.registeredCount || event.registrations?.length || 0)), 0);
+    const setText = (selector, value) => { const node = $(selector); if (node) node.textContent = String(value ?? ''); };
+    setText('#currentSeasonTitleText', season.title || 'Temporada 1');
+    setText('#currentSeasonName', season.name || 'Hollow Nexus T1');
+    setText('#currentSeasonDescription', season.description || 'Os próximos campeonatos oficiais serão organizados dentro desta temporada.');
+    setText('#currentSeasonStatus', season.statusLabel || 'Em preparação');
+    setText('#seasonCompetitionCount', Number(season.competitionCount || 0));
+    setText('#seasonActiveCount', Number(season.activeCompetitionCount || 0));
+    setText('#seasonClubCount', Number(season.registeredClubCount || 0));
     $$('[data-competition-stat="active"]').forEach((node) => { node.textContent = String(events.filter((event) => activeStatuses.has(String(event.status || 'open').toLowerCase())).length); });
     $$('[data-competition-stat="registered"]').forEach((node) => { node.textContent = String(totalRegistered); });
     $$('[data-competition-stat="slots"]').forEach((node) => { node.textContent = String(totalSlots); });
@@ -625,7 +639,8 @@
       const officialResult = isNexusCupFirstEdition(event)
         ? '<div class="hnl-competition-result-note"><div><strong>🏆 Pódio confirmado</strong><span>1º Flow · 2º Griffin Gaming · 3º Império</span></div><a class="hnl-btn primary" href="/pages/resultados.html">Ver resultado oficial</a></div>'
         : '';
-      return `<article class="hnl-card hnl-competition-feature ${finished ? 'is-finished' : ''}"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : finished ? 'hnl-finished-chip' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">Edição oficial</span></div><h2 class="hnl-competition-title">${esc(competitionTitle(event))}</h2><p class="hnl-competition-description">${esc(finished ? 'Competição encerrada com resultado oficial publicado pela Hollow Nexus League.' : (event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.'))}</p></div><div class="hnl-competition-mark" aria-hidden="true">${finished ? '🏆' : '♕'}</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>${finished ? 'Situação' : 'Início'}</small><strong>${finished ? 'Encerrada' : esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p>${officialResult}<div class="hnl-actions">${canRegister ? `<button class="hnl-btn primary" type="button" data-register-event="${esc(event.id)}">Inscrever meu time</button>` : ''}<a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
+      const seasonLabel = String(event.seasonId || '') === String(season.id || '') ? (season.shortName || 'HN T1') : 'Histórico da liga';
+      return `<article class="hnl-card hnl-competition-feature ${finished ? 'is-finished' : ''}"><div class="hnl-competition-head"><div><div class="hnl-actions"><span class="hnl-chip ${activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'green' : finished ? 'hnl-finished-chip' : ''}">${esc(statusLabel(event.status || 'open'))}</span><span class="hnl-chip">${esc(seasonLabel)}</span></div><h2 class="hnl-competition-title">${esc(competitionTitle(event))}</h2><p class="hnl-competition-description">${esc(finished ? 'Competição encerrada com resultado oficial publicado pela Hollow Nexus League.' : (event.description || 'Competição oficial da Hollow Nexus League. Confira formato, vagas e calendário antes de inscrever o clube.'))}</p></div><div class="hnl-competition-mark" aria-hidden="true">${finished ? '🏆' : '♕'}</div></div><div class="hnl-competition-meta"><div><small>Formato</small><strong>${esc(event.matchFormat || 'MD1')}</strong></div><div><small>Estrutura</small><strong>${esc(structureLabel(event.structure || event.mode))}</strong></div><div><small>${finished ? 'Situação' : 'Início'}</small><strong>${finished ? 'Encerrada' : esc(fmt(event.startAt))}</strong></div><div><small>Entrada</small><strong>${esc(fee)}</strong></div></div><div class="hnl-registration-progress"><header><span>Clubes confirmados</span><strong>${registered}/${limit}</strong></header><div class="hnl-progress-track"><span style="width:${progress}%"></span></div></div><p><strong>Premiação:</strong> ${esc(reward)}</p>${officialResult}<div class="hnl-actions">${canRegister ? `<button class="hnl-btn primary" type="button" data-register-event="${esc(event.id)}">Inscrever meu time</button>` : ''}<a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || '')}">Ver competição</a><a class="hnl-btn" href="/pages/regulamento.html">Regulamento</a><a class="hnl-btn ghost" href="/pages/chaveamento.html">Chaveamento</a></div></article>`;
     }
 
     function render(filter = 'active') {

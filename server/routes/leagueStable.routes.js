@@ -4,6 +4,7 @@ const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service
 const { callBot } = require('../services/botApi.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 const { normalizeBracketForResponse } = require('../services/bracket.service');
+const { isVisibleCompetition, publicSeason } = require('../services/season.service');
 
 const RESULT_CHANNEL = 'results-main';
 const RANKING_CHANNELS = ['frm-ranking-settings', 'league-ranking-settings'];
@@ -197,7 +198,7 @@ async function snapshot(req = null) {
   return {
     teams: teamsResult.value,
     users: usersResult.value,
-    events: eventsResult.value,
+    events: eventsResult.value.filter(isVisibleCompetition),
     bracket: bracketResult.value,
     settings: settingsResult.value,
     viewer: viewerResult.value,
@@ -307,6 +308,7 @@ function registerLeagueStableRoutes(app) {
     ['get', '/api/league/players'],
     ['get', '/api/league/players/:playerId'],
     ['get', '/api/league/competitions'],
+    ['get', '/api/league/seasons'],
     ['get', '/api/league/rankings'],
     ['get', '/api/league/bracket'],
     ['get', '/api/league/groups'],
@@ -327,7 +329,7 @@ function registerLeagueStableRoutes(app) {
     });
     const resultMessages = await storage.readChatMessages({ channelId: RESULT_CHANNEL, limit: 500 }).catch(() => []);
     const results = resultMessages.map(parseResult).filter(Boolean);
-    return res.json({ success: true, degraded: data.degraded, errors: data.errors, teams: clubs, clubs, players, users: players, events: data.events, bracket: normalizeBracketForResponse(data.bracket || {}, data.teams, data.users), settings: data.settings, stats: { clubes: clubs.length, jogadores: players.length, atletas: players.length, competicoes: data.events.length, partidas: results.length } });
+    return res.json({ success: true, degraded: data.degraded, errors: data.errors, teams: clubs, clubs, players, users: players, events: data.events, season: publicSeason(data.events), bracket: normalizeBracketForResponse(data.bracket || {}, data.teams, data.users), settings: data.settings, stats: { clubes: clubs.length, jogadores: players.length, atletas: players.length, competicoes: data.events.length, partidas: results.length } });
   });
 
   app.get('/api/league/clubs', async (req, res) => {
@@ -376,8 +378,16 @@ function registerLeagueStableRoutes(app) {
 
   app.get('/api/league/competitions', async (_req, res) => {
     const eventsResult = await safeRead('competições', () => storage.readEvents(), []);
-    const competitions = eventsResult.value.filter((event) => !['deleted', 'hidden', 'archived'].includes(String(event.status || '').toLowerCase()));
-    return res.json({ success: true, degraded: Boolean(eventsResult.error), errors: eventsResult.error ? [eventsResult.error] : [], competitions, events: competitions });
+    const competitions = eventsResult.value.filter(isVisibleCompetition);
+    const season = publicSeason(competitions);
+    return res.json({ success: true, degraded: Boolean(eventsResult.error), errors: eventsResult.error ? [eventsResult.error] : [], season, seasons: [season], competitions, events: competitions });
+  });
+
+  app.get('/api/league/seasons', async (_req, res) => {
+    const eventsResult = await safeRead('competições', () => storage.readEvents(), []);
+    const competitions = eventsResult.value.filter(isVisibleCompetition);
+    const season = publicSeason(competitions);
+    return res.json({ success: true, degraded: Boolean(eventsResult.error), errors: eventsResult.error ? [eventsResult.error] : [], currentSeason: season, seasons: [season], competitions: competitions.filter((event) => String(event.seasonId || '') === season.id) });
   });
 
   app.get('/api/league/rankings', async (req, res) => {

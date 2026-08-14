@@ -1,10 +1,13 @@
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord, requireAdmin } = require('../services/access.service');
 const { canManageTeam } = require('../services/teamAccess.service');
+const { isVisibleCompetition } = require('../services/season.service');
 const RESULT_CHANNEL = 'results-main';
 const MAX_PROOF_CHARACTERS = 2600000;
 const STAT_KEYS = ['goals', 'assists', 'interceptions', 'defenses', 'passes'];
 const ALLOWED_STATUSES = new Set(['pending', 'validated', 'rejected']);
+let reportCache = [];
+let reportCacheUpdatedAt = null;
 
 function text(value = '', max = 180) {
   return String(value || '').trim().slice(0, max);
@@ -48,28 +51,61 @@ function parseResultRecord(message = {}) {
   }
 }
 
+function sortReports(reports = []) {
+  return [...reports].sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+}
+
+function cacheReport(report = {}) {
+  const identities = [report.id, report.messageId, report.hubId].map(String).filter(Boolean);
+  const index = reportCache.findIndex((item) => [item.id, item.messageId, item.hubId].map(String).some((id) => identities.includes(id)));
+  if (index >= 0) reportCache[index] = { ...reportCache[index], ...report };
+  else reportCache.unshift(report);
+  reportCache = sortReports(reportCache);
+  reportCacheUpdatedAt = new Date().toISOString();
+}
+
+async function readReportState() {
+  try {
+    const messages = await storage.readChatMessages({ channelId: RESULT_CHANNEL, limit: 500 });
+    const results = sortReports(messages.map(parseResultRecord).filter(Boolean));
+    reportCache = results;
+    reportCacheUpdatedAt = new Date().toISOString();
+    return { results, degraded: false, warning: '', cacheUpdatedAt: reportCacheUpdatedAt };
+  } catch (error) {
+    return {
+      results: sortReports(reportCache),
+      degraded: true,
+      warning: reportCache.length
+        ? 'O histórico está exibindo a última cópia disponível. Novos envios continuam bloqueados até a conexão de dados voltar.'
+        : 'O histórico está temporariamente indisponível. A criação da súmula permanece na tela e pode ser tentada novamente em instantes.',
+      cacheUpdatedAt: reportCacheUpdatedAt,
+      error: error.message
+    };
+  }
+}
+
 async function readReports() {
-  const messages = await storage.readChatMessages({ channelId: RESULT_CHANNEL, limit: 500 }).catch(() => []);
-  return messages
-    .map(parseResultRecord)
-    .filter(Boolean)
-    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+  return (await readReportState()).results;
 }
 
 async function saveReport(report = {}) {
   const content = `RESULT_JSON:${JSON.stringify(report)}`;
+  let saved;
   if (report.messageId) {
-    return storage.updateChatMessage(report.messageId, { content }, { channelId: RESULT_CHANNEL, source: 'system' });
+    saved = await storage.updateChatMessage(report.messageId, { content }, { channelId: RESULT_CHANNEL, source: 'system' });
+  } else {
+    saved = await storage.saveChatMessage({
+      channelId: RESULT_CHANNEL,
+      source: 'system',
+      authorId: 'void-arena-sumulas',
+      authorName: 'Central de Súmulas',
+      content,
+      attachments: [],
+      createdAt: report.createdAt || new Date().toISOString()
+    });
   }
-  return storage.saveChatMessage({
-    channelId: RESULT_CHANNEL,
-    source: 'system',
-    authorId: 'void-arena-sumulas',
-    authorName: 'Central de Súmulas',
-    content,
-    attachments: [],
-    createdAt: report.createdAt || new Date().toISOString()
-  });
+  cacheReport({ ...report, messageId: saved?.id || report.messageId || '' });
+  return saved;
 }
 
 function userMaps(users = []) {
@@ -248,12 +284,12 @@ function publicHistoryResult(result = {}) {
 }
 
 async function loadBootstrap(req) {
-  const [user, teams, users, events, results] = await Promise.all([
+  const [user, teams, users, events, reportState] = await Promise.all([
     getSessionUser(req),
     storage.readTeams(),
     storage.readUsers(),
     storage.readEvents().catch(() => []),
-    readReports()
+    readReportState()
   ]);
   if (!user) return null;
   const isAdmin = await isAdminRecord(user).catch(() => false);
@@ -263,8 +299,11 @@ async function loadBootstrap(req) {
     isAdmin,
     teams,
     users,
-    events,
-    results,
+    events: events.filter(isVisibleCompetition),
+    results: reportState.results,
+    reportsDegraded: reportState.degraded,
+    reportsWarning: reportState.warning,
+    reportsCacheUpdatedAt: reportState.cacheUpdatedAt,
     managedIds
   };
 }
@@ -285,6 +324,9 @@ function registerMatchReportRoutes(app) {
         teams,
         events: data.events.map(publicEvent),
         results: data.results.map(publicHistoryResult),
+        degraded: data.reportsDegraded,
+        warning: data.reportsWarning,
+        cacheUpdatedAt: data.reportsCacheUpdatedAt,
         stats: {
           total: data.results.length,
           pending: data.results.filter((item) => ['pending', 'partial', 'conflict'].includes(String(item.status || 'pending'))).length,
@@ -298,12 +340,14 @@ function registerMatchReportRoutes(app) {
   });
 
   app.get('/api/match-reports', requireSession, async (_req, res) => {
-    try {
-      const results = await readReports();
-      return res.json({ success: true, results: results.map(publicHistoryResult) });
-    } catch (error) {
-      return res.status(503).json({ success: false, message: error.message });
-    }
+    const state = await readReportState();
+    return res.json({
+      success: true,
+      results: state.results.map(publicHistoryResult),
+      degraded: state.degraded,
+      warning: state.warning,
+      cacheUpdatedAt: state.cacheUpdatedAt
+    });
   });
 
   app.get('/api/match-reports/:reportId/proof', requireSession, async (req, res) => {
@@ -484,10 +528,14 @@ function registerMatchReportRoutes(app) {
       return res.status(201).json({
         success: true,
         report: publicHistoryResult(report),
-        message: 'Súmula salva no site e enviada para a área Todos os envios.'
+        message: 'Súmula salva com sucesso em Todos os envios do site.'
       });
     } catch (error) {
-      return res.status(400).json({ success: false, message: error.message });
+      return res.status(503).json({
+        success: false,
+        retryable: true,
+        message: 'Não foi possível salvar em Todos os envios agora. Seus campos continuam preenchidos; aguarde alguns instantes e tente novamente.'
+      });
     }
   });
 
@@ -619,7 +667,7 @@ function registerMatchReportRoutes(app) {
         message: 'Alterações salvas em Todos os envios.'
       });
     } catch (error) {
-      return res.status(400).json({ success: false, message: error.message });
+      return res.status(503).json({ success: false, retryable: true, message: 'Não foi possível atualizar esta súmula agora. Tente novamente em instantes.' });
     }
   });
 
@@ -657,7 +705,7 @@ function registerMatchReportRoutes(app) {
       });
       return res.json({ success: true, report: publicHistoryResult(report) });
     } catch (error) {
-      return res.status(400).json({ success: false, message: error.message });
+      return res.status(503).json({ success: false, retryable: true, message: 'Não foi possível alterar o status agora. Tente novamente em instantes.' });
     }
   });
 

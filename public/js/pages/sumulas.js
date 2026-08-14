@@ -33,7 +33,10 @@
     stats: {},
     proof: null,
     submitting: false,
-    editingReportId: ''
+    editingReportId: '',
+    historyDegraded: false,
+    historyWarning: '',
+    historyCacheUpdatedAt: null
   };
 
   function escapeHtml(value = '') {
@@ -373,7 +376,8 @@
     };
     state.submitting = true;
     updateReview();
-    setStatus('Salvando a súmula no sistema...');
+    $('submitReportBtn').textContent = 'Salvando em Todos os envios...';
+    setStatus('Salvando a súmula somente no histórico do site...');
     try {
       const editingId = state.editingReportId;
       const endpoint = editingId
@@ -398,11 +402,12 @@
         resetForm();
         switchView('history');
         $('historyView')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 700);
+      }, 250);
     } catch (error) {
       setStatus(error.message, 'error');
     } finally {
       state.submitting = false;
+      $('submitReportBtn').textContent = state.editingReportId ? 'Salvar alterações' : 'Salvar em Todos os envios';
       updateReview();
     }
   }
@@ -410,7 +415,7 @@
   function resetForm() {
     $('matchReportForm').reset();
     state.editingReportId = '';
-    $('submitReportBtn').textContent = 'Enviar para validação';
+    $('submitReportBtn').textContent = 'Salvar em Todos os envios';
     resetMatchSelection();
     removeProof();
     updateOpponentSelector();
@@ -479,9 +484,8 @@
     const status = normalizeStatus(report.status);
     const [statusLabel, statusClass] = STATUS[status];
     const proof = imageUrl(typeof report.proof === 'string' ? report.proof : report.proof?.url, '');
-    const stableProof = report.discordChannelId && report.discordMessageId && report.id
-      ? `/api/match-reports/${encodeURIComponent(report.id)}/proof`
-      : proof;
+    const reportId = report.id || report.messageId || report.hubId || '';
+    const stableProof = reportId ? `/api/match-reports/${encodeURIComponent(reportId)}/proof` : proof;
     const proofMarkup = stableProof
       ? `<a href="${escapeHtml(stableProof)}" target="_blank" rel="noopener"><img src="${escapeHtml(stableProof)}" alt="Comprovante da partida" loading="lazy" /></a>`
       : '<span>Comprovante indisponível para este registro antigo.</span>';
@@ -522,9 +526,28 @@
   function renderHistory() {
     const reports = filteredReports();
     $('historyCount').textContent = `${reports.length} ${reports.length === 1 ? 'envio' : 'envios'}`;
+    if ($('historyTabCount')) {
+      $('historyTabCount').textContent = String(state.results.length);
+      $('historyTabCount').setAttribute('aria-label', `${state.results.length} ${state.results.length === 1 ? 'envio' : 'envios'}`);
+    }
     $('reportsHistory').innerHTML = reports.length ? reports.map(historyCard).join('') : '<div class="sumulas-empty">Nenhuma súmula corresponde aos filtros selecionados.</div>';
     $('reportsHistory').querySelectorAll('[data-report-status]').forEach((button) => button.addEventListener('click', () => updateReportStatus(button)));
     $('reportsHistory').querySelectorAll('[data-report-edit]').forEach((button) => button.addEventListener('click', () => editReport(button.dataset.reportId)));
+  }
+
+  function renderHistoryHealth() {
+    const target = $('historySyncNotice');
+    if (!target) return;
+    if (!state.historyDegraded) {
+      target.hidden = true;
+      target.className = 'sumulas-history-health';
+      target.textContent = '';
+      return;
+    }
+    const cachedAt = state.historyCacheUpdatedAt ? ` Última atualização: ${formatDate(state.historyCacheUpdatedAt)}.` : '';
+    target.hidden = false;
+    target.className = 'sumulas-history-health is-degraded';
+    target.textContent = `${state.historyWarning || 'O histórico está usando a última cópia disponível.'}${cachedAt}`;
   }
 
   function renderMetrics() {
@@ -624,8 +647,12 @@
     try {
       const data = await VA.request('/api/match-reports', { timeoutMs: 20000 });
       state.results = data.results || [];
+      state.historyDegraded = Boolean(data.degraded);
+      state.historyWarning = data.warning || '';
+      state.historyCacheUpdatedAt = data.cacheUpdatedAt || null;
       renderMetrics();
       renderHistory();
+      renderHistoryHealth();
     } catch (error) {
       $('reportsHistory').innerHTML = `<div class="sumulas-notice is-error">${escapeHtml(error.message)}</div>`;
     } finally {
@@ -674,12 +701,16 @@
         managedTeams: data.managedTeams || [],
         teams: data.teams || [],
         events: data.events || [],
-        results: data.results || []
+        results: data.results || [],
+        historyDegraded: Boolean(data.degraded),
+        historyWarning: data.warning || '',
+        historyCacheUpdatedAt: data.cacheUpdatedAt || null
       });
       populateSelectors();
       renderRosters();
       renderMetrics();
       renderHistory();
+      renderHistoryHealth();
       if (!state.canSubmit) {
         const notice = $('reportPermissionNotice');
         notice.hidden = false;

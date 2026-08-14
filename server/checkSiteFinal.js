@@ -103,16 +103,48 @@ for (const [label, source, marker] of [
   ['página', sumulasPage, 'Central de Súmulas'],
   ['página', sumulasPage, 'Todos os envios'],
   ['página', sumulasPage, 'proofFile'],
+  ['página', sumulasPage, 'Destino: Todos os envios'],
+  ['página', sumulasPage, 'historyTabCount'],
   ['cliente', sumulasClient, 'async function optimizeProof'],
   ['cliente', sumulasClient, "VA.request('/api/match-reports'"],
+  ['cliente', sumulasClient, 'Salvar em Todos os envios'],
   ['servidor', sumulasRoutes, "app.post('/api/match-reports'"],
-  ['servidor', sumulasRoutes, "callBot('/internal/discord/send-match-report'"],
-  ['servidor', sumulasRoutes, 'discord.proofUrl'],
+  ['servidor', sumulasRoutes, 'storage.saveChatMessage'],
+  ['servidor', sumulasRoutes, 'readReportState'],
   ['servidor', sumulasRoutes, "app.get('/api/match-reports/:reportId/proof'"],
-  ['servidor', sumulasRoutes, 'resolve-match-report-attachment']
+  ['servidor', sumulasRoutes, 'storedProof']
 ]) {
   if (!source.includes(marker)) {
     console.error(`[Check Final] Central de Súmulas incompleta em ${label}: ${marker}`);
+    process.exit(1);
+  }
+}
+
+for (const forbidden of [
+  "callBot('/internal/discord/send-match-report'",
+  'resolve-match-report-attachment',
+  'discord.proofUrl',
+  'canal de resultados'
+]) {
+  if (sumulasRoutes.includes(forbidden) || sumulasClient.includes(forbidden) || sumulasPage.includes(forbidden)) {
+    console.error(`[Check Final] Central de Súmulas ainda depende do fluxo antigo do Discord: ${forbidden}`);
+    process.exit(1);
+  }
+}
+
+const seasonService = fs.readFileSync(path.join(ROOT, 'server', 'services', 'season.service.js'), 'utf8');
+const leagueStableRoutes = fs.readFileSync(path.join(ROOT, 'server', 'routes', 'leagueStable.routes.js'), 'utf8');
+const leagueExperiencePatch = fs.readFileSync(path.join(ROOT, 'server', 'patchLeagueExperienceRuntime.js'), 'utf8');
+for (const [label, source, marker] of [
+  ['temporada', seasonService, "id: 'hollow-nexus-t1'"],
+  ['temporada', seasonService, "name: 'Hollow Nexus T1'"],
+  ['temporada', seasonService, 'isRotaAoAbismo'],
+  ['API', leagueStableRoutes, "app.get('/api/league/seasons'"],
+  ['página', leagueExperiencePatch, 'currentSeasonCard'],
+  ['página', leagueExperiencePatch, 'Campeonatos da liga']
+]) {
+  if (!source.includes(marker)) {
+    console.error(`[Check Final] Temporada 1 incompleta em ${label}: ${marker}`);
     process.exit(1);
   }
 }
