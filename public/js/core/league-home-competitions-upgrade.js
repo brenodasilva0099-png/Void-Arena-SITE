@@ -43,7 +43,19 @@
   }
 
   function structureLabel(value = '') {
-    return ({ single_elimination: 'Mata-mata', groups: 'Fase de grupos', groups_playoffs: 'Grupos + playoffs' })[String(value || '')] || String(value || 'Mata-mata').replaceAll('_', ' ');
+    return ({ tbd: 'A definir', single_elimination: 'Mata-mata', groups: 'Fase de grupos', groups_playoffs: 'Grupos + playoffs' })[String(value || '')] || String(value || 'A definir').replaceAll('_', ' ');
+  }
+
+  function inputDate(value = '') {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const local = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+    return local.toISOString().slice(0, 16);
+  }
+
+  function option(value, label, current) {
+    return `<option value="${esc(value)}"${String(value) === String(current) ? ' selected' : ''}>${esc(label)}</option>`;
   }
 
   function registeredTeamsHtml(event = {}, isAdmin = false) {
@@ -68,7 +80,92 @@
       api('/api/events'),
       api('/api/league/viewer').catch(() => ({ isAdmin: false }))
     ]);
-    return { events: (eventsData.events || []).map(officialEvent), isAdmin: Boolean(viewerData.isAdmin) };
+    return { events: (eventsData.events || []).map(officialEvent), season: eventsData.season || null, isAdmin: Boolean(viewerData.isAdmin) };
+  }
+
+  function isHnlCampOne(event = {}) {
+    return String(event.id || '') === 'hnl-camp-1' || /^hnl\s+camp\s+1(?:º|o)?$/i.test(titleOf(event));
+  }
+
+  function renderSeasonCompetition(event = {}, isAdmin = false, rerender = async () => {}) {
+    const target = $('#seasonPrimaryCompetition');
+    if (!target) return;
+    const registered = Array.isArray(event.registrations) ? event.registrations.length : number(event.registeredCount);
+    const limit = Math.max(1, number(event.teamLimit || 8));
+    target.innerHTML = `<article class="hnl-season-competition-card">
+      <div class="hnl-season-competition-number" aria-hidden="true">1º</div>
+      <div class="hnl-season-competition-copy">
+        <span>Campeonato 01 · Hollow Nexus T1</span>
+        <h3>${esc(titleOf(event) || 'HNL Camp 1º')}</h3>
+        <p>${esc(event.description || 'Primeiro campeonato da temporada. Data, formato e inscrições serão definidos pela organização.')}</p>
+        <div class="hnl-season-competition-meta">
+          <span>${esc(statusLabel(event.status))}</span>
+          <span>${esc(formatDate(event.startAt))}</span>
+          <span>${esc(event.matchFormat || 'A definir')}</span>
+          <span>${esc(structureLabel(event.structure || event.mode))}</span>
+          <span>${registered}/${limit} clubes</span>
+        </div>
+      </div>
+      <div class="hnl-season-competition-actions">
+        <a class="hnl-btn" href="/pages/competicao.html?id=${encodeURIComponent(event.id || 'hnl-camp-1')}">Abrir campeonato</a>
+        ${isAdmin ? `<button class="hnl-season-configure" type="button" data-configure-season-competition aria-label="Configurar ${esc(titleOf(event))}" title="Configurar data, formato e inscrições">⚙</button>` : ''}
+      </div>
+    </article>`;
+    target.querySelector('[data-configure-season-competition]')?.addEventListener('click', () => openCompetitionSettings(event, rerender));
+  }
+
+  function openCompetitionSettings(event = {}, rerender = async () => {}) {
+    const modal = $('#frmModal');
+    const panel = $('#frmModalPanel');
+    if (!modal || !panel) return;
+    panel.innerHTML = `<div class="hnl-modal-head"><div><span class="hnl-section-kicker">Hollow Nexus T1</span><h2>Configurar HNL Camp 1º</h2></div><button class="hnl-modal-close" id="hnlCompetitionClose" type="button" aria-label="Fechar">×</button></div>
+      <p class="hnl-season-config-help">Defina o calendário e o formato antes de abrir as inscrições. A alteração fica salva no campeonato da Temporada 1.</p>
+      <form id="hnlSeasonCompetitionForm" class="hnl-season-config-form">
+        <label class="hnl-field"><span>Nome do campeonato</span><input class="hnl-input" name="name" maxlength="100" required value="${esc(titleOf(event) || 'HNL Camp 1º')}"></label>
+        <label class="hnl-field"><span>Data e horário</span><input class="hnl-input" name="startAt" type="datetime-local" value="${esc(inputDate(event.startAt))}"></label>
+        <label class="hnl-field"><span>Formato das partidas</span><select class="hnl-select" name="matchFormat">${option('A definir', 'A definir', event.matchFormat || 'A definir')}${option('MD1', 'MD1', event.matchFormat)}${option('MD2', 'MD2', event.matchFormat)}${option('MD3', 'MD3', event.matchFormat)}${option('MD5', 'MD5', event.matchFormat)}</select></label>
+        <label class="hnl-field"><span>Estrutura</span><select class="hnl-select" name="structure">${option('tbd', 'A definir', event.structure || 'tbd')}${option('single_elimination', 'Mata-mata', event.structure)}${option('groups', 'Fase de grupos', event.structure)}${option('groups_playoffs', 'Grupos + playoffs', event.structure)}</select></label>
+        <label class="hnl-field"><span>Limite de clubes</span><select class="hnl-select" name="teamLimit">${[4,6,8,10,12,14,16,18,20,22,24,26,28,30,32].map((value) => option(value, `${value} clubes`, Number(event.teamLimit || 8))).join('')}</select></label>
+        <label class="hnl-field"><span>Situação</span><select class="hnl-select" name="status">${option('upcoming', 'Em preparação', event.status || 'upcoming')}${option('open', 'Inscrições abertas', event.status)}${option('running', 'Em andamento', event.status)}${option('closed', 'Inscrições encerradas', event.status)}${option('finished', 'Finalizada', event.status)}</select></label>
+        <label class="hnl-field"><span>Entrada</span><input class="hnl-input" name="entryFee" maxlength="80" placeholder="Gratuita ou valor" value="${esc(event.entryFee || event.registrationFee || '')}"></label>
+        <label class="hnl-field"><span>Premiação</span><input class="hnl-input" name="reward" maxlength="180" placeholder="A definir" value="${esc(event.reward || event.prize || '')}"></label>
+        <label class="hnl-field full"><span>Descrição</span><textarea class="hnl-textarea" name="description" maxlength="1200" rows="4">${esc(event.description || '')}</textarea></label>
+        <div class="full" id="hnlCompetitionConfigStatus"></div>
+        <div class="hnl-actions full"><button class="hnl-btn primary" type="submit">Salvar configuração</button><button class="hnl-btn" id="hnlCompetitionCancel" type="button">Cancelar</button></div>
+      </form>`;
+    modal.classList.add('open');
+    const close = () => modal.classList.remove('open');
+    $('#hnlCompetitionClose')?.addEventListener('click', close);
+    $('#hnlCompetitionCancel')?.addEventListener('click', close);
+    modal.onclick = (clickEvent) => { if (clickEvent.target === modal) close(); };
+    $('#hnlSeasonCompetitionForm')?.addEventListener('submit', async (submitEvent) => {
+      submitEvent.preventDefault();
+      const form = submitEvent.currentTarget;
+      const submit = form.querySelector('[type="submit"]');
+      const status = $('#hnlCompetitionConfigStatus');
+      const values = Object.fromEntries(new FormData(form));
+      const structure = String(values.structure || 'tbd');
+      submit.disabled = true;
+      status.innerHTML = '<div class="hnl-notice">Salvando configuração...</div>';
+      try {
+        await api(`/api/league/competitions/${encodeURIComponent(event.id || 'hnl-camp-1')}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...values,
+            seasonId: 'hollow-nexus-t1',
+            teamLimit: Number(values.teamLimit || 8),
+            mode: structureLabel(structure)
+          })
+        });
+        status.innerHTML = '<div class="hnl-notice success">Configuração salva.</div>';
+        await rerender();
+        close();
+      } catch (error) {
+        status.innerHTML = `<div class="hnl-notice error">${esc(error.message)}</div>`;
+        submit.disabled = false;
+      }
+    });
   }
 
   async function removeRegistration(button, rerender) {
@@ -97,7 +194,7 @@
     let filterTouched = false;
 
     const render = async () => {
-      const { events, isAdmin } = await loadCompetitionData();
+      const { events, season, isAdmin } = await loadCompetitionData();
       const activeStatuses = new Set(['open', 'running', 'active']);
       const finishedStatuses = new Set(['closed', 'finished', 'archived']);
       const category = (event) => activeStatuses.has(String(event.status || 'open').toLowerCase()) ? 'active' : finishedStatuses.has(String(event.status || '').toLowerCase()) ? 'finished' : 'upcoming';
@@ -111,6 +208,10 @@
       $$('[data-competition-stat="registered"]').forEach((node) => { node.textContent = String(registeredTotal); });
       $$('[data-competition-stat="slots"]').forEach((node) => { node.textContent = String(slotsTotal); });
       $$('[data-competition-filter]').forEach((node) => node.classList.toggle('active', node.dataset.competitionFilter === filter));
+      if ($('#seasonCompetitionCount')) $('#seasonCompetitionCount').textContent = String(number(season?.competitionCount ?? events.filter((event) => String(event.seasonId || '') === 'hollow-nexus-t1').length));
+      if ($('#seasonActiveCount')) $('#seasonActiveCount').textContent = String(number(season?.activeCompetitionCount ?? events.filter((event) => activeStatuses.has(String(event.status || '').toLowerCase())).length));
+      if ($('#seasonClubCount')) $('#seasonClubCount').textContent = String(number(season?.registeredClubCount ?? registeredTotal));
+      renderSeasonCompetition(events.find(isHnlCampOne) || { id: 'hnl-camp-1', name: 'HNL Camp 1º', status: 'upcoming', matchFormat: 'A definir', structure: 'tbd', teamLimit: 8, registrations: [] }, isAdmin, render);
 
       box.innerHTML = visible.length ? visible.map((event) => {
         const registrations = Array.isArray(event.registrations) ? event.registrations : [];

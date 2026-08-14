@@ -428,9 +428,21 @@
   }
 
   function reportTeams(report = {}) {
+    const hydrate = (stored = {}) => {
+      const identities = [stored.id, stored.name, stored.tag].map((value) => String(value || '').trim().toLocaleLowerCase('pt-BR')).filter(Boolean);
+      const current = state.teams.find((team) => [team.id, team.name, team.tag].map((value) => String(value || '').trim().toLocaleLowerCase('pt-BR')).some((value) => identities.includes(value))) || null;
+      if (!current) return stored;
+      const storedLogo = imageUrl(stored.logo, '');
+      const isLeagueFallback = /\/assets\/hollow-nexus(?:-official)?\.(?:svg|png|webp)/i.test(storedLogo);
+      return {
+        ...current,
+        ...stored,
+        logo: (!storedLogo || isLeagueFallback) && current.logo ? current.logo : storedLogo
+      };
+    };
     return {
-      teamA: report.match?.teamA || report.teamA || {},
-      teamB: report.match?.teamB || report.teamB || {}
+      teamA: hydrate(report.match?.teamA || report.teamA || {}),
+      teamB: hydrate(report.match?.teamB || report.teamB || {})
     };
   }
 
@@ -465,7 +477,14 @@
   function statsList(report = {}) {
     const rows = Array.isArray(report.playerStats) ? report.playerStats : [];
     if (!rows.length) return '<p>Nenhuma estatística individual registrada.</p>';
-    return `<ul>${rows.map((player) => `<li><strong>${escapeHtml(player.name || 'Jogador')}</strong>: G ${Number(player.goals || 0)} · A ${Number(player.assists || 0)} · I ${Number(player.interceptions || 0)} · D ${Number(player.defenses || 0)} · P ${Number(player.passes || 0)}</li>`).join('')}</ul>`;
+    return `<div class="sumulas-stats-table-wrap"><table class="sumulas-stats-table">
+      <thead><tr><th>Jogador</th><th title="Gols">Gols</th><th title="Assistências">Assist.</th><th title="Interceptações">Intercep.</th><th title="Defesas">Defesas</th><th title="Passes">Passes</th></tr></thead>
+      <tbody>${rows.map((player) => {
+        const avatar = imageUrl(player.avatar, '');
+        const visual = avatar ? `<img src="${escapeHtml(avatar)}" alt="" loading="lazy">` : `<span>${escapeHtml((player.name || '?').slice(0, 1).toUpperCase())}</span>`;
+        return `<tr><td><div class="sumulas-stats-player">${visual}<div><strong>${escapeHtml(player.name || 'Jogador')}</strong><small>${escapeHtml(player.rosterRole || 'Elenco')}</small></div></div></td><td>${Number(player.goals || 0)}</td><td>${Number(player.assists || 0)}</td><td>${Number(player.interceptions || 0)}</td><td>${Number(player.defenses || 0)}</td><td>${Number(player.passes || 0)}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
   }
 
   function adminActions(report = {}) {
@@ -476,6 +495,7 @@
       <button class="hnl-btn primary" type="button" data-report-status="validated" data-report-id="${id}">Validar súmula</button>
       <button class="hnl-btn danger" type="button" data-report-status="rejected" data-report-id="${id}">Rejeitar</button>
       <button class="hnl-btn" type="button" data-report-status="pending" data-report-id="${id}">Voltar para análise</button>
+      <button class="hnl-btn danger ghost" type="button" data-report-delete data-report-id="${id}">Excluir envio</button>
     </div>`;
   }
 
@@ -483,6 +503,13 @@
     const { teamA, teamB } = reportTeams(report);
     const status = normalizeStatus(report.status);
     const [statusLabel, statusClass] = STATUS[status];
+    const competitionName = String(report.competitionName || 'Amistoso / teste');
+    const phase = String(report.round || 'Fase não informada');
+    const historyMeta = [
+      phase.toLocaleLowerCase('pt-BR') === competitionName.toLocaleLowerCase('pt-BR') ? '' : phase,
+      report.game || '',
+      formatDate(report.createdAt || report.updatedAt)
+    ].filter(Boolean).map(escapeHtml).join(' · ');
     const proof = imageUrl(typeof report.proof === 'string' ? report.proof : report.proof?.url, '');
     const reportId = report.id || report.messageId || report.hubId || '';
     const stableProof = reportId ? `/api/match-reports/${encodeURIComponent(reportId)}/proof` : proof;
@@ -491,7 +518,7 @@
       : '<span>Comprovante indisponível para este registro antigo.</span>';
     return `<article class="sumulas-history-card" data-report-card>
       <header class="sumulas-history-card-head">
-        <div><strong>${escapeHtml(report.competitionName || 'Amistoso / teste')}</strong><small>${escapeHtml(report.round || 'Fase não informada')}${report.game ? ` · ${escapeHtml(report.game)}` : ''} · ${escapeHtml(formatDate(report.createdAt || report.updatedAt))}</small></div>
+        <div class="sumulas-history-title"><strong>${escapeHtml(competitionName)}</strong><small>${historyMeta}</small></div>
         <span class="sumulas-status ${statusClass}">${escapeHtml(statusLabel)}</span>
       </header>
       <div class="sumulas-history-card-body">
@@ -500,14 +527,14 @@
           <div class="sumulas-score-box"><strong>${escapeHtml(reportScore(report, 'A'))} × ${escapeHtml(reportScore(report, 'B'))}</strong><small>placar informado</small></div>
           <div class="sumulas-match-team">${teamVisual(teamB)}<strong>${escapeHtml(teamB.name || 'Time B')}</strong></div>
         </div>
-        <div class="sumulas-history-proof">${proofMarkup}</div>
+        <div class="sumulas-history-proof"><small>Comprovante da partida</small>${proofMarkup}</div>
       </div>
       <details class="sumulas-history-details">
         <summary>Ver participantes, MVP e estatísticas</summary>
         <div class="sumulas-history-detail-grid">
-          <div><h4>Participantes (${Number(report.participants?.length || 0)})</h4>${participantList(report)}</div>
-          <div><h4>Estatísticas</h4>${statsList(report)}</div>
-          <div><h4>Controle</h4><p><strong>MVP:</strong> ${escapeHtml(report.mvp?.name || 'Não informado')}</p><p><strong>Enviado por:</strong> ${escapeHtml(report.submittedBy?.name || report.submissions?.[0]?.authorName || 'Registro do sistema')}</p>${report.notes ? `<p><strong>Observação:</strong> ${escapeHtml(report.notes)}</p>` : ''}${report.validationNote ? `<p><strong>Análise:</strong> ${escapeHtml(report.validationNote)}</p>` : ''}${adminActions(report)}</div>
+          <div class="sumulas-detail-participants"><h4>Participantes (${Number(report.participants?.length || 0)})</h4>${participantList(report)}</div>
+          <div class="sumulas-detail-stats"><h4>Estatísticas individuais</h4>${statsList(report)}</div>
+          <div class="sumulas-detail-control"><h4>Controle</h4><p><strong>MVP:</strong> ${escapeHtml(report.mvp?.name || 'Não informado')}</p><p><strong>Enviado por:</strong> ${escapeHtml(report.submittedBy?.name || report.submissions?.[0]?.authorName || 'Registro do sistema')}</p>${report.notes ? `<p><strong>Observação:</strong> ${escapeHtml(report.notes)}</p>` : ''}${report.validationNote ? `<p><strong>Análise:</strong> ${escapeHtml(report.validationNote)}</p>` : ''}${adminActions(report)}</div>
         </div>
       </details>
     </article>`;
@@ -533,6 +560,7 @@
     $('reportsHistory').innerHTML = reports.length ? reports.map(historyCard).join('') : '<div class="sumulas-empty">Nenhuma súmula corresponde aos filtros selecionados.</div>';
     $('reportsHistory').querySelectorAll('[data-report-status]').forEach((button) => button.addEventListener('click', () => updateReportStatus(button)));
     $('reportsHistory').querySelectorAll('[data-report-edit]').forEach((button) => button.addEventListener('click', () => editReport(button.dataset.reportId)));
+    $('reportsHistory').querySelectorAll('[data-report-delete]').forEach((button) => button.addEventListener('click', () => deleteReport(button)));
   }
 
   function renderHistoryHealth() {
@@ -628,6 +656,30 @@
     } catch (error) {
       window.alert(error.message);
       button.disabled = false;
+    }
+  }
+
+  async function deleteReport(button) {
+    if (!state.isAdmin) return;
+    const reportId = String(button.dataset.reportId || '');
+    const report = state.results.find((item) => [item.id, item.messageId, item.hubId].map(String).includes(reportId));
+    if (!report) return;
+    const { teamA, teamB } = reportTeams(report);
+    const label = `${teamA.name || 'Time A'} ${reportScore(report, 'A')} × ${reportScore(report, 'B')} ${teamB.name || 'Time B'}`;
+    if (!window.confirm(`Excluir o envio “${label}” de Todos os envios?\n\nA ação fica registrada para a administração.`)) return;
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Excluindo...';
+    try {
+      const data = await VA.request(`/api/match-reports/${encodeURIComponent(reportId)}`, { method: 'DELETE', timeoutMs: 15000 });
+      const removedIds = new Set([reportId, data.reportId].map(String));
+      state.results = state.results.filter((item) => ![item.id, item.messageId, item.hubId].map(String).some((id) => removedIds.has(id)));
+      renderMetrics();
+      renderHistory();
+    } catch (error) {
+      window.alert(error.message);
+      button.disabled = false;
+      button.textContent = original;
     }
   }
 

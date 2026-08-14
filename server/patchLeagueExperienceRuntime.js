@@ -302,6 +302,9 @@ const competitionSeasonBody = `<section class="hnl-season-banner" id="currentSea
     <div><strong id="seasonActiveCount">0</strong><span>Em andamento</span></div>
     <div><strong id="seasonClubCount">0</strong><span>Clubes no ciclo</span></div>
   </div>
+  <section class="hnl-season-competition" id="seasonPrimaryCompetition" aria-label="Primeiro campeonato da temporada" aria-live="polite">
+    <div class="hnl-season-competition-loading"><span></span><strong>Carregando HNL Camp 1º...</strong></div>
+  </section>
 </section><div class="hnl-section-heading"><div><span class="hnl-season-eyebrow">Agenda competitiva</span><h2>Campeonatos da liga</h2><p>As novas competições entram na Hollow Nexus T1; edições encerradas continuam disponíveis no histórico.</p></div></div>`;
 
 const pages = {

@@ -98,6 +98,7 @@ for (const marker of ['/css/tactical-simulator-v2.css', '/js/core/tactical-simul
 const sumulasPage = fs.readFileSync(path.join(ROOT, 'public', 'pages', 'sumulas.html'), 'utf8');
 const sumulasClient = fs.readFileSync(path.join(ROOT, 'public', 'js', 'pages', 'sumulas.js'), 'utf8');
 const sumulasRoutes = fs.readFileSync(path.join(ROOT, 'server', 'routes', 'matchReports.routes.js'), 'utf8');
+const competitionUpgrade = fs.readFileSync(path.join(ROOT, 'public', 'js', 'core', 'league-home-competitions-upgrade.js'), 'utf8');
 const botApiService = fs.readFileSync(path.join(ROOT, 'server', 'services', 'botApi.service.js'), 'utf8');
 for (const [label, source, marker] of [
   ['página', sumulasPage, 'Central de Súmulas'],
@@ -108,7 +109,10 @@ for (const [label, source, marker] of [
   ['cliente', sumulasClient, 'async function optimizeProof'],
   ['cliente', sumulasClient, "VA.request('/api/match-reports'"],
   ['cliente', sumulasClient, 'Salvar em Todos os envios'],
+  ['cliente', sumulasClient, 'sumulas-stats-table'],
+  ['cliente', sumulasClient, 'data-report-delete'],
   ['servidor', sumulasRoutes, "app.post('/api/match-reports'"],
+  ['servidor', sumulasRoutes, "app.delete('/api/match-reports/:reportId'"],
   ['servidor', sumulasRoutes, 'storage.saveChatMessage'],
   ['servidor', sumulasRoutes, 'readReportState'],
   ['servidor', sumulasRoutes, "app.get('/api/match-reports/:reportId/proof'"],
@@ -138,9 +142,14 @@ const leagueExperiencePatch = fs.readFileSync(path.join(ROOT, 'server', 'patchLe
 for (const [label, source, marker] of [
   ['temporada', seasonService, "id: 'hollow-nexus-t1'"],
   ['temporada', seasonService, "name: 'Hollow Nexus T1'"],
+  ['temporada', seasonService, "name: 'HNL Camp 1º'"],
+  ['temporada', seasonService, 'withSeasonCompetitions'],
   ['temporada', seasonService, 'isRotaAoAbismo'],
   ['API', leagueStableRoutes, "app.get('/api/league/seasons'"],
   ['página', leagueExperiencePatch, 'currentSeasonCard'],
+  ['página', leagueExperiencePatch, 'seasonPrimaryCompetition'],
+  ['cliente', competitionUpgrade, 'data-configure-season-competition'],
+  ['cliente', competitionUpgrade, 'openCompetitionSettings'],
   ['página', leagueExperiencePatch, 'Campeonatos da liga']
 ]) {
   if (!source.includes(marker)) {

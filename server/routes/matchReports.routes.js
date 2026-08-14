@@ -1,7 +1,7 @@
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord, requireAdmin } = require('../services/access.service');
 const { canManageTeam } = require('../services/teamAccess.service');
-const { isVisibleCompetition } = require('../services/season.service');
+const { withSeasonCompetitions } = require('../services/season.service');
 const RESULT_CHANNEL = 'results-main';
 const MAX_PROOF_CHARACTERS = 2600000;
 const STAT_KEYS = ['goals', 'assists', 'interceptions', 'defenses', 'passes'];
@@ -55,8 +55,17 @@ function sortReports(reports = []) {
   return [...reports].sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
 }
 
+function isDeletedReport(report = {}) {
+  return Boolean(report.deletedAt) || String(report.status || '').toLowerCase() === 'deleted';
+}
+
 function cacheReport(report = {}) {
   const identities = [report.id, report.messageId, report.hubId].map(String).filter(Boolean);
+  if (isDeletedReport(report)) {
+    reportCache = reportCache.filter((item) => ![item.id, item.messageId, item.hubId].map(String).some((id) => identities.includes(id)));
+    reportCacheUpdatedAt = new Date().toISOString();
+    return;
+  }
   const index = reportCache.findIndex((item) => [item.id, item.messageId, item.hubId].map(String).some((id) => identities.includes(id)));
   if (index >= 0) reportCache[index] = { ...reportCache[index], ...report };
   else reportCache.unshift(report);
@@ -67,7 +76,7 @@ function cacheReport(report = {}) {
 async function readReportState() {
   try {
     const messages = await storage.readChatMessages({ channelId: RESULT_CHANNEL, limit: 500 });
-    const results = sortReports(messages.map(parseResultRecord).filter(Boolean));
+    const results = sortReports(messages.map(parseResultRecord).filter((report) => report && !isDeletedReport(report)));
     reportCache = results;
     reportCacheUpdatedAt = new Date().toISOString();
     return { results, degraded: false, warning: '', cacheUpdatedAt: reportCacheUpdatedAt };
@@ -208,12 +217,12 @@ function publicTeam(team = {}, users = []) {
 }
 
 function compactTeam(team = {}) {
-  const logo = safeImage(team.logo || '', 5000);
+  const logo = safeImage(team.logo || '', 900000);
   return {
     id: text(team.id, 120),
     name: text(team.name || 'Clube', 100),
     tag: text(team.tag, 24),
-    logo: logo && !logo.startsWith('data:image/') ? logo : '/assets/hollow-nexus-official.svg',
+    logo,
     region: text(team.region, 80)
   };
 }
@@ -299,7 +308,7 @@ async function loadBootstrap(req) {
     isAdmin,
     teams,
     users,
-    events: events.filter(isVisibleCompetition),
+    events: withSeasonCompetitions(events),
     results: reportState.results,
     reportsDegraded: reportState.degraded,
     reportsWarning: reportState.warning,
@@ -709,7 +718,41 @@ function registerMatchReportRoutes(app) {
     }
   });
 
-  console.log('[Súmulas] Envios salvos somente no site, com comprovante, histórico e edição administrativa.');
+  app.delete('/api/match-reports/:reportId', requireAdmin, async (req, res) => {
+    try {
+      const reports = await readReports();
+      const report = reports.find((item) => (
+        String(item.id || '') === String(req.params.reportId) ||
+        String(item.messageId || '') === String(req.params.reportId) ||
+        String(item.hubId || '') === String(req.params.reportId)
+      ));
+      if (!report) return res.status(404).json({ success: false, message: 'Súmula não encontrada.' });
+
+      const user = await getSessionUser(req);
+      const deletedAt = new Date().toISOString();
+      report.status = 'deleted';
+      report.deletedAt = deletedAt;
+      report.deletedBy = {
+        id: text(user?.id, 100),
+        discordId: text(user?.discordId || user?.id, 40),
+        name: text(user?.profile?.username || user?.name || 'Administração', 120)
+      };
+      report.updatedAt = deletedAt;
+      await saveReport(report);
+
+      const reportId = String(report.id || report.messageId || report.hubId || req.params.reportId);
+      req.app.locals.realtime?.broadcast?.({
+        type: 'match-report:delete',
+        payload: { reportId },
+        source: 'site'
+      });
+      return res.json({ success: true, reportId, message: 'Envio removido do histórico.' });
+    } catch (error) {
+      return res.status(503).json({ success: false, retryable: true, message: 'Não foi possível excluir este envio agora. Tente novamente em instantes.' });
+    }
+  });
+
+  console.log('[Súmulas] Envios salvos somente no site, com comprovante, histórico, edição e exclusão administrativa recuperável.');
 }
 
 module.exports = {

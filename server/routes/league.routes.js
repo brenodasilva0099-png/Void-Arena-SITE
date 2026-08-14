@@ -4,7 +4,7 @@ const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
 const { canManageTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
-const { isVisibleCompetition, publicSeason } = require('../services/season.service');
+const { isVisibleCompetition, publicSeason, withSeasonCompetitions } = require('../services/season.service');
 
 const RANKING_CHANNEL = 'league-ranking-settings';
 const LEGACY_RANKING_CHANNEL = 'frm-ranking-settings';
@@ -198,7 +198,7 @@ function registerLeagueRoutes(app) {
         storage.readEvents().catch(() => []),
         readResultsSafe()
       ]);
-      const visibleEvents = events.filter(isVisibleStatus);
+      const visibleEvents = withSeasonCompetitions(events.filter(isVisibleStatus));
       const goals = results.reduce((sum, item) => sum + Number(item.finalScoreA || item.scoreA || 0) + Number(item.finalScoreB || item.scoreB || 0), 0);
       const nexusCup = visibleEvents.find((event) => /nexus/i.test(String(event.name || event.title || ''))) || null;
       return res.json({
