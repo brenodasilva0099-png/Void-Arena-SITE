@@ -4,6 +4,7 @@ const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { callBot } = require('../services/botApi.service');
 const { canManageTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
+const { isVisibleCompetition, publicSeason } = require('../services/season.service');
 
 const RANKING_CHANNEL = 'league-ranking-settings';
 const LEGACY_RANKING_CHANNEL = 'frm-ranking-settings';
@@ -50,7 +51,7 @@ function parseStoredJson(message = {}) {
 }
 
 function isVisibleStatus(item = {}) {
-  return !['deleted', 'hidden', 'archived'].includes(String(item.status || '').toLowerCase());
+  return isVisibleCompetition(item);
 }
 
 function publicSiteUrl(req) {
@@ -210,11 +211,7 @@ function registerLeagueRoutes(app) {
         events: visibleEvents,
         nexusCup,
         stats: { clubes: teams.length, jogadores: users.length, atletas: users.length, competicoes: visibleEvents.length, partidas: results.length, gols: goals },
-        season: {
-          name: 'Temporada 1 - 2026',
-          startAt: nexusCup?.startAt || null,
-          endAt: nexusCup?.endAt || nexusCup?.registrationDeadline || nexusCup?.registrationCloseAt || null
-        }
+        season: publicSeason(visibleEvents)
       });
     } catch (error) {
       return res.status(500).json({ success: false, message: error.message, teams: [], clubs: [], players: [], users: [], events: [], stats: { clubes: 0, jogadores: 0, atletas: 0, competicoes: 0, partidas: 0, gols: 0 } });

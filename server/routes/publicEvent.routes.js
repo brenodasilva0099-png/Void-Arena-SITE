@@ -4,6 +4,7 @@ const { callBot } = require('../services/botApi.service');
 const { getSessionUser, requireOwner } = require('../services/access.service');
 const { sanitizeTeam } = require('../services/bracket.service');
 const { canManageTeam } = require('../services/teamAccess.service');
+const { SEASON_ONE, isVisibleCompetition } = require('../services/season.service');
 const { removeRoutes } = require('../utils/expressRoutes');
 
 function requireLogin(req, res, next) {
@@ -21,7 +22,33 @@ function safeTeam(team = null) { return team ? sanitizeTeam(team) : null; }
 function safeEvent(event = {}, teams = []) {
   const teamById = new Map(teams.map((team) => [String(team.id || ''), team]));
   const registrations = Array.isArray(event.registrations) ? event.registrations : [];
-  return { id: event.id || '', name: event.name || event.title || 'Evento', title: event.title || event.name || 'Evento', mode: event.mode || 'Mata-mata', matchFormat: event.matchFormat || 'MD1', structure: event.structure || 'single_elimination', teamLimit: Number(event.teamLimit || 16) || 16, minimumTeams: Number(event.minimumTeams || 4) || 4, startAt: event.startAt || '', status: String(event.id || '') === 'coliseu-void-arena' ? 'finished' : (event.status || 'open'), description: event.description || '', reward: event.reward || event.prize || '', prize: event.prize || event.reward || '', entryFee: event.entryFee || event.registrationFee || '', registrationFee: event.registrationFee || event.entryFee || '', isFree: event.isFree === true || (!cleanText(event.entryFee || event.registrationFee || '') && String(event.status || '').toLowerCase() !== 'upcoming'), feeLabel: feeLabel(event), paymentInstructions: event.paymentInstructions || '', captainNoticeMessages: Array.isArray(event.captainNoticeMessages) ? event.captainNoticeMessages : [], registrations: registrations.map((item) => ({ ...item, team: safeTeam(teamById.get(String(item.teamId || '')) || null) })), registeredCount: registrations.length, createdAt: event.createdAt || null, updatedAt: event.updatedAt || null };
+  return {
+    id: event.id || '',
+    name: event.name || event.title || 'Evento',
+    title: event.title || event.name || 'Evento',
+    seasonId: event.seasonId || '',
+    season: event.seasonId === SEASON_ONE.id ? SEASON_ONE : null,
+    mode: event.mode || 'Mata-mata',
+    matchFormat: event.matchFormat || 'MD1',
+    structure: event.structure || 'single_elimination',
+    teamLimit: Number(event.teamLimit || 16) || 16,
+    minimumTeams: Number(event.minimumTeams || 4) || 4,
+    startAt: event.startAt || '',
+    status: String(event.id || '') === 'coliseu-void-arena' ? 'finished' : (event.status || 'open'),
+    description: event.description || '',
+    reward: event.reward || event.prize || '',
+    prize: event.prize || event.reward || '',
+    entryFee: event.entryFee || event.registrationFee || '',
+    registrationFee: event.registrationFee || event.entryFee || '',
+    isFree: event.isFree === true || (!cleanText(event.entryFee || event.registrationFee || '') && String(event.status || '').toLowerCase() !== 'upcoming'),
+    feeLabel: feeLabel(event),
+    paymentInstructions: event.paymentInstructions || '',
+    captainNoticeMessages: Array.isArray(event.captainNoticeMessages) ? event.captainNoticeMessages : [],
+    registrations: registrations.map((item) => ({ ...item, team: safeTeam(teamById.get(String(item.teamId || '')) || null) })),
+    registeredCount: registrations.length,
+    createdAt: event.createdAt || null,
+    updatedAt: event.updatedAt || null
+  };
 }
 function normalizeEvent(body = {}, existing = {}) {
   const allowed = new Set(['upcoming', 'open', 'closed', 'running', 'finished']);
@@ -29,14 +56,14 @@ function normalizeEvent(body = {}, existing = {}) {
   const teamLimit = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].includes(Number(body.teamLimit)) ? Number(body.teamLimit) : Number(existing.teamLimit || 16) || 16;
   const entryFee = cleanText(body.entryFee ?? body.registrationFee ?? existing.entryFee ?? existing.registrationFee ?? '', 80);
   const reward = cleanText(body.reward ?? body.prize ?? existing.reward ?? existing.prize ?? '', 180);
-  return { ...existing, id: existing.id || body.id || crypto.randomUUID(), title: cleanText(body.title || body.name || existing.title || existing.name || 'Novo evento', 80), name: cleanText(body.title || body.name || existing.title || existing.name || 'Novo evento', 80), mode: cleanText(body.mode || existing.mode || 'Mata-mata', 60), matchFormat: allowedFormats.has(String(body.matchFormat || existing.matchFormat || 'MD1')) ? String(body.matchFormat || existing.matchFormat || 'MD1') : 'MD1', structure: cleanText(body.structure || existing.structure || 'single_elimination', 60), teamLimit, minimumTeams: Math.max(2, Math.min(teamLimit, Number(body.minimumTeams || existing.minimumTeams || 4) || 4)), startAt: cleanText(body.startAt || existing.startAt || '', 40), status: allowed.has(String(body.status || existing.status || 'open')) ? String(body.status || existing.status || 'open') : 'open', description: cleanText(body.description || existing.description || '', 320), reward, prize: reward, entryFee, registrationFee: entryFee, isFree: body.isFree === true || (!entryFee && String(body.status || existing.status || 'open').toLowerCase() !== 'upcoming'), paymentInstructions: cleanText(body.paymentInstructions || existing.paymentInstructions || '', 420), captainNoticeMessages: Array.isArray(existing.captainNoticeMessages) ? existing.captainNoticeMessages : [], registrations: Array.isArray(existing.registrations) ? existing.registrations : [], updatedAt: new Date().toISOString(), createdAt: existing.createdAt || new Date().toISOString() };
+  return { ...existing, id: existing.id || body.id || crypto.randomUUID(), title: cleanText(body.title || body.name || existing.title || existing.name || 'Novo evento', 80), name: cleanText(body.title || body.name || existing.title || existing.name || 'Novo evento', 80), seasonId: cleanText(body.seasonId ?? existing.seasonId ?? (existing.id ? '' : SEASON_ONE.id), 80), mode: cleanText(body.mode || existing.mode || 'Mata-mata', 60), matchFormat: allowedFormats.has(String(body.matchFormat || existing.matchFormat || 'MD1')) ? String(body.matchFormat || existing.matchFormat || 'MD1') : 'MD1', structure: cleanText(body.structure || existing.structure || 'single_elimination', 60), teamLimit, minimumTeams: Math.max(2, Math.min(teamLimit, Number(body.minimumTeams || existing.minimumTeams || 4) || 4)), startAt: cleanText(body.startAt || existing.startAt || '', 40), status: allowed.has(String(body.status || existing.status || 'open')) ? String(body.status || existing.status || 'open') : 'open', description: cleanText(body.description || existing.description || '', 320), reward, prize: reward, entryFee, registrationFee: entryFee, isFree: body.isFree === true || (!entryFee && String(body.status || existing.status || 'open').toLowerCase() !== 'upcoming'), paymentInstructions: cleanText(body.paymentInstructions || existing.paymentInstructions || '', 420), captainNoticeMessages: Array.isArray(existing.captainNoticeMessages) ? existing.captainNoticeMessages : [], registrations: Array.isArray(existing.registrations) ? existing.registrations : [], updatedAt: new Date().toISOString(), createdAt: existing.createdAt || new Date().toISOString() };
 }
 async function notifyCaptains(event, reason, options = {}) { return callBot('/internal/events/notify-captains', { method: 'POST', body: JSON.stringify({ event, reason, ...options }) }).catch((error) => ({ success: false, message: error.message, skipped: true })); }
 function registrationTeamId(registration = {}) { return String(registration.teamId || registration.id || '').trim(); }
 
 function registerPublicEventRoutes(app) {
   removeRoutes(app, [['get', '/api/events'], ['post', '/api/events'], ['put', '/api/events/:eventId'], ['delete', '/api/events/:eventId/registrations/:teamId'], ['post', '/api/events/:eventId/announce'], ['post', '/api/events/:eventId/manual-dm'], ['post', '/api/events/:eventId/register']]);
-  app.get('/api/events', async (_req, res) => { const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]); return res.json({ success: true, events: events.map((event) => safeEvent(event, teams)) }); });
+  app.get('/api/events', async (_req, res) => { const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]); return res.json({ success: true, season: { ...SEASON_ONE }, events: events.filter(isVisibleCompetition).map((event) => safeEvent(event, teams)) }); });
   app.post('/api/events', requireOwner, async (req, res) => { try { const event = await storage.saveTournamentEvent(normalizeEvent(req.body || {})); const teams = await storage.readTeams().catch(() => []); const notice = event.status === 'open' ? await notifyCaptains(safeEvent(event, teams), 'created', { forceNew: true }) : { success: true, skipped: true, reason: `status-${event.status || 'unknown'}` }; return res.status(201).json({ success: true, event: safeEvent(event, teams), notice }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
   app.put('/api/events/:eventId', requireOwner, async (req, res) => { try { const events = await storage.readEvents().catch(() => []); const existing = events.find((item) => String(item.id || '') === String(req.params.eventId || '')); if (!existing) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' }); const event = await storage.saveTournamentEvent(normalizeEvent({ ...(req.body || {}), id: existing.id }, existing)); const teams = await storage.readTeams().catch(() => []); const notice = event.status === 'open' ? await notifyCaptains(safeEvent(event, teams), 'edited', { forceNew: false }) : { success: true, skipped: true }; return res.json({ success: true, event: safeEvent(event, teams), notice }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
   app.delete('/api/events/:eventId/registrations/:teamId', requireOwner, async (req, res) => { try { const [events, teams] = await Promise.all([storage.readEvents().catch(() => []), storage.readTeams().catch(() => [])]); const existing = events.find((item) => String(item.id || '') === String(req.params.eventId || '')); if (!existing) return res.status(404).json({ success: false, message: 'Evento nao encontrado.' }); const teamId = cleanText(req.params.teamId || '', 100); const before = Array.isArray(existing.registrations) ? existing.registrations : []; const after = before.filter((registration) => registrationTeamId(registration) !== teamId); if (after.length === before.length) return res.status(404).json({ success: false, message: 'Time nao estava inscrito nesse evento.' }); const event = await storage.saveTournamentEvent({ ...existing, registrations: after, updatedAt: new Date().toISOString() }); const team = teams.find((item) => String(item.id || '') === teamId) || null; return res.json({ success: true, event: safeEvent(event, teams), removedTeamId: teamId, message: team ? `Time ${team.name || team.tag || teamId} removido do evento.` : 'Time removido do evento.' }); } catch (error) { return res.status(400).json({ success: false, message: error.message }); } });
@@ -47,7 +74,7 @@ function registerPublicEventRoutes(app) {
     const teamId = cleanText(req.body?.teamId || '', 80);
     const team = teams.find((item) => String(item.id || '') === teamId);
     const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
-    if (!event) return res.status(404).json({ success: false, message: 'Evento não encontrado.' });
+    if (!event || !isVisibleCompetition(event)) return res.status(404).json({ success: false, message: 'Evento não encontrado.' });
     if (String(event.id || '') === 'coliseu-void-arena') return res.status(409).json({ success: false, message: 'A Nexus Cup — 1ª Edição foi encerrada e não recebe novas inscrições.' });
     if (!team) return res.status(404).json({ success: false, message: 'Time não encontrado para inscrição.' });
     if (!canManageTeam(user, team)) return res.status(403).json({ success: false, message: 'Apenas o capitão ou o diretor vinculado pode solicitar a inscrição deste time.' });

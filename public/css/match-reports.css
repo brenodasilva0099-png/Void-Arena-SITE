@@ -289,6 +289,17 @@
 .sumulas-paste-tip { margin: 10px 0 0; color: #8f87b4; font-size: 11px; text-align: center; }
 .sumulas-paste-tip kbd { padding: 2px 5px; border: 1px solid rgba(255,255,255,.12); border-radius: 5px; background: #070a18; color: #ddd6fe; }
 .sumulas-review-panel h3 { margin: 10px 0 12px; }
+.sumulas-destination {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 12px 13px;
+  border: 1px solid rgba(34, 211, 238, .26);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, .09), rgba(139, 92, 246, .07));
+}
+.sumulas-destination strong { color: #a5f3fc; font-size: 12px; }
+.sumulas-destination span { color: #aaa2d0; font-size: 11px; line-height: 1.45; }
 .sumulas-review-panel ul { display: grid; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
 .sumulas-review-panel li { position: relative; padding-left: 26px; color: #a49cc8; font-size: 13px; line-height: 1.35; }
 .sumulas-review-panel li::before { content: ""; position: absolute; left: 0; top: 1px; width: 16px; height: 16px; border: 1px solid rgba(255,255,255,.18); border-radius: 6px; background: rgba(255,255,255,.035); }
@@ -306,6 +317,11 @@
 .sumulas-history-head p { margin: 0; color: #aaa2d0; }
 .sumulas-filters { display: grid; grid-template-columns: minmax(220px,1fr) minmax(170px,.35fr) minmax(160px,.3fr) auto; gap: 10px; align-items: end; margin: 18px 0; padding: 14px; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; background: rgba(255,255,255,.025); }
 .sumulas-count { align-self: center; padding: 9px 12px; border-radius: 999px; color: #67e8f9; background: rgba(34,211,238,.07); font-size: 11px; font-weight: 950; white-space: nowrap; }
+.sumulas-history-health { margin: -4px 0 16px; padding: 12px 14px; border-radius: 13px; color: #c7d2fe; background: rgba(99,102,241,.08); font-size: 12px; line-height: 1.5; }
+.sumulas-history-health[hidden] { display: none; }
+.sumulas-history-health.is-degraded { border: 1px solid rgba(245,158,11,.32); color: #fde8b0; background: rgba(245,158,11,.08); }
+.sumulas-tab-count { display: inline-grid; min-width: 22px; height: 22px; margin-left: 6px; padding: 0 6px; place-items: center; border: 1px solid rgba(103,232,249,.28); border-radius: 999px; background: rgba(103,232,249,.11); color: #67e8f9; font-size: 11px; line-height: 1; font-weight: 950; vertical-align: middle; }
+.sumulas-tabs button.is-active .sumulas-tab-count { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.12); color: #fff; }
 .sumulas-history-list { display: grid; gap: 12px; }
 .sumulas-history-card {
   overflow: hidden;
@@ -370,7 +386,7 @@
 }
 
 
-/* Site-only report workflow v3 */
+/* Site-only report workflow v4 */
 .sumulas-admin-actions [data-report-edit] {
   border-color: rgba(34, 211, 238, .38);
   color: #a5f3fc;

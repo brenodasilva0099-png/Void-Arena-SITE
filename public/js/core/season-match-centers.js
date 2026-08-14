@@ -293,6 +293,7 @@
 
     const active = activeEvent();
     const upcoming = nextEvent();
+    const season = state.overview?.season || { title: 'Temporada 1', name: 'Hollow Nexus T1', statusLabel: 'Em preparação' };
     const champion = findClub("Flow") || { name: "Flow", tag: "FLOW", logo: FALLBACK_LOGO };
 
     if (active) {
@@ -317,20 +318,20 @@
       return;
     }
 
-    setBadge(badge, "Temporada em preparação", "is-waiting");
+    setBadge(badge, season.statusLabel || "Temporada em preparação", "is-waiting");
     target.innerHTML = `
       <div class="hnl-season-feature">
-        <span class="hnl-season-tag">Entre temporadas</span>
-        <h3>${upcoming ? esc(eventName(upcoming)) : "A próxima disputa começa aqui"}</h3>
+        <span class="hnl-season-tag">${esc(season.title || 'Temporada atual')}</span>
+        <h3>${upcoming ? esc(eventName(upcoming)) : esc(season.name || "Hollow Nexus T1")}</h3>
         <p>${
           upcoming
             ? `A próxima competição já está sendo preparada para ${esc(formatDate(pick(upcoming, ["startAt", "startsAt", "date"], "")))}.`
-            : "Não há competição ativa agora. Os clubes podem organizar o elenco enquanto a próxima edição é preparada."
+            : esc(season.description || "A nova temporada está em preparação. Os clubes podem organizar o elenco enquanto os primeiros campeonatos são anunciados.")
         }</p>
         <div class="hnl-season-meta">
-          <span>${number(state.overview?.stats?.clubs ?? state.overview?.clubs?.length)} clubes na liga</span>
-          <span>${number(state.overview?.stats?.players ?? state.overview?.players?.length)} jogadores</span>
-          <span>Inscrições encerradas</span>
+          <span>${number(state.overview?.stats?.clubes ?? state.overview?.stats?.clubs ?? state.overview?.clubs?.length)} clubes na liga</span>
+          <span>${number(state.overview?.stats?.jogadores ?? state.overview?.stats?.players ?? state.overview?.players?.length)} jogadores</span>
+          <span>${number(season.competitionCount)} campeonatos no ciclo</span>
         </div>
         <div class="hnl-champion-row">
           ${image(teamLogo(champion), `Escudo ${teamName(champion)}`, "hnl-team-logo")}

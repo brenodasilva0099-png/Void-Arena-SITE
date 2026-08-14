@@ -3,6 +3,7 @@ const { callBot } = require('../services/botApi.service');
 const { getSessionUser, isAdminRecord } = require('../services/access.service');
 const { canManageTeam, canDeleteTeam } = require('../services/teamAccess.service');
 const { removeRoutes } = require('../utils/expressRoutes');
+const { SEASON_ONE, isVisibleCompetition } = require('../services/season.service');
 
 const CALENDAR_CHANNEL = 'league-calendar-settings';
 const CAFE_CHANNELS = ['league-cafe-com-leite-queue', 'cafe-com-leite-queue'];
@@ -298,8 +299,8 @@ function registerLeagueExperienceRoutes(app) {
     const events = await storage.readEvents().catch(() => []);
     const id = decodeURIComponent(String(req.params.eventId || '')).trim().toLowerCase();
     const event = events.find((item) => [item.id, item.name, item.title].some((value) => String(value || '').trim().toLowerCase() === id));
-    if (!event) return res.status(404).json({ success: false, message: 'Competição não encontrada.' });
-    return res.json({ success: true, competition: event });
+    if (!event || !isVisibleCompetition(event)) return res.status(404).json({ success: false, message: 'Competição não encontrada.' });
+    return res.json({ success: true, competition: event, season: event.seasonId === SEASON_ONE.id ? SEASON_ONE : null });
   });
 
   app.put('/api/league/competitions/:eventId', async (req, res) => {
@@ -308,11 +309,12 @@ function registerLeagueExperienceRoutes(app) {
     try {
       const events = await storage.readEvents().catch(() => []);
       const event = events.find((item) => String(item.id || '') === String(req.params.eventId || ''));
-      if (!event) return res.status(404).json({ success: false, message: 'Competição não encontrada.' });
+      if (!event || !isVisibleCompetition(event)) return res.status(404).json({ success: false, message: 'Competição não encontrada.' });
       const next = {
         ...event,
         name: clean(req.body?.name || req.body?.title || event.name || event.title, 100),
         title: clean(req.body?.title || req.body?.name || event.title || event.name, 100),
+        seasonId: clean(req.body?.seasonId ?? event.seasonId ?? '', 80),
         description: clean(req.body?.description ?? event.description, 1200),
         matchFormat: clean(req.body?.matchFormat || event.matchFormat, 20),
         mode: clean(req.body?.mode || event.mode, 80),
