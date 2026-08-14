@@ -315,12 +315,26 @@ function registerMatchReportRoutes(app) {
         String(item.hubId || '') === String(req.params.reportId)
       ));
       if (!report) return res.status(404).send('Súmula não encontrada.');
-      const proofUrl = await resolveDiscordProof(report);
-      if (!proofUrl) return res.status(404).send('Comprovante não encontrado.');
+
+      const storedProof = safeImage(
+        typeof report.proof === 'string'
+          ? report.proof
+          : report.proof?.dataUrl || report.proof?.url || '',
+        MAX_PROOF_CHARACTERS
+      );
+      if (!storedProof) return res.status(404).send('Comprovante não encontrado.');
+
       res.set('Cache-Control', 'private, no-store');
-      return res.redirect(302, proofUrl);
+      const dataImage = storedProof.match(/^data:(image\/(?:png|jpe?g|webp));base64,([a-z0-9+/=]+)$/i);
+      if (dataImage) {
+        const buffer = Buffer.from(dataImage[2], 'base64');
+        if (!buffer.length) return res.status(404).send('Comprovante não encontrado.');
+        res.type(dataImage[1]);
+        return res.send(buffer);
+      }
+      return res.redirect(302, storedProof);
     } catch (error) {
-      return res.status(502).send(error.message || 'Não foi possível abrir o comprovante.');
+      return res.status(500).send(error.message || 'Não foi possível abrir o comprovante.');
     }
   });
 
@@ -389,7 +403,7 @@ function registerMatchReportRoutes(app) {
         authorName: text(data.user.profile?.username || data.user.name || 'Capitão', 120),
         scoreA,
         scoreB,
-        proof,
+        proof: '',
         isStaff: data.isAdmin,
         source: 'site',
         participantCount: participants.length,
@@ -430,7 +444,7 @@ function registerMatchReportRoutes(app) {
           finalScoreA: scoreA,
           finalScoreB: scoreB,
           winnerTeamId: scoreA > scoreB ? teamA.id : teamB.id,
-          proof,
+          proof: '',
           submissions: [submission],
           createdAt: now,
           updatedAt: now
@@ -543,7 +557,7 @@ function registerMatchReportRoutes(app) {
         ...existingSubmission,
         scoreA,
         scoreB,
-        proof,
+        proof: '',
         participantCount: participants.length,
         mvpId: reportPlayerId(mvp),
         updatedAt: now
@@ -588,7 +602,7 @@ function registerMatchReportRoutes(app) {
         finalScoreA: scoreA,
         finalScoreB: scoreB,
         winnerTeamId: report.winnerTeamId,
-        proof,
+        proof: '',
         submissions: [savedSubmission],
         updatedAt: now
       }];
