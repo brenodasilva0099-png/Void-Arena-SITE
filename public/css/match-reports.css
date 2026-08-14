@@ -368,3 +368,17 @@
   .sumulas-history-detail-grid { grid-template-columns: 1fr; }
   .sumulas-history-head { display: grid; }
 }
+
+
+/* Site-only report workflow v3 */
+.sumulas-admin-actions [data-report-edit] {
+  border-color: rgba(34, 211, 238, .38);
+  color: #a5f3fc;
+  background: rgba(34, 211, 238, .08);
+}
+.sumulas-submit-status.success {
+  color: #86efac;
+}
+.sumulas-submit-status.error {
+  color: #fca5a5;
+}

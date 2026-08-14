@@ -32,7 +32,8 @@
     selectedPlayers: new Set(),
     stats: {},
     proof: null,
-    submitting: false
+    submitting: false,
+    editingReportId: ''
   };
 
   function escapeHtml(value = '') {
@@ -372,15 +373,25 @@
     };
     state.submitting = true;
     updateReview();
-    setStatus('Enviando a print ao Discord e registrando a súmula...');
+    setStatus('Salvando a súmula no sistema...');
     try {
-      const data = await VA.request('/api/match-reports', {
-        method: 'POST',
+      const editingId = state.editingReportId;
+      const endpoint = editingId
+        ? `/api/match-reports/${encodeURIComponent(editingId)}`
+        : '/api/match-reports';
+      const data = await VA.request(endpoint, {
+        method: editingId ? 'PATCH' : 'POST',
         body: JSON.stringify(payload),
         timeoutMs: 75000
       });
-      state.results.unshift(data.report);
-      setStatus(data.message || 'Súmula enviada com sucesso.', 'success');
+      if (editingId) {
+        const index = state.results.findIndex((report) => [report.id, report.messageId, report.hubId].map(String).includes(String(editingId)));
+        if (index >= 0) state.results[index] = data.report;
+        else state.results.unshift(data.report);
+      } else {
+        state.results.unshift(data.report);
+      }
+      setStatus(data.message || (editingId ? 'Súmula atualizada com sucesso.' : 'Súmula salva com sucesso.'), 'success');
       renderMetrics();
       renderHistory();
       setTimeout(() => {
@@ -398,6 +409,8 @@
 
   function resetForm() {
     $('matchReportForm').reset();
+    state.editingReportId = '';
+    $('submitReportBtn').textContent = 'Enviar para validação';
     resetMatchSelection();
     removeProof();
     updateOpponentSelector();
@@ -454,6 +467,7 @@
     if (!state.isAdmin) return '';
     const id = escapeHtml(report.id || report.messageId || report.hubId || '');
     return `<div class="sumulas-admin-actions">
+      <button class="hnl-btn" type="button" data-report-edit data-report-id="${id}">Editar informações</button>
       <button class="hnl-btn primary" type="button" data-report-status="validated" data-report-id="${id}">Validar súmula</button>
       <button class="hnl-btn danger" type="button" data-report-status="rejected" data-report-id="${id}">Rejeitar</button>
       <button class="hnl-btn" type="button" data-report-status="pending" data-report-id="${id}">Voltar para análise</button>
@@ -510,6 +524,7 @@
     $('historyCount').textContent = `${reports.length} ${reports.length === 1 ? 'envio' : 'envios'}`;
     $('reportsHistory').innerHTML = reports.length ? reports.map(historyCard).join('') : '<div class="sumulas-empty">Nenhuma súmula corresponde aos filtros selecionados.</div>';
     $('reportsHistory').querySelectorAll('[data-report-status]').forEach((button) => button.addEventListener('click', () => updateReportStatus(button)));
+    $('reportsHistory').querySelectorAll('[data-report-edit]').forEach((button) => button.addEventListener('click', () => editReport(button.dataset.reportId)));
   }
 
   function renderMetrics() {
@@ -521,6 +536,56 @@
     $('metricPending').textContent = pending;
     $('metricValidated').textContent = validated;
     $('metricProof').textContent = withProof;
+  }
+
+  function editReport(reportId) {
+    if (!state.isAdmin) return;
+    const report = state.results.find((item) => [item.id, item.messageId, item.hubId].map(String).includes(String(reportId)));
+    if (!report) return;
+    const { teamA, teamB } = reportTeams(report);
+    state.editingReportId = String(report.id || report.messageId || report.hubId || '');
+    $('competitionId').value = report.competitionId || '__test__';
+    if (!$('competitionId').value) $('competitionId').value = '__test__';
+    $('round').value = report.round || 'Amistoso / teste';
+    $('teamAId').value = teamA.id || '';
+    updateOpponentSelector();
+    $('teamBId').value = teamB.id || '';
+    $('game').value = report.game || '';
+    $('scoreA').value = reportScore(report, 'A');
+    $('scoreB').value = reportScore(report, 'B');
+    resetMatchSelection();
+    (report.participants || []).forEach((player) => state.selectedPlayers.add(playerId(player)));
+    state.stats = Object.fromEntries((report.playerStats || []).map((player) => [playerId(player), {
+      goals: Number(player.goals || 0),
+      assists: Number(player.assists || 0),
+      interceptions: Number(player.interceptions || 0),
+      defenses: Number(player.defenses || 0),
+      passes: Number(player.passes || 0)
+    }]));
+    const proof = imageUrl(typeof report.proof === 'string' ? report.proof : report.proof?.url, '');
+    state.proof = proof ? {
+      dataUrl: proof,
+      name: report.proofMeta?.name || 'comprovante-da-partida.webp',
+      type: report.proofMeta?.contentType || 'image/webp',
+      size: Number(report.proofMeta?.size || 0)
+    } : null;
+    $('notes').value = report.notes || '';
+    renderRosters();
+    $('mvpId').value = playerId(report.mvp || {});
+    if (state.proof) {
+      $('proofImage').src = state.proof.dataUrl;
+      $('proofName').textContent = state.proof.name;
+      $('proofMeta').textContent = `${formatBytes(state.proof.size)} · salvo no site`;
+      $('proofPreview').hidden = false;
+      $('proofDropzone').hidden = true;
+    } else {
+      removeProof();
+    }
+    $('submitReportBtn').textContent = 'Salvar alterações';
+    setStatus('Editando esta súmula. Revise os campos e salve as alterações.');
+    switchView('new');
+    $('newReportView')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    updateReview();
   }
 
   async function updateReportStatus(button) {
