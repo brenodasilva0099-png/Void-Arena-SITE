@@ -1,12 +1,7 @@
 const storage = require('../storage');
 const { getSessionUser, isAdminRecord, requireAdmin } = require('../services/access.service');
 const { canManageTeam } = require('../services/teamAccess.service');
-const { callBot } = require('../services/botApi.service');
-
 const RESULT_CHANNEL = 'results-main';
-const DISCORD_RESULTS_CHANNEL_ID = String(
-  process.env.CAPTAIN_STATS_RESULTS_CHANNEL_ID || '1518441859519877120'
-).trim();
 const MAX_PROOF_CHARACTERS = 2600000;
 const STAT_KEYS = ['goals', 'assists', 'interceptions', 'defenses', 'passes'];
 const ALLOWED_STATUSES = new Set(['pending', 'validated', 'rejected']);
@@ -252,82 +247,6 @@ function publicHistoryResult(result = {}) {
   };
 }
 
-function discordSubmissionText(report = {}) {
-  const participants = Array.isArray(report.participants) ? report.participants : [];
-  const stats = Array.isArray(report.playerStats) ? report.playerStats : [];
-  const statsLines = stats.map((item) => (
-    `• ${item.name}: G ${item.goals || 0} · A ${item.assists || 0} · I ${item.interceptions || 0} · D ${item.defenses || 0} · P ${item.passes || 0}`
-  ));
-  return [
-    '📨 **Nova súmula enviada pelo site**',
-    '',
-    `**Competição:** ${report.competitionName || 'Amistoso / teste'}`,
-    `**Rodada/fase:** ${report.round || 'Não informada'}${report.game ? ` • ${report.game}` : ''}`,
-    `**Partida:** ${report.match?.teamA?.name || 'Time A'} ${report.scoreA} x ${report.scoreB} ${report.match?.teamB?.name || 'Time B'}`,
-    `**MVP:** ${report.mvp?.discordId ? `<@${report.mvp.discordId}>` : report.mvp?.name || 'Não informado'}`,
-    `**Enviado por:** ${report.submittedBy?.discordId ? `<@${report.submittedBy.discordId}>` : report.submittedBy?.name || 'Capitão'}`,
-    `**Participantes selecionados:** ${participants.length}`,
-    '',
-    '**Estatísticas individuais**',
-    ...(statsLines.length ? statsLines : ['• Nenhuma estatística individual informada.']),
-    '',
-    '⏳ Aguardando validação da organização. O ranking ainda não foi alterado.',
-    '🔗 https://hollownexus.com.br/pages/sumulas.html'
-  ].join('\n').slice(0, 2000);
-}
-
-async function notifyDiscord(report = {}) {
-  if (!DISCORD_RESULTS_CHANNEL_ID) return { sent: false, reason: 'channel_not_configured' };
-  const withoutDuplicateProof = {
-    ...report,
-    submissions: (report.submissions || []).map((item) => ({ ...item, proof: '' })),
-    games: (report.games || []).map((game) => ({
-      ...game,
-      proof: '',
-      submissions: (game.submissions || []).map((item) => ({ ...item, proof: '' }))
-    }))
-  };
-  try {
-    const data = await callBot('/internal/discord/send-match-report', {
-      method: 'POST',
-      retryCount: 2,
-      retryDelayMs: 2500,
-      body: JSON.stringify({
-        discordChannelId: DISCORD_RESULTS_CHANNEL_ID,
-        report: withoutDuplicateProof
-      })
-    });
-    const proofUrl = safeImage(data.proofUrl || '', 5000);
-    if (!proofUrl || !/^https:\/\//i.test(proofUrl)) {
-      throw new Error('O BOT não retornou a URL segura do comprovante.');
-    }
-    return {
-      sent: true,
-      proofUrl,
-      channelId: data.discordChannelId || DISCORD_RESULTS_CHANNEL_ID,
-      messageId: data.discordMessageId || ''
-    };
-  } catch (error) {
-    return {
-      sent: false,
-      reason: 'discord_unavailable',
-      error: error.message || 'O BOT não conseguiu publicar a súmula.'
-    };
-  }
-}
-
-async function resolveDiscordProof(report = {}) {
-  if (!report.discordChannelId || !report.discordMessageId) return '';
-  const data = await callBot('/internal/discord/resolve-match-report-attachment', {
-    method: 'POST',
-    body: JSON.stringify({
-      discordChannelId: report.discordChannelId,
-      discordMessageId: report.discordMessageId
-    })
-  });
-  return safeImage(data.proofUrl || '', 5000);
-}
-
 async function loadBootstrap(req) {
   const [user, teams, users, events, results] = await Promise.all([
     getSessionUser(req),
@@ -539,51 +458,9 @@ function registerMatchReportRoutes(app) {
         updatedAt: now
       };
 
-      const discord = await notifyDiscord(report);
-      if (!discord.sent || !discord.proofUrl) {
-        return res.status(503).json({
-          success: false,
-          message: 'Não foi possível publicar a print no canal de resultados. Nenhuma súmula incompleta foi salva; tente novamente em instantes.',
-          detail: discord.error || discord.reason || ''
-        });
-      }
-
-      const proofUrl = discord.proofUrl;
-      const savedSubmission = {
-        authorDiscordId: submission.authorDiscordId,
-        authorName: submission.authorName,
-        scoreA,
-        scoreB,
-        proof: proofUrl,
-        isStaff: submission.isStaff,
-        source: 'site',
-        participantCount: participants.length,
-        mvpId: reportPlayerId(mvp),
-        createdAt: now
-      };
-      report = {
-        ...report,
-        proof: proofUrl,
-        submissions: [savedSubmission],
-        games: [{
-          id: `${hubId}_game_1`,
-          gameNumber: 1,
-          status: 'pending',
-          finalScoreA: scoreA,
-          finalScoreB: scoreB,
-          winnerTeamId: scoreA > scoreB ? teamA.id : teamB.id,
-          proof: proofUrl,
-          submissions: [savedSubmission],
-          createdAt: now,
-          updatedAt: now
-        }],
-        discordChannelId: discord.channelId,
-        discordMessageId: discord.messageId,
-        updatedAt: new Date().toISOString()
-      };
       const saved = await saveReport(report);
-      report.messageId = saved.id || '';
-
+      report.messageId = saved.id || report.messageId || '';
+      report.updatedAt = new Date().toISOString();
       req.app.locals.realtime?.broadcast?.({
         type: 'match-report:create',
         payload: { report: publicHistoryResult(report) },
@@ -593,8 +470,139 @@ function registerMatchReportRoutes(app) {
       return res.status(201).json({
         success: true,
         report: publicHistoryResult(report),
-        discord,
-        message: 'Súmula enviada para validação, comprovante publicado no Discord e histórico atualizado.'
+        message: 'Súmula salva no site e enviada para a área Todos os envios.'
+      });
+    } catch (error) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+  });
+
+  app.patch('/api/match-reports/:reportId', requireAdmin, async (req, res) => {
+    try {
+      const data = await loadBootstrap(req);
+      if (!data) return res.status(401).json({ success: false, message: 'Sessão Discord inválida.' });
+
+      const reports = data.results;
+      const report = reports.find((item) => (
+        String(item.id || '') === String(req.params.reportId) ||
+        String(item.messageId || '') === String(req.params.reportId) ||
+        String(item.hubId || '') === String(req.params.reportId)
+      ));
+      if (!report) return res.status(404).json({ success: false, message: 'Súmula não encontrada.' });
+
+      const body = req.body || {};
+      const teamA = data.teams.find((team) => String(team.id) === String(body.teamAId || report.teamA?.id || report.match?.teamA?.id || ''));
+      const teamB = data.teams.find((team) => String(team.id) === String(body.teamBId || report.teamB?.id || report.match?.teamB?.id || ''));
+      if (!teamA || !teamB || String(teamA.id) === String(teamB.id)) {
+        return res.status(400).json({ success: false, message: 'Selecione dois clubes cadastrados e diferentes.' });
+      }
+
+      const scoreA = Number(body.scoreA);
+      const scoreB = Number(body.scoreB);
+      if (![scoreA, scoreB].every((value) => Number.isInteger(value) && value >= 0 && value <= 999)) {
+        return res.status(400).json({ success: false, message: 'Informe um placar válido, usando números inteiros de 0 a 999.' });
+      }
+      if (scoreA === scoreB) {
+        return res.status(400).json({ success: false, message: 'O resultado não pode terminar empatado.' });
+      }
+
+      const proof = safeImage(body.proof || report.proof, MAX_PROOF_CHARACTERS);
+      if (!proof || !proof.startsWith('data:image/')) {
+        return res.status(400).json({ success: false, message: 'A print deve continuar salva no próprio sistema.' });
+      }
+
+      const teamAPublic = publicTeam(teamA, data.users);
+      const teamBPublic = publicTeam(teamB, data.users);
+      const participants = normalizeParticipants(body.participantIds, [teamAPublic.roster, teamBPublic.roster]);
+      const teamAPlayerIds = new Set(teamAPublic.roster.map(reportPlayerId));
+      const teamBPlayerIds = new Set(teamBPublic.roster.map(reportPlayerId));
+      if (
+        !participants.length ||
+        !participants.some((player) => teamAPlayerIds.has(reportPlayerId(player))) ||
+        !participants.some((player) => teamBPlayerIds.has(reportPlayerId(player)))
+      ) {
+        return res.status(400).json({ success: false, message: 'Selecione ao menos um participante de cada clube.' });
+      }
+
+      const mvp = participantFromId(body.mvpId, [participants]);
+      if (!mvp) {
+        return res.status(400).json({ success: false, message: 'Selecione o MVP entre os participantes.' });
+      }
+
+      const submittedStats = body.playerStats && typeof body.playerStats === 'object' ? body.playerStats : {};
+      const playerStats = participants.map((player) => ({
+        ...player,
+        ...cleanStats(submittedStats[reportPlayerId(player)])
+      }));
+      const event = data.events.find((item) => String(item.id) === String(body.competitionId || '')) || null;
+      const now = new Date().toISOString();
+      const teamARecord = compactTeam(teamAPublic);
+      const teamBRecord = compactTeam(teamBPublic);
+      const existingSubmission = Array.isArray(report.submissions) ? report.submissions[0] || {} : {};
+      const savedSubmission = {
+        ...existingSubmission,
+        scoreA,
+        scoreB,
+        proof,
+        participantCount: participants.length,
+        mvpId: reportPlayerId(mvp),
+        updatedAt: now
+      };
+
+      Object.assign(report, {
+        competitionId: text(event?.id || body.competitionId || report.competitionId || '__test__', 120),
+        competitionName: text(event?.name || event?.title || body.competitionName || report.competitionName || 'Amistoso / teste', 120),
+        round: text(body.round || report.round || 'Não informada', 100),
+        game: text(body.game || '', 100),
+        notes: text(body.notes || '', 800),
+        match: {
+          ...(report.match || {}),
+          matchFormat: text(event?.matchFormat || body.matchFormat || report.match?.matchFormat || 'MD1', 20),
+          teamA: teamARecord,
+          teamB: teamBRecord
+        },
+        teamA: teamARecord,
+        teamB: teamBRecord,
+        scoreA,
+        scoreB,
+        finalScoreA: scoreA,
+        finalScoreB: scoreB,
+        participants,
+        playerStats,
+        mvp,
+        proof,
+        proofMeta: {
+          name: text(body.proofName || report.proofMeta?.name || 'comprovante-da-partida.webp', 160),
+          contentType: text(body.proofType || report.proofMeta?.contentType || 'image/webp', 80),
+          size: Number(body.proofSize || report.proofMeta?.size || 0) || 0
+        },
+        submissions: [savedSubmission],
+        winnerTeamId: scoreA > scoreB ? String(teamA.id) : String(teamB.id),
+        updatedAt: now
+      });
+      report.games = [{
+        ...(Array.isArray(report.games) ? report.games[0] || {} : {}),
+        id: report.games?.[0]?.id || `${report.hubId || report.id}_game_1`,
+        gameNumber: 1,
+        status: report.status || 'pending',
+        finalScoreA: scoreA,
+        finalScoreB: scoreB,
+        winnerTeamId: report.winnerTeamId,
+        proof,
+        submissions: [savedSubmission],
+        updatedAt: now
+      }];
+
+      await saveReport(report);
+      req.app.locals.realtime?.broadcast?.({
+        type: 'match-report:update',
+        payload: { report: publicHistoryResult(report) },
+        source: 'site'
+      });
+      return res.json({
+        success: true,
+        report: publicHistoryResult(report),
+        message: 'Alterações salvas em Todos os envios.'
       });
     } catch (error) {
       return res.status(400).json({ success: false, message: error.message });
@@ -639,7 +647,7 @@ function registerMatchReportRoutes(app) {
     }
   });
 
-  console.log('[Súmulas] Central do site, comprovante obrigatório, histórico e validação registrados.');
+  console.log('[Súmulas] Envios salvos somente no site, com comprovante, histórico e edição administrativa.');
 }
 
 module.exports = {
@@ -647,5 +655,5 @@ module.exports = {
   parseResultRecord,
   publicHistoryResult,
   teamRoster,
-  DISCORD_RESULTS_CHANNEL_ID
+  RESULT_CHANNEL
 };
