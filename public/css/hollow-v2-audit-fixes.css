@@ -49,5 +49,31 @@ body.hn-v2-login .btn.primary{border:0!important;background:linear-gradient(135d
 body.hn-v2-login .btn.discord{border:1px solid rgba(143,70,255,.28)!important;background:rgba(143,70,255,.09)!important;color:#fff!important}
 body.hn-v2-login .separator{color:#646c7c!important}
 
-@media(max-width:980px){body.hn-v2-login .login-shell{grid-template-columns:1fr!important;padding:24px 0!important}body.hn-v2-login .hero-panel,body.hn-v2-login .auth-panel{min-height:auto!important;padding:28px!important}body.hn-v2-login .hero-message-card h3{font-size:clamp(2rem,9vw,3.5rem)!important}.hn2-profile>span:last-child{display:none}.hn2-profile{width:40px;padding:0!important}}
-@media(max-width:720px){.hn2-notifications{width:36px;height:36px}.hn2-head-tools{gap:7px!important}body.hn-v2-login .login-shell{width:calc(100% - 24px)!important}body.hn-v2-login .hero-chip-grid{grid-template-columns:1fr!important}}
+/* Header must stay usable when DevTools or split-screen reduces the viewport. */
+@media(max-width:1220px){
+  .hn2-header{padding-left:18px!important;padding-right:18px!important}
+  .hn2-brand{gap:0!important;min-width:34px!important}
+  .hn2-brand>span{display:none!important}
+  .hn2-nav{padding:0 8px!important;gap:0!important}
+  .hn2-nav a{padding-left:10px!important;padding-right:10px!important}
+  .hn2-nav a.active:after{left:10px!important;right:10px!important}
+  .hn2-search-wrap{width:180px!important}
+}
+@media(max-width:980px){
+  body.hn-v2-login .login-shell{grid-template-columns:1fr!important;padding:24px 0!important}
+  body.hn-v2-login .hero-panel,body.hn-v2-login .auth-panel{min-height:auto!important;padding:28px!important}
+  body.hn-v2-login .hero-message-card h3{font-size:clamp(2rem,9vw,3.5rem)!important}
+  .hn2-header{grid-template-columns:44px minmax(0,1fr) auto!important}
+  .hn2-nav{justify-content:flex-start!important;overflow-x:auto!important;scrollbar-width:none!important}
+  .hn2-nav::-webkit-scrollbar{display:none!important}
+  .hn2-search-wrap{display:none!important}
+  .hn2-profile>span:last-child{display:none}
+  .hn2-profile{width:40px;padding:0!important}
+}
+@media(max-width:720px){
+  .hn2-notifications{width:36px;height:36px}
+  .hn2-head-tools{gap:7px!important}
+  .hn2-nav a{padding-left:8px!important;padding-right:8px!important;font-size:.82rem!important}
+  body.hn-v2-login .login-shell{width:calc(100% - 24px)!important}
+  body.hn-v2-login .hero-chip-grid{grid-template-columns:1fr!important}
+}
