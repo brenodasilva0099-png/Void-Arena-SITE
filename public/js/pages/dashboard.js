@@ -3,10 +3,13 @@
   try {
     await VoidArena.bootLayout('dashboard');
     if (statusEl) {
-      statusEl.textContent = 'Use o menu lateral para criar times, acompanhar eventos, ver chaveamento e registrar resultados oficiais.';
+      statusEl.textContent = 'Sua sessão está ativa. Use a navegação superior para acessar as áreas oficiais da Hollow Nexus.';
       statusEl.className = 'va-status ok';
     }
   } catch (error) {
-    if (statusEl) { statusEl.textContent = `❌ ${error.message}`; statusEl.className = 'va-status err'; }
+    if (statusEl) {
+      statusEl.textContent = error.message;
+      statusEl.className = 'va-status err';
+    }
   }
 }());
