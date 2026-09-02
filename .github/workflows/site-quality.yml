@@ -19,5 +19,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Validate syntax, pages and assets
-        run: node server/checkSite.js
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate syntax, pages, assets and Hollow Nexus V2 final runtime
+        run: npm run check
