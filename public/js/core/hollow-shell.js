@@ -35,7 +35,7 @@
       ${nav.map(([key,label,href])=>`<a data-hn-key="${key}" href="${href}">${label}</a>`).join('')}
     </nav>
     <div class="hn-actions">
-      <a class="hn-profile" href="/pages/perfil.html">Perfil</a>
+      <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
       <details class="hn-more">
         <summary aria-label="Abrir mais opções">Mais</summary>
         <div class="hn-more-menu">
@@ -63,8 +63,4 @@
 
   const title=document.title||'';
   if(title.includes('Void Arena'))document.title=title.replace(/Void Arena/g,'Hollow Nexus');
-
-  document.querySelectorAll('.va-site-footer strong').forEach(el=>{
-    el.textContent='© 2026 Hollow Nexus.';
-  });
 }());
