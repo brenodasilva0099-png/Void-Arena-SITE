@@ -1,0 +1,28 @@
+/* Final bridge: covers legacy pages that do not use .va-main/.frm-main. */
+body.hn-v2-runtime:not(.hn-v2-login) main:not(.va-main):not(.frm-main):not(.login-shell){width:min(1540px,calc(100% - 56px))!important;max-width:none!important;margin:0 auto!important;padding:0 0 74px!important;min-width:0!important}
+body.hn-v2-runtime .dashboard-side-rail,body.hn-v2-runtime .tournament-topbar,body.hn-v2-runtime .legacy-sidebar,body.hn-v2-runtime .sidebar:not(.va-sidebar):not(.frm-sidebar){display:none!important}
+body.hn-v2-runtime .tournament-shell,body.hn-v2-runtime .dashboard-shell,body.hn-v2-runtime .panel-shell{background:transparent!important;box-shadow:none!important}
+body.hn-v2-runtime .panel,body.hn-v2-runtime .dashboard-card,body.hn-v2-runtime .tournament-card,body.hn-v2-runtime .content-card,body.hn-v2-runtime .settings-card,body.hn-v2-runtime .modal-card{border:1px solid var(--hn2-border)!important;border-radius:12px!important;background:linear-gradient(180deg,rgba(12,15,24,.97),rgba(7,9,15,.97))!important;box-shadow:none!important;color:var(--hn2-text)!important}
+body.hn-v2-runtime .panel h1,body.hn-v2-runtime .panel h2,body.hn-v2-runtime .panel h3,body.hn-v2-runtime .dashboard-card h1,body.hn-v2-runtime .dashboard-card h2,body.hn-v2-runtime .dashboard-card h3,body.hn-v2-runtime .tournament-card h1,body.hn-v2-runtime .tournament-card h2,body.hn-v2-runtime .tournament-card h3{color:#fff!important}
+body.hn-v2-runtime .panel p,body.hn-v2-runtime .dashboard-card p,body.hn-v2-runtime .tournament-card p{color:var(--hn2-muted)!important}
+body.hn-v2-runtime button:not(.hn2-tab):not(.hn2-podium-card):not(.hn2-club-mini),body.hn-v2-runtime .button,body.hn-v2-runtime .btn{border-color:var(--hn2-border)!important;border-radius:8px!important;box-shadow:none!important}
+body.hn-v2-runtime .primary,body.hn-v2-runtime button.primary,body.hn-v2-runtime .btn.primary{background:linear-gradient(135deg,#6e24df,#934cff)!important;color:#fff!important}
+body.hn-v2-runtime .stars,body.hn-v2-runtime .glow,body.hn-v2-runtime .pitch-overlay,body.hn-v2-runtime .floating-balls{opacity:.12!important;pointer-events:none!important}
+body.hn-v2-runtime .site-notification-stack{z-index:1400!important}
+body.hn-v2-runtime .modal,body.hn-v2-runtime .modal-overlay,body.hn-v2-runtime .va-modal-shell{z-index:1500!important}
+
+/* Remove visual traces of the retired migration/federation shell. */
+body.hn-v2-runtime [class*="federation"],body.hn-v2-runtime [class*="federacao"]{--legacy-federation-hidden:1}
+body.hn-v2-runtime .federation-sidebar,body.hn-v2-runtime .federation-topbar,body.hn-v2-runtime .frm-sidebar{display:none!important}
+
+/* Keep administrative/workflow pages readable in the same premium grid. */
+body.hn2-secondary-page .tournament-shell>section,body.hn2-secondary-page .tournament-shell>.panel,body.hn2-secondary-page .tournament-shell>.dashboard-card{margin-bottom:16px!important}
+body.hn2-secondary-page table{background:#07090f!important;border-collapse:collapse!important}
+body.hn2-secondary-page table th,body.hn2-secondary-page table td{border-color:rgba(255,255,255,.06)!important}
+body.hn2-secondary-page input,body.hn2-secondary-page select,body.hn2-secondary-page textarea{border:1px solid rgba(255,255,255,.09)!important;background:#090c13!important;color:#fff!important;border-radius:8px!important}
+body.hn2-secondary-page label{color:#c9cdd7!important}
+
+/* The old panel had colored emoji shortcut rails. They are intentionally removed. */
+body.hn-v2-runtime .side-rail-btn,body.hn-v2-runtime .side-rail-group{display:none!important}
+
+@media(max-width:900px){body.hn-v2-runtime:not(.hn-v2-login) main:not(.va-main):not(.frm-main):not(.login-shell){width:calc(100% - 28px)!important}.hn2-header{margin-left:-14px!important;margin-right:-14px!important}}
