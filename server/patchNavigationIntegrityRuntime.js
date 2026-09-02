@@ -5,11 +5,12 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 const VERSION_FILE = path.join(PUBLIC_DIR, 'navigation-integrity.json');
-const BUILD = '2026-07-18-navigation-integrity-v1';
+const BUILD = '2026-09-02-navigation-integrity-v2';
 
 const ALIASES = new Map([
   ['/', '/pages/dashboard.html'],
   ['/index.html', '/pages/dashboard.html'],
+  ['/pages/login.html', '/'],
   ['/pages/times.html', '/pages/clubes.html'],
   ['/pages/jogadores.html', '/pages/atletas.html'],
   ['/pages/recrutamento.html', '/pages/mercado.html'],
@@ -112,7 +113,7 @@ write(VERSION_FILE, JSON.stringify({
   changedLinks,
   missingTargets: audit.missingTargets,
   aliases: Object.fromEntries(ALIASES),
-  updatedAt: '2026-07-18T21:41:00-03:00'
+  updatedAt: '2026-09-02T14:08:00-03:00'
 }, null, 2));
 
 console.log(`[Navigation] ${files.length} página(s), ${Math.max(scannedLinks, audit.links)} link(s), ${changedLinks} alias(es) corrigido(s).`);
