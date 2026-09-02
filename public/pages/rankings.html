@@ -3,51 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rankings | Void Arena</title>
+  <title>Rankings | Hollow Nexus</title>
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
   <link rel="stylesheet" href="/css/scoring-rankings.css" />
+  <link rel="stylesheet" href="/css/hollow-v2.css" />
 </head>
 <body class="va-organized-body" data-page="rankings">
   <div class="va-shell">
-    <aside class="va-sidebar">
+    <aside class="va-sidebar" aria-hidden="true">
       <div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div>
       <nav class="va-nav">
-        <div class="va-nav-title">Principal</div>
-        <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-        <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
-        <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-        <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-        <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-        <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-        <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-        <a data-nav-key="jogadores" href="/pages/jogadores.html">👤 Jogadores</a>
-        <a data-nav-key="recrutamento" href="/pages/recrutamento.html">🤝 Recrutamento</a>
-        <a data-nav-key="pontuacao" href="/pages/pontuacao.html">🏅 Pontuação</a>
-        <a data-nav-key="placar" href="/pages/placar.html">🎮 Placar</a>
-        <div class="va-nav-title">Comunicação</div>
-        <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-        <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-        <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-        <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-        <div class="va-nav-title">Admin</div>
-        <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-        <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-        <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-        <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
+        <a data-nav-key="dashboard" href="/pages/dashboard.html">Início</a>
+        <a data-nav-key="eventos" href="/pages/eventos.html">Competições</a>
+        <a data-nav-key="times" href="/pages/times.html">Clubes</a>
+        <a data-nav-key="jogadores" href="/pages/jogadores.html">Jogadores</a>
+        <a data-nav-key="rankings" href="/pages/rankings.html">Rankings</a>
+        <a data-nav-key="resultados" href="/pages/resultados.html">Partidas</a>
       </nav>
     </aside>
     <main class="va-main">
-      <header class="va-topbar"><div><p class="va-eyebrow">Void Arena Rankings</p><h1 class="va-title">Rankings</h1><p class="va-subtitle">Classificação completa de times e jogadores com estatísticas competitivas.</p></div><a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a></header>
+      <header class="va-topbar"><div><p class="va-eyebrow">Hollow Nexus</p><h1 class="va-title">Rankings</h1><p class="va-subtitle">A elite da Hollow Nexus. Acompanhe a classificação de clubes e jogadores no cenário competitivo.</p></div></header>
       <section class="va-grid">
-        <article class="va-card full va-rankings-hero"><div><h2>Ranking competitivo</h2><p class="va-muted">Times aparecem com win-rate, gols, defesas e VAP. Jogadores aparecem com passes, gols, assistências, defesas, MVP e interceptações.</p></div><div class="va-rankings-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button><a class="va-btn" href="/pages/pontuacao.html">Regras</a></div></article>
-        <article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Times</h2><p class="va-muted">Ordenado por VAP, vitórias, saldo de gols e gols marcados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div></article>
-        <article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Jogadores</h2><p class="va-muted">Enquanto as estatísticas individuais reais não forem enviadas, os campos ficam preparados e começam zerados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div><div id="rankingStatus" class="va-status">Carregando...</div></article>
-        <article class="va-card full va-next-areas"><div class="va-section-head"><div><p class="va-eyebrow">Áreas separadas</p><h2>Jogadores e Recrutamento</h2><p class="va-muted">O mercado de jogadores e as solicitações agora ficam em páginas próprias para evitar mistura com rankings e reduzir erro de carregamento.</p></div></div><div class="va-rankings-toolbar"><a class="va-btn" href="/pages/jogadores.html">Abrir jogadores</a><a class="va-btn secondary" href="/pages/recrutamento.html">Abrir recrutamento</a></div></article>
+        <article class="va-card full va-rankings-hero"><div><h2>Ranking competitivo</h2><p class="va-muted">Clubes aparecem com win-rate, gols, defesas e VAP. Jogadores aparecem com passes, gols, assistências, defesas, MVP e interceptações.</p></div><div class="va-rankings-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button><a class="va-btn" href="/pages/pontuacao.html">Regras</a></div></article>
+        <article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Clubes</h2><p class="va-muted">Ordenado por VAP, vitórias, saldo de gols e gols marcados.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div></article>
+        <article class="va-card full"><div class="va-section-head"><div><h2>Ranking de Jogadores</h2><p class="va-muted">Estatísticas individuais alimentadas pelos dados competitivos registrados na plataforma.</p></div></div><div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div><div id="rankingStatus" class="va-status">Carregando...</div></article>
+        <article class="va-card full va-next-areas"><div class="va-section-head"><div><p class="va-eyebrow">Explorar</p><h2>Jogadores e Café com Leite</h2><p class="va-muted">Acesse o banco de jogadores ou acompanhe os rankings individuais 3v3 e 5v5.</p></div></div><div class="va-rankings-toolbar"><a class="va-btn" href="/pages/jogadores.html">Abrir jogadores</a><a class="va-btn secondary" href="/pages/placar.html">Café com Leite</a></div></article>
       </section>
     </main>
   </div>
+  <script src="/js/core/hollow-shell.js"></script>
   <script src="/assets/api.js"></script>
   <script src="/js/core/social-icons.js"></script>
   <script src="/js/pages/rankings.js"></script>
