@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const VERSION = '2026-09-02-5';
+const VERSION = '2026-09-02-6';
 const CSS = `<link rel="stylesheet" href="/css/hollow-v2-runtime.css?v=${VERSION}">`;
 const FINAL_CSS = `<link rel="stylesheet" href="/css/hollow-v2-final.css?v=${VERSION}">`;
 const JS = `<script src="/js/core/hollow-v2-runtime.js?v=${VERSION}"></script>`;
