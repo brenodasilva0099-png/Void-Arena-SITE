@@ -8,19 +8,52 @@
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
   <link rel="stylesheet" href="/css/hollow-v2.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
 </head>
 <body class="va-organized-body" data-page="resultados">
   <div class="va-shell">
-    <aside class="va-sidebar" aria-hidden="true"><div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div><nav class="va-nav"><a data-nav-key="dashboard" href="/pages/dashboard.html">Início</a><a data-nav-key="eventos" href="/pages/eventos.html">Competições</a><a data-nav-key="times" href="/pages/times.html">Clubes</a><a data-nav-key="jogadores" href="/pages/jogadores.html">Jogadores</a><a data-nav-key="rankings" href="/pages/rankings.html">Rankings</a><a data-nav-key="resultados" href="/pages/resultados.html">Partidas</a></nav></aside>
     <main class="va-main">
-      <header class="va-topbar"><div><p class="va-eyebrow">Hollow Nexus</p><h1 class="va-title">Partidas</h1><p class="va-subtitle">Resultados oficiais, confrontos da temporada e acesso rápido às fases competitivas.</p></div></header>
-      <section class="va-grid">
-        <article class="va-card full"><div class="va-section-head"><div><h2>Resultados publicados</h2><p class="va-muted">Acompanhe os placares registrados e acesse grupos, chaveamento e súmulas sem sair da nova estrutura.</p></div><button id="reloadResultsBtn" class="va-btn secondary" type="button">Atualizar</button></div><div class="va-actions"><a class="va-btn" href="/pages/grupos.html">Fase de grupos</a><a class="va-btn" href="/pages/chaveamento.html">Chaveamento</a><a class="va-btn" href="/pages/sumulas.html">Súmulas</a></div><div id="resultsStatus" class="va-status">Carregando...</div><div id="resultsList" class="va-list"></div></article>
+      <div class="hn2-title-row">
+        <header class="hn2-page-title"><small>Central de confrontos</small><h1>Partidas</h1><p>Acompanhe confrontos, resultados oficiais, grupos, chaveamento e súmulas da Hollow Nexus.</p></header>
+        <button id="reloadResultsBtn" class="va-btn secondary" type="button">Atualizar</button>
+      </div>
+
+      <nav class="hn2-tabs" aria-label="Áreas de partidas">
+        <a class="hn2-tab" href="/pages/chaveamento.html">Ao vivo / chaveamento</a>
+        <a class="hn2-tab" href="/pages/grupos.html">Próximas / grupos</a>
+        <a class="hn2-tab active" href="/pages/resultados.html">Resultados</a>
+      </nav>
+
+      <section class="hn2-layout">
+        <div class="hn2-main-col">
+          <article id="latestMatchSpotlight" class="hn2-panel hn2-match-feature"><p class="hn2-empty-copy">Carregando último resultado...</p></article>
+          <article class="hn2-panel">
+            <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Histórico oficial</span><h2>Resultados publicados</h2></div><span class="hn2-pill"><b id="matchResultCount">—</b>&nbsp; registros</span></div>
+            <div id="resultsStatus" class="va-status">Carregando...</div>
+            <div id="resultsList" class="va-list hn2-results-list"></div>
+          </article>
+        </div>
+
+        <aside class="hn2-side-col hn2-match-side">
+          <article class="hn2-panel">
+            <div class="hn2-panel-head"><h2>HNL Season 01</h2></div>
+            <span class="hn2-panel-kicker">Estrutura competitiva</span>
+            <div class="hn2-quick-links"><a href="/pages/grupos.html">Fase de grupos</a><a href="/pages/chaveamento.html">Chaveamento</a><a href="/pages/sumulas.html">Súmulas</a></div>
+          </article>
+          <article class="hn2-panel">
+            <div class="hn2-panel-head"><h2>Estatísticas</h2></div>
+            <div class="hn2-quick-links"><a href="/pages/estatisticas.html">Estatísticas gerais</a><a href="/pages/analise-partidas.html">Análise de partidas</a><a href="/pages/rankings.html">Rankings</a></div>
+          </article>
+          <article class="hn2-panel">
+            <div class="hn2-panel-head"><h2>Outras partidas</h2></div>
+            <div class="hn2-quick-links"><a href="/pages/scrims.html">Scrims</a><a href="/pages/treinos.html">Treinos</a></div>
+          </article>
+        </aside>
       </section>
     </main>
   </div>
-  <script src="/js/core/hollow-shell.js"></script>
   <script src="/js/core/api.js"></script>
   <script src="/js/pages/resultados.js"></script>
+  <script src="/js/core/hollow-v2-runtime.js"></script>
 </body>
 </html>

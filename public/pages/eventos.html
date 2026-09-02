@@ -9,25 +9,52 @@
   <link rel="stylesheet" href="/css/organization.css" />
   <link rel="stylesheet" href="/css/arena-pages.css" />
   <link rel="stylesheet" href="/css/hollow-v2.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
 </head>
 <body class="va-organized-body" data-page="eventos">
   <div class="va-shell">
-    <aside class="va-sidebar" aria-hidden="true"><div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div><nav class="va-nav"><a data-nav-key="dashboard" href="/pages/dashboard.html">Início</a><a data-nav-key="eventos" href="/pages/eventos.html">Competições</a><a data-nav-key="times" href="/pages/times.html">Clubes</a><a data-nav-key="jogadores" href="/pages/jogadores.html">Jogadores</a><a data-nav-key="rankings" href="/pages/rankings.html">Rankings</a><a data-nav-key="resultados" href="/pages/resultados.html">Partidas</a></nav></aside>
-
     <main class="va-main">
-      <header class="va-topbar"><div><p class="va-eyebrow">Hollow Nexus</p><h1 class="va-title">Competições</h1><p class="va-subtitle">Acompanhe torneios e temporadas, inscrições, formatos e andamento competitivo.</p></div></header>
+      <div class="hn2-title-row">
+        <header class="hn2-page-title"><small>Hollow Nexus League</small><h1>Competições</h1><p>Acompanhe torneios e temporadas, inscrições, formatos, progresso e histórico competitivo.</p></header>
+        <a class="va-btn" href="/pages/times.html">Ver clubes</a>
+      </div>
 
-      <section class="va-grid">
-        <article class="va-card full va-events-hero">
-          <div><p class="va-eyebrow">Temporadas e torneios</p><h2>Escolha uma competição e acompanhe tudo em um só lugar</h2><p>Inscrições, validação, formato, datas, premiações e histórico continuam usando o sistema atual, agora dentro da nova estrutura da Hollow Nexus.</p></div>
-          <div class="va-flow-grid mini"><div><strong>1</strong><span>Escolha a competição</span></div><div><strong>2</strong><span>Envie a inscrição</span></div><div><strong>3</strong><span>Valide o elenco</span></div><div><strong>4</strong><span>Acompanhe as partidas</span></div></div>
-        </article>
+      <nav class="hn2-tabs" aria-label="Filtrar competições">
+        <button class="hn2-tab active" type="button" data-competition-filter="all">Todas</button>
+        <button class="hn2-tab" type="button" data-competition-filter="running">Em andamento</button>
+        <button class="hn2-tab" type="button" data-competition-filter="upcoming">Próximas</button>
+        <button class="hn2-tab" type="button" data-competition-filter="finished">Encerradas</button>
+      </nav>
 
-        <article class="va-card full">
-          <div class="va-section-head"><div><h2>Competições disponíveis</h2><p class="va-muted">As competições abertas aparecem primeiro. A gestão continua disponível para quem possui permissão.</p></div><a class="va-btn" href="/pages/times.html">Ver clubes</a></div>
-          <div id="eventsList" class="va-list va-events-list"></div>
-          <div id="eventsStatus" class="va-status">Carregando...</div>
-        </article>
+      <section class="hn2-layout">
+        <div class="hn2-main-col">
+          <article class="hn2-panel hn2-competition-feature">
+            <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Temporadas e torneios</span><h2>Competições disponíveis</h2></div><span class="hn2-pill"><b id="competitionCountKpi">—</b>&nbsp; cadastradas</span></div>
+            <div id="eventsList" class="va-list va-events-list"></div>
+            <div id="eventsStatus" class="va-status">Carregando...</div>
+          </article>
+        </div>
+
+        <aside class="hn2-side-col">
+          <article class="hn2-panel">
+            <div class="hn2-panel-head"><h2>Calendário / próximas etapas</h2></div>
+            <div class="hn2-calendar-list">
+              <a class="hn2-calendar-row" href="/pages/grupos.html"><b>01</b><span><strong>Fase de grupos</strong><small>Classificação e confrontos</small></span></a>
+              <a class="hn2-calendar-row" href="/pages/chaveamento.html"><b>02</b><span><strong>Playoffs</strong><small>Chaveamento oficial</small></span></a>
+              <a class="hn2-calendar-row" href="/pages/placar.html"><b>3V3</b><span><strong>Café com Leite</strong><small>Ranking individual 3v3</small></span></a>
+              <a class="hn2-calendar-row" href="/pages/placar.html"><b>5V5</b><span><strong>Café com Leite</strong><small>Ranking individual 5v5</small></span></a>
+            </div>
+          </article>
+          <article class="hn2-panel">
+            <div class="hn2-panel-head"><h2>Central competitiva</h2></div>
+            <div class="hn2-quick-links">
+              <a href="/pages/inscricao.html">Inscrições</a>
+              <a href="/pages/sumulas.html">Súmulas</a>
+              <a href="/pages/resultados.html">Resultados</a>
+              <a href="/pages/rankings.html">Classificação</a>
+            </div>
+          </article>
+        </aside>
       </section>
 
       <div id="eventRegisterModal" class="va-modal-shell" hidden>
@@ -63,8 +90,8 @@
       </div>
     </main>
   </div>
-  <script src="/js/core/hollow-shell.js"></script>
   <script src="/js/core/api.js"></script>
   <script src="/js/pages/eventos.js"></script>
+  <script src="/js/core/hollow-v2-runtime.js"></script>
 </body>
 </html>
