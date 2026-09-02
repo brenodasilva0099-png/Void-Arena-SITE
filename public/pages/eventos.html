@@ -3,137 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Eventos | Void Arena</title>
+  <title>Competições | Hollow Nexus</title>
   <link rel="icon" href="/assets/hollow-nexus.png" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/organization.css" />
   <link rel="stylesheet" href="/css/arena-pages.css" />
+  <link rel="stylesheet" href="/css/hollow-v2.css" />
 </head>
 <body class="va-organized-body" data-page="eventos">
   <div class="va-shell">
-
-<aside class="va-sidebar">
-  <div class="va-brand">
-    <img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" />
-    <div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div>
-  </div>
-  <nav class="va-nav">
-    <div class="va-nav-title">Principal</div>
-    <a data-nav-key="dashboard" href="/pages/dashboard.html">🏠 Início</a>
-    <a data-nav-key="perfil" href="/pages/perfil.html">👤 Perfil</a>
-    <a data-nav-key="eventos" href="/pages/eventos.html">🏆 Eventos</a>
-    <a data-nav-key="times" href="/pages/times.html">🛡️ Times</a>
-    <a data-nav-key="chaveamento" href="/pages/chaveamento.html">🧩 Chaveamento</a>
-    <a data-nav-key="resultados" href="/pages/resultados.html">📌 Resultados</a>
-    <a data-nav-key="rankings" href="/pages/rankings.html">📊 Rankings</a>
-    <div class="va-nav-title">Comunicação</div>
-    <a data-nav-key="chat" href="/pages/chat.html">💬 Chat</a>
-    <a data-nav-key="scrims" href="/pages/scrims.html">⚔️ Scrims</a>
-    <a data-nav-key="estatisticas" href="/pages/estatisticas.html">📈 Estatísticas</a>
-    <a data-nav-key="analise" href="/pages/analise-partidas.html">🎥 Análise de Partidas</a>
-    <div class="va-nav-title">Admin</div>
-    <a data-nav-key="formularios" href="/pages/formularios.html">📋 Formulários</a>
-    <a data-nav-key="permissoes" href="/pages/permissoes.html">⚙️ Permissões</a>
-    <a data-nav-key="config" href="/pages/configuracoes.html">🔧 Configurações</a>
-    <a data-nav-key="termos" href="/pages/termos.html">📜 Termos</a>
-  </nav>
-</aside>
+    <aside class="va-sidebar" aria-hidden="true"><div class="va-brand"><img data-server-icon src="/assets/hollow-nexus.png" alt="Servidor" /><div><small>Servidor</small><strong data-server-name>Hollow Nexus</strong></div></div><nav class="va-nav"><a data-nav-key="dashboard" href="/pages/dashboard.html">Início</a><a data-nav-key="eventos" href="/pages/eventos.html">Competições</a><a data-nav-key="times" href="/pages/times.html">Clubes</a><a data-nav-key="jogadores" href="/pages/jogadores.html">Jogadores</a><a data-nav-key="rankings" href="/pages/rankings.html">Rankings</a><a data-nav-key="resultados" href="/pages/resultados.html">Partidas</a></nav></aside>
 
     <main class="va-main">
-      <header class="va-topbar">
-        <div>
-          <p class="va-eyebrow">Eventos públicos</p>
-          <h1 class="va-title">Eventos</h1>
-          <p class="va-subtitle">Veja campeonatos disponíveis, requisitos, vagas e inscreva seu time como capitão.</p>
+      <header class="va-topbar"><div><p class="va-eyebrow">Hollow Nexus</p><h1 class="va-title">Competições</h1><p class="va-subtitle">Acompanhe torneios e temporadas, inscrições, formatos e andamento competitivo.</p></div></header>
+
+      <section class="va-grid">
+        <article class="va-card full va-events-hero">
+          <div><p class="va-eyebrow">Temporadas e torneios</p><h2>Escolha uma competição e acompanhe tudo em um só lugar</h2><p>Inscrições, validação, formato, datas, premiações e histórico continuam usando o sistema atual, agora dentro da nova estrutura da Hollow Nexus.</p></div>
+          <div class="va-flow-grid mini"><div><strong>1</strong><span>Escolha a competição</span></div><div><strong>2</strong><span>Envie a inscrição</span></div><div><strong>3</strong><span>Valide o elenco</span></div><div><strong>4</strong><span>Acompanhe as partidas</span></div></div>
+        </article>
+
+        <article class="va-card full">
+          <div class="va-section-head"><div><h2>Competições disponíveis</h2><p class="va-muted">As competições abertas aparecem primeiro. A gestão continua disponível para quem possui permissão.</p></div><a class="va-btn" href="/pages/times.html">Ver clubes</a></div>
+          <div id="eventsList" class="va-list va-events-list"></div>
+          <div id="eventsStatus" class="va-status">Carregando...</div>
+        </article>
+      </section>
+
+      <div id="eventRegisterModal" class="va-modal-shell" hidden>
+        <div class="va-modal-card">
+          <div class="va-modal-head"><div><p class="va-eyebrow">Inscrição de clube</p><h2 id="eventRegisterTitle">Inscrever na competição</h2><p class="va-muted" id="eventRegisterInfo">Selecione o clube que você representa.</p></div><button class="va-modal-close" type="button" data-event-close>×</button></div>
+          <form id="eventRegisterForm" class="va-form-grid two"><input type="hidden" name="eventId" /><label class="wide">Clube<select name="teamId" required></select></label><div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar para validação</button><button class="va-btn" type="button" data-event-close>Cancelar</button></div></form>
+          <div id="eventRegisterStatus" class="va-status"></div>
         </div>
-        <a class="va-user-pill va-user-avatar-link" href="/pages/perfil.html" aria-label="Abrir perfil"><span class="va-user-pill-avatar">?</span></a>
-      </header>
-
-<section class="va-grid">
-  <article class="va-card full va-events-hero">
-    <div>
-      <p class="va-eyebrow">Inscrições e validação</p>
-      <h2>Escolha um evento e envie seu time</h2>
-      <p>O time só entra oficialmente depois da validação no Discord. A inscrição abre um pedido no canal de validação, com botão e histórico para a staff aprovar.</p>
-    </div>
-    <div class="va-flow-grid mini">
-      <div><strong>1</strong><span>Crie o time</span></div>
-      <div><strong>2</strong><span>Envie inscrição</span></div>
-      <div><strong>3</strong><span>Valide no Discord</span></div>
-      <div><strong>4</strong><span>Staff aprova</span></div>
-    </div>
-  </article>
-
-  <article class="va-card full">
-    <div class="va-section-head">
-      <div>
-        <h2>Eventos disponíveis</h2>
-        <p>Os eventos abertos aparecem primeiro. A engrenagem permite ajustar formato, data, recompensa e taxa.</p>
       </div>
-      <a class="va-btn" href="/pages/times.html">Criar time</a>
-    </div>
-    <div id="eventsList" class="va-list va-events-list"></div>
-    <div id="eventsStatus" class="va-status">Carregando...</div>
-  </article>
-</section>
 
-<div id="eventRegisterModal" class="va-modal-shell" hidden>
-  <div class="va-modal-card">
-    <div class="va-modal-head">
-      <div>
-        <p class="va-eyebrow">Inscrição de time</p>
-        <h2 id="eventRegisterTitle">Inscrever no evento</h2>
-        <p class="va-muted" id="eventRegisterInfo">Selecione o time que você representa.</p>
+      <div id="eventSettingsModal" class="va-modal-shell" hidden>
+        <div class="va-modal-card va-event-settings-modal">
+          <div class="va-modal-head"><div><p class="va-eyebrow">Definições da competição</p><h2 id="eventSettingsTitle">Editar competição</h2><p class="va-muted">Atualize data, formato, modelo, recompensa e taxa de inscrição.</p></div><button class="va-modal-close" type="button" data-event-settings-close>×</button></div>
+          <form id="eventSettingsForm" class="va-form-grid two">
+            <input type="hidden" name="eventId" />
+            <label class="wide">Nome da competição<input name="title" maxlength="80" required /></label>
+            <label>Data/hora<input name="startAt" type="datetime-local" /></label>
+            <label>Status<select name="status"><option value="open">Aberto</option><option value="closed">Fechado</option><option value="running">Em andamento</option><option value="finished">Finalizado</option></select></label>
+            <label>Formato<select name="matchFormat"><option>MD1</option><option>MD2</option><option>MD3</option><option>MD5</option></select></label>
+            <label>Modelo / estrutura<select name="structure"><option value="single_elimination">Mata-mata</option><option value="groups">Grupos</option><option value="groups_playoffs">Grupos + playoffs</option></select></label>
+            <label>Modo<input name="mode" maxlength="60" placeholder="Rematch, Liga, Copa..." /></label>
+            <label>Limite de clubes<select name="teamLimit"><option>4</option><option>8</option><option>12</option><option>16</option><option>20</option><option>24</option><option>28</option><option>32</option></select></label>
+            <label>Recompensa<input name="reward" maxlength="180" placeholder="Ex: cargo, prêmio, dinheiro, destaque..." /></label>
+            <label>Taxa de inscrição<input name="entryFee" maxlength="80" placeholder="Ex: R$ 10,00 por clube" /></label>
+            <label class="va-check-row"><input name="isFree" type="checkbox" /> <span>Marcar como F2P / gratuito</span></label>
+            <label class="wide">Instruções de pagamento/validação<textarea name="paymentInstructions" maxlength="420" placeholder="Explique onde enviar comprovante ou como validar a inscrição."></textarea></label>
+            <label class="wide">Descrição<textarea name="description" maxlength="320"></textarea></label>
+            <div class="va-event-settings-teams wide"><div class="va-section-head mini"><div><h3>Clubes inscritos/validados</h3><p>Remova um clube da competição sem apagar o cadastro dele do site.</p></div></div><div id="eventRegisteredTeamsManager" class="va-event-manage-teams"></div></div>
+            <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar definições</button><button id="eventManualDmBtn" class="va-btn secondary" type="button">Reenviar DM</button><button class="va-btn" type="button" data-event-settings-close>Cancelar</button></div>
+          </form>
+          <div id="eventSettingsStatus" class="va-status"></div>
+        </div>
       </div>
-      <button class="va-modal-close" type="button" data-event-close>×</button>
-    </div>
-    <form id="eventRegisterForm" class="va-form-grid two">
-      <input type="hidden" name="eventId" />
-      <label class="wide">Time
-        <select name="teamId" required></select>
-      </label>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Enviar para validação</button><button class="va-btn" type="button" data-event-close>Cancelar</button></div>
-    </form>
-    <div id="eventRegisterStatus" class="va-status"></div>
-  </div>
-</div>
-
-<div id="eventSettingsModal" class="va-modal-shell" hidden>
-  <div class="va-modal-card va-event-settings-modal">
-    <div class="va-modal-head">
-      <div>
-        <p class="va-eyebrow">Definições do evento</p>
-        <h2 id="eventSettingsTitle">Editar evento</h2>
-        <p class="va-muted">Atualize data, formato, modelo, recompensa e taxa de inscrição. Se não houver taxa, marque como F2P.</p>
-      </div>
-      <button class="va-modal-close" type="button" data-event-settings-close>×</button>
-    </div>
-    <form id="eventSettingsForm" class="va-form-grid two">
-      <input type="hidden" name="eventId" />
-      <label class="wide">Nome do evento<input name="title" maxlength="80" required /></label>
-      <label>Data/hora<input name="startAt" type="datetime-local" /></label>
-      <label>Status<select name="status"><option value="open">Aberto</option><option value="closed">Fechado</option><option value="running">Em andamento</option><option value="finished">Finalizado</option></select></label>
-      <label>Formato<select name="matchFormat"><option>MD1</option><option>MD2</option><option>MD3</option><option>MD5</option></select></label>
-      <label>Modelo / estrutura<select name="structure"><option value="single_elimination">Mata-mata</option><option value="groups">Grupos</option><option value="groups_playoffs">Grupos + playoffs</option></select></label>
-      <label>Modo<input name="mode" maxlength="60" placeholder="Rematch, Liga, Copa..." /></label>
-      <label>Limite de times<select name="teamLimit"><option>4</option><option>8</option><option>12</option><option>16</option><option>20</option><option>24</option><option>28</option><option>32</option></select></label>
-      <label>Recompensa<input name="reward" maxlength="180" placeholder="Ex: cargo, prêmio, dinheiro, destaque..." /></label>
-      <label>Taxa de inscrição<input name="entryFee" maxlength="80" placeholder="Ex: R$ 10,00 por time" /></label>
-      <label class="va-check-row"><input name="isFree" type="checkbox" /> <span>Marcar como F2P / gratuito</span></label>
-      <label class="wide">Instruções de pagamento/validação<textarea name="paymentInstructions" maxlength="420" placeholder="Explique onde enviar comprovante ou como validar a inscrição."></textarea></label>
-      <label class="wide">Descrição<textarea name="description" maxlength="320"></textarea></label>
-      <div class="va-event-settings-teams wide">
-        <div class="va-section-head mini"><div><h3>Times inscritos/validados</h3><p>Remova um time do evento sem apagar o cadastro dele do site.</p></div></div>
-        <div id="eventRegisteredTeamsManager" class="va-event-manage-teams"></div>
-      </div>
-      <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar definições</button><button id="eventManualDmBtn" class="va-btn secondary" type="button">Reenviar DM do evento</button><button class="va-btn" type="button" data-event-settings-close>Cancelar</button></div>
-    </form>
-    <div id="eventSettingsStatus" class="va-status"></div>
-  </div>
-</div>
-
     </main>
   </div>
+  <script src="/js/core/hollow-shell.js"></script>
   <script src="/js/core/api.js"></script>
   <script src="/js/pages/eventos.js"></script>
 </body>
