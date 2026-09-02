@@ -4,10 +4,11 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const VERSION = '2026-09-02-4';
+const VERSION = '2026-09-02-5';
 const CSS = `<link rel="stylesheet" href="/css/hollow-v2-runtime.css?v=${VERSION}">`;
 const FINAL_CSS = `<link rel="stylesheet" href="/css/hollow-v2-final.css?v=${VERSION}">`;
 const JS = `<script src="/js/core/hollow-v2-runtime.js?v=${VERSION}"></script>`;
+const FINAL_JS = `<script src="/js/core/hollow-v2-final.js?v=${VERSION}"></script>`;
 
 function read(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
@@ -57,10 +58,12 @@ function inject(file) {
   const cssPattern = /<link[^>]+href=["']\/css\/hollow-v2-runtime\.css(?:\?[^"']*)?["'][^>]*>/i;
   const finalCssPattern = /<link[^>]+href=["']\/css\/hollow-v2-final\.css(?:\?[^"']*)?["'][^>]*>/i;
   const jsPattern = /<script[^>]+src=["']\/js\/core\/hollow-v2-runtime\.js(?:\?[^"']*)?["'][^>]*><\/script>/i;
+  const finalJsPattern = /<script[^>]+src=["']\/js\/core\/hollow-v2-final\.js(?:\?[^"']*)?["'][^>]*><\/script>/i;
 
   html = upsertTag(html, cssPattern, CSS, '</head>');
   html = upsertTag(html, finalCssPattern, FINAL_CSS, '</head>');
   html = upsertTag(html, jsPattern, JS, '</body>');
+  html = upsertTag(html, finalJsPattern, FINAL_JS, '</body>');
 
   write(file, html);
   return true;
