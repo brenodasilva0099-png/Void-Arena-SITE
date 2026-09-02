@@ -4,8 +4,9 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const VERSION = '2026-09-02-3';
+const VERSION = '2026-09-02-4';
 const CSS = `<link rel="stylesheet" href="/css/hollow-v2-runtime.css?v=${VERSION}">`;
+const FINAL_CSS = `<link rel="stylesheet" href="/css/hollow-v2-final.css?v=${VERSION}">`;
 const JS = `<script src="/js/core/hollow-v2-runtime.js?v=${VERSION}"></script>`;
 
 function read(file) {
@@ -32,9 +33,6 @@ function redirectHtml(target, label) {
   return `<!doctype html>\n<html lang="pt-BR">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<meta http-equiv="refresh" content="0;url=${target}">\n<title>${label} | Hollow Nexus</title>\n<style>html,body{margin:0;min-height:100%;background:#04050a;color:#fff;font-family:system-ui,sans-serif}body{display:grid;place-items:center}.box{padding:24px;text-align:center}a{color:#b878ff}</style>\n</head>\n<body><div class="box">Abrindo a versão atual de <strong>${label}</strong>…<br><a href="${target}">Continuar</a></div><script>location.replace(${JSON.stringify(target)});</script></body>\n</html>\n`;
 }
 
-// Patches antigos ainda podem recriar aliases/rotas históricas no boot. A V2 roda por último
-// e força esses caminhos a apontarem para uma única página canônica, evitando qualquer retorno
-// a uma interface antiga paralela.
 const CANONICAL_ALIASES = {
   'competicoes.html': ['/pages/eventos.html', 'Competições'],
   'clubes.html': ['/pages/times.html', 'Clubes'],
@@ -47,18 +45,22 @@ for (const [fileName, [target, label]] of Object.entries(CANONICAL_ALIASES)) {
   write(path.join(PAGES, fileName), redirectHtml(target, label));
 }
 
+function upsertTag(html, pattern, tag, closingTag) {
+  if (pattern.test(html)) return html.replace(pattern, tag);
+  return html.includes(closingTag) ? html.replace(closingTag, `  ${tag}\n${closingTag}`) : `${tag}\n${html}`;
+}
+
 function inject(file) {
   let html = read(file);
   if (!html) return false;
 
   const cssPattern = /<link[^>]+href=["']\/css\/hollow-v2-runtime\.css(?:\?[^"']*)?["'][^>]*>/i;
+  const finalCssPattern = /<link[^>]+href=["']\/css\/hollow-v2-final\.css(?:\?[^"']*)?["'][^>]*>/i;
   const jsPattern = /<script[^>]+src=["']\/js\/core\/hollow-v2-runtime\.js(?:\?[^"']*)?["'][^>]*><\/script>/i;
 
-  if (cssPattern.test(html)) html = html.replace(cssPattern, CSS);
-  else html = html.includes('</head>') ? html.replace('</head>', `  ${CSS}\n</head>`) : `${CSS}\n${html}`;
-
-  if (jsPattern.test(html)) html = html.replace(jsPattern, JS);
-  else html = html.includes('</body>') ? html.replace('</body>', `  ${JS}\n</body>`) : `${html}\n${JS}`;
+  html = upsertTag(html, cssPattern, CSS, '</head>');
+  html = upsertTag(html, finalCssPattern, FINAL_CSS, '</head>');
+  html = upsertTag(html, jsPattern, JS, '</body>');
 
   write(file, html);
   return true;
