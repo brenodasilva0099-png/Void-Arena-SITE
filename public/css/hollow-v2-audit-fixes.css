@@ -1,0 +1,53 @@
+/* Final audit polish for Hollow Nexus V2. */
+.hn2-notifications{position:relative;width:40px;height:40px;display:grid;place-items:center;padding:0;border:1px solid var(--hn2-border);border-radius:9px;background:rgba(255,255,255,.02);color:#cfd4df;cursor:pointer;transition:.18s ease}
+.hn2-notifications:hover,.hn2-notifications.has-unread{border-color:rgba(143,70,255,.42);background:rgba(143,70,255,.08);color:#fff}
+.hn2-notifications svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hn2-notification-badge{position:absolute;right:-5px;top:-5px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;border:2px solid #05060b;border-radius:999px;background:#8f46ff;color:#fff;font-size:.61rem;font-weight:850;line-height:1}
+.hn2-profile{max-width:180px;overflow:hidden}
+.hn2-profile>span:last-child{max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hn2-avatar-dot{overflow:hidden;flex:0 0 auto}
+.hn2-avatar-dot img{width:100%;height:100%;display:block;object-fit:cover;border-radius:inherit}
+.hn2-menu a[hidden],.hn2-menu span[hidden],#hn2SearchResults a[hidden]{display:none!important}
+.hn2-notification-card{width:min(620px,calc(100vw - 30px));max-height:min(78vh,720px);overflow:auto}
+.hn2-notification-card h2{margin:4px 0 18px;color:#fff}
+.hn2-notification-item{padding:14px 0;border-top:1px solid rgba(255,255,255,.07)}
+.hn2-notification-item strong{display:block;color:#fff}
+.hn2-notification-item p{margin:6px 0 0;color:var(--hn2-muted);line-height:1.5}
+body.hn2-access-denied .hn2-header~*:not(.hn2-access-denied-card){display:none!important}
+.hn2-access-denied-card{max-width:760px;margin:42px auto 0;padding:34px!important;text-align:left}
+.hn2-access-denied-card h1{margin:4px 0 10px;color:#fff;font-size:clamp(2rem,5vw,3.6rem);letter-spacing:-.04em}
+.hn2-access-denied-card p{max-width:580px;margin:0 0 22px;color:var(--hn2-muted);line-height:1.55}
+
+/* The login was the last large surface still carrying the pre-V2 composition. */
+body.hn-v2-login .stars,body.hn-v2-login .glow,body.hn-v2-login .pitch-overlay,body.hn-v2-login .floating-balls{display:none!important}
+body.hn-v2-login{background:radial-gradient(circle at 18% 30%,rgba(88,40,169,.18),transparent 30rem),radial-gradient(circle at 82% 12%,rgba(40,62,118,.10),transparent 26rem),linear-gradient(180deg,#05060b,#030409)!important;color:var(--hn2-text)!important}
+body.hn-v2-login .login-shell{width:min(1180px,calc(100% - 40px))!important;min-height:100vh!important;margin:0 auto!important;padding:54px 0!important;display:grid!important;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr)!important;gap:18px!important;align-items:center!important}
+body.hn-v2-login .hero-panel,body.hn-v2-login .auth-panel{min-height:610px!important;margin:0!important;padding:42px!important;border:1px solid var(--hn2-border)!important;border-radius:16px!important;background:linear-gradient(180deg,rgba(12,15,24,.97),rgba(7,9,15,.97))!important;box-shadow:none!important;animation:none!important;transform:none!important}
+body.hn-v2-login .hero-panel{position:relative;overflow:hidden;display:flex!important;flex-direction:column!important;justify-content:space-between!important;background:radial-gradient(circle at 78% 25%,rgba(143,70,255,.23),transparent 18rem),linear-gradient(145deg,#0b0e16,#070910 72%)!important}
+body.hn-v2-login .hero-panel:after{content:"";position:absolute;right:-110px;bottom:-130px;width:420px;height:420px;border:1px solid rgba(143,70,255,.18);border-radius:50%;box-shadow:inset 0 0 80px rgba(143,70,255,.06)}
+body.hn-v2-login .brand-row{position:relative;z-index:2;display:flex!important;align-items:center!important;gap:16px!important}
+body.hn-v2-login .brand-mark{width:58px!important;height:58px!important;display:grid!important;place-items:center!important;border:1px solid rgba(143,70,255,.28)!important;border-radius:14px!important;background:rgba(143,70,255,.06)!important}
+body.hn-v2-login .brand-mark img{width:44px!important;height:44px!important;object-fit:contain!important}
+body.hn-v2-login .brand-title{margin:4px 0 0!important;color:#fff!important;font-size:clamp(2rem,4.4vw,4.5rem)!important;line-height:.9!important;letter-spacing:-.045em!important;text-transform:uppercase!important}
+body.hn-v2-login .eyebrow,body.hn-v2-login .mini-badge{color:var(--hn2-purple2)!important;font-size:.73rem!important;font-weight:850!important;letter-spacing:.12em!important;text-transform:uppercase!important}
+body.hn-v2-login .hero-message-card{position:relative;z-index:2;margin-top:34px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+body.hn-v2-login .hero-message-card h3{max-width:620px;margin:14px 0!important;color:#fff!important;font-size:clamp(2rem,4vw,4rem)!important;line-height:1!important;letter-spacing:-.04em!important}
+body.hn-v2-login .hero-message-card p{max-width:620px;color:var(--hn2-muted)!important;line-height:1.6!important}
+body.hn-v2-login .discord-recommendation{padding:13px 14px!important;border:1px solid rgba(143,70,255,.16)!important;border-radius:10px!important;background:rgba(143,70,255,.055)!important;color:#cfc6df!important}
+body.hn-v2-login .hero-chip-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin-top:18px!important}
+body.hn-v2-login .hero-chip{padding:11px 12px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:9px!important;background:rgba(255,255,255,.018)!important;color:#c3c8d3!important}
+body.hn-v2-login .auth-panel{display:flex!important;flex-direction:column!important;justify-content:center!important}
+body.hn-v2-login .auth-header h2{margin:8px 0!important;color:#fff!important;font-size:2.1rem!important;letter-spacing:-.035em!important}
+body.hn-v2-login .auth-header p{color:var(--hn2-muted)!important;line-height:1.55!important}
+body.hn-v2-login .tabs{margin:22px 0 14px!important;padding:4px!important;border:1px solid rgba(255,255,255,.065)!important;border-radius:10px!important;background:#070a10!important}
+body.hn-v2-login .tab{min-height:40px!important;border:0!important;border-radius:7px!important;background:transparent!important;color:#81899a!important}
+body.hn-v2-login .tab.active{background:rgba(143,70,255,.11)!important;color:#fff!important}
+body.hn-v2-login .auth-form label{color:#c7ccd6!important;font-size:.86rem!important}
+body.hn-v2-login .auth-form input{min-height:46px!important;margin-top:7px!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:9px!important;background:#080b12!important;color:#fff!important;box-shadow:none!important}
+body.hn-v2-login .btn{min-height:46px!important;border-radius:9px!important;box-shadow:none!important}
+body.hn-v2-login .btn.primary{border:0!important;background:linear-gradient(135deg,#6e24df,#934cff)!important;color:#fff!important}
+body.hn-v2-login .btn.discord{border:1px solid rgba(143,70,255,.28)!important;background:rgba(143,70,255,.09)!important;color:#fff!important}
+body.hn-v2-login .separator{color:#646c7c!important}
+
+@media(max-width:980px){body.hn-v2-login .login-shell{grid-template-columns:1fr!important;padding:24px 0!important}body.hn-v2-login .hero-panel,body.hn-v2-login .auth-panel{min-height:auto!important;padding:28px!important}body.hn-v2-login .hero-message-card h3{font-size:clamp(2rem,9vw,3.5rem)!important}.hn2-profile>span:last-child{display:none}.hn2-profile{width:40px;padding:0!important}}
+@media(max-width:720px){.hn2-notifications{width:36px;height:36px}.hn2-head-tools{gap:7px!important}body.hn-v2-login .login-shell{width:calc(100% - 24px)!important}body.hn-v2-login .hero-chip-grid{grid-template-columns:1fr!important}}
