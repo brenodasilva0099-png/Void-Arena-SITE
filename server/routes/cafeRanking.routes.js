@@ -13,6 +13,17 @@ function normalize(value = '') {
   return String(value || '').trim().toLowerCase();
 }
 
+function asArray(value, keys = []) {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== 'object') return [];
+  for (const key of keys) {
+    if (Array.isArray(value[key])) return value[key];
+  }
+  if (Array.isArray(value.data)) return value.data;
+  if (Array.isArray(value.items)) return value.items;
+  return [];
+}
+
 function nameOf(user = {}) {
   return user?.profile?.username || user?.profile?.displayName || user?.name || user?.username || user?.discordId || 'Membro';
 }
@@ -47,77 +58,85 @@ function registerCafeRankingRoutes(app) {
   removeRoutes(app, [['get', '/api/league/cafe-ranking']]);
 
   app.get('/api/league/cafe-ranking', async (_req, res) => {
-    const [users, messageGroups, discordData] = await Promise.all([
-      storage.readUsers().catch(() => []),
-      Promise.all(CHANNELS.map((channelId) => storage.readChatMessages({ channelId, limit: 500 }).catch(() => []))),
-      callBot('/internal/discord/members/all?limit=1000', { method: 'GET' }).catch(() => ({ members: [] }))
-    ]);
+    try {
+      const [rawUsers, rawMessageGroups, discordData] = await Promise.all([
+        storage.readUsers().catch(() => []),
+        Promise.all(CHANNELS.map((channelId) => storage.readChatMessages({ channelId, limit: 500 }).catch(() => []))),
+        callBot('/internal/discord/members/all?limit=1000', { method: 'GET' }).catch(() => ({ members: [] }))
+      ]);
 
-    const activeUsers = users.filter((user) => !user.deletedAt && !user.hiddenFromPlayersDirectory);
-    const byDiscord = new Map(activeUsers.map((user) => [String(user.discordId || '').trim(), user]).filter(([id]) => id));
-    const participants = new Map();
+      const users = asArray(rawUsers, ['users', 'players', 'members']);
+      const messageGroups = asArray(rawMessageGroups).map((group) => asArray(group, ['messages', 'records']));
+      const members = asArray(discordData, ['members', 'users']);
+      const activeUsers = users.filter((user) => user && !user.deletedAt && !user.hiddenFromPlayersDirectory);
+      const byDiscord = new Map(activeUsers.map((user) => [String(user.discordId || '').trim(), user]).filter(([id]) => id));
+      const participants = new Map();
 
-    messageGroups.flat().map(parseMessage).filter(Boolean).filter((entry) => entry.status !== 'deleted').forEach((entry) => {
-      participationKeys(entry).forEach((key) => participants.set(key, (participants.get(key) || 0) + 1));
-    });
-
-    const records = new Map();
-    const upsert = (raw = {}) => {
-      const key = String(raw.discordId || raw.id || raw.name || '').trim();
-      if (!key) return;
-      const current = records.get(key) || {};
-      records.set(key, { ...current, ...raw });
-    };
-
-    (Array.isArray(discordData.members) ? discordData.members : []).forEach((member) => {
-      const linked = byDiscord.get(String(member.id || member.discordId || '').trim()) || null;
-      upsert({
-        id: linked?.id || member.id || member.discordId || '',
-        discordId: member.id || member.discordId || linked?.discordId || '',
-        name: linked ? nameOf(linked) : (member.name || member.username || 'Membro'),
-        avatar: linked?.avatar || member.avatar || '',
-        profile: linked?.profile || {},
-        roles: Array.isArray(member.roles) ? member.roles : [],
-        registered: Boolean(linked),
-        user: linked
+      messageGroups.flat().map(parseMessage).filter(Boolean).filter((entry) => entry.status !== 'deleted').forEach((entry) => {
+        participationKeys(entry).forEach((key) => participants.set(key, (participants.get(key) || 0) + 1));
       });
-    });
 
-    activeUsers.forEach((user) => upsert({
-      id: user.id || user.discordId || '',
-      discordId: user.discordId || '',
-      name: nameOf(user),
-      avatar: user.avatar || '',
-      profile: user.profile || {},
-      roles: Array.isArray(user.roles) ? user.roles : [],
-      registered: true,
-      user
-    }));
-
-    const ranking = Array.from(records.values()).map((record) => {
-      const keys = record.user ? userKeys(record.user) : [record.discordId, record.id, record.name].map(normalize).filter(Boolean);
-      const participations = keys.reduce((best, key) => Math.max(best, participants.get(key) || 0), 0);
-      return {
-        id: record.id || '',
-        discordId: record.discordId || '',
-        name: record.name || 'Membro',
-        avatar: record.avatar || '',
-        profile: record.profile || {},
-        roles: record.roles || [],
-        registered: Boolean(record.registered),
-        participations,
-        ...statistics(record.user || {}, participations),
-        profileUrl: record.registered ? `/pages/perfil-jogador.html?id=${encodeURIComponent(record.id || record.discordId || '')}` : ''
+      const records = new Map();
+      const upsert = (raw = {}) => {
+        const key = String(raw.discordId || raw.id || raw.name || '').trim();
+        if (!key) return;
+        const current = records.get(key) || {};
+        records.set(key, { ...current, ...raw });
       };
-    }).sort((a, b) => b.points - a.points || b.goals - a.goals || b.passes - a.passes || String(a.name).localeCompare(String(b.name), 'pt-BR'));
 
-    return res.json({
-      success: true,
-      source: discordData.members?.length ? 'discord-members-and-site' : 'site-users-fallback',
-      memberCount: ranking.length,
-      ranking,
-      metrics: ['points', 'goals', 'passes', 'assists', 'wins', 'matches', 'mvp']
-    });
+      members.forEach((member) => {
+        const linked = byDiscord.get(String(member.id || member.discordId || '').trim()) || null;
+        upsert({
+          id: linked?.id || member.id || member.discordId || '',
+          discordId: member.id || member.discordId || linked?.discordId || '',
+          name: linked ? nameOf(linked) : (member.name || member.username || 'Membro'),
+          avatar: linked?.avatar || member.avatar || '',
+          profile: linked?.profile || {},
+          roles: Array.isArray(member.roles) ? member.roles : [],
+          registered: Boolean(linked),
+          user: linked
+        });
+      });
+
+      activeUsers.forEach((user) => upsert({
+        id: user.id || user.discordId || '',
+        discordId: user.discordId || '',
+        name: nameOf(user),
+        avatar: user.avatar || '',
+        profile: user.profile || {},
+        roles: Array.isArray(user.roles) ? user.roles : [],
+        registered: true,
+        user
+      }));
+
+      const ranking = Array.from(records.values()).map((record) => {
+        const keys = record.user ? userKeys(record.user) : [record.discordId, record.id, record.name].map(normalize).filter(Boolean);
+        const participations = keys.reduce((best, key) => Math.max(best, participants.get(key) || 0), 0);
+        return {
+          id: record.id || '',
+          discordId: record.discordId || '',
+          name: record.name || 'Membro',
+          avatar: record.avatar || '',
+          profile: record.profile || {},
+          roles: record.roles || [],
+          registered: Boolean(record.registered),
+          participations,
+          ...statistics(record.user || {}, participations),
+          profileUrl: record.registered ? `/pages/perfil-jogador.html?id=${encodeURIComponent(record.id || record.discordId || '')}` : ''
+        };
+      }).sort((a, b) => b.points - a.points || b.goals - a.goals || b.passes - a.passes || String(a.name).localeCompare(String(b.name), 'pt-BR'));
+
+      return res.json({
+        success: true,
+        source: members.length ? 'discord-members-and-site' : 'site-users-fallback',
+        memberCount: ranking.length,
+        ranking,
+        metrics: ['points', 'goals', 'passes', 'assists', 'wins', 'matches', 'mvp']
+      });
+    } catch (error) {
+      console.error('[Cafe Ranking] Falha ao montar ranking:', error);
+      return res.json({ success: true, source: 'safe-fallback', memberCount: 0, ranking: [], metrics: ['points', 'goals', 'passes', 'assists', 'wins', 'matches', 'mvp'] });
+    }
   });
 
   console.log('[Cafe com Leite] Ranking completo de membros do Discord registrado.');

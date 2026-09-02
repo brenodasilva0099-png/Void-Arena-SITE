@@ -73,7 +73,8 @@ const patches = [
   './patchNexusCupFinalPublicationRuntime',
   './patchSeasonMatchCentersRuntime',
   './patchCurrentSumulasNavigationRuntime',
-  './patchHollowNexusV2Runtime'
+  './patchHollowNexusV2Runtime',
+  './patchHollowNexusV3CanonicalRuntime'
 ];
 
 const patchFailures = [];

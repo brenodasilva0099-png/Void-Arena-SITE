@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Início | Hollow Nexus</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/arena-pages.css" />
+  <link rel="stylesheet" href="/css/site-cleanup.css" />
+  <link rel="stylesheet" href="/css/hollow-v2.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-final.css" />
+  <link rel="stylesheet" href="/css/hollow-home-v3.css" />
+</head>
+<body class="va-organized-body" data-page="dashboard">
+  <div class="va-shell">
+    <main class="va-main">
+      <div class="hn3-home">
+        <section class="hn3-hero" aria-labelledby="hn3SeasonTitle">
+          <div class="hn3-hero-copy">
+            <div class="hn3-kicker">Hollow Nexus League · temporada oficial</div>
+            <h1><span id="hn3SeasonTitle">HNL Season 01</span></h1>
+            <p id="hn3SeasonSubtitle">A temporada principal da Hollow Nexus reúne clubes, jogadores, classificação e partidas oficiais em uma única experiência competitiva.</p>
+            <div class="hn3-hero-actions">
+              <a class="hn3-btn primary" href="/pages/eventos.html">Acompanhar temporada</a>
+              <a class="hn3-btn" href="/pages/rankings.html">Ver classificação</a>
+              <a class="hn3-btn" href="/pages/resultados.html">Partidas</a>
+            </div>
+          </div>
+          <aside class="hn3-hero-side" aria-label="Status da temporada">
+            <div class="hn3-season-status">
+              <span class="hn3-live" id="hn3SeasonStatus">Temporada oficial</span>
+              <span class="hn3-season-code">HNL · S01</span>
+            </div>
+            <div class="hn3-crest"><img src="/assets/hollow-nexus-official.svg" alt="Hollow Nexus" /></div>
+            <div class="hn3-hero-meta">
+              <div class="hn3-meta"><strong id="hn3MetaClubs">—</strong><span>Clubes</span></div>
+              <div class="hn3-meta"><strong id="hn3MetaPlayers">—</strong><span>Jogadores</span></div>
+              <div class="hn3-meta"><strong id="hn3MetaMatches">—</strong><span>Partidas</span></div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="hn3-row match" aria-label="Partidas em destaque">
+          <article class="hn3-card hn3-match-card">
+            <div class="hn3-card-inner" style="padding-bottom:0">
+              <div class="hn3-card-head"><div><span class="hn3-label">Resultado mais recente</span><h2>Último resultado</h2></div><a href="/pages/resultados.html">Ver resultados</a></div>
+            </div>
+            <div id="hn3LatestResult"><div class="hn3-empty hn3-skeleton">Carregando resultado oficial...</div></div>
+          </article>
+          <article class="hn3-card hn3-match-card">
+            <div class="hn3-card-inner" style="padding-bottom:0">
+              <div class="hn3-card-head"><div><span class="hn3-label">Agenda oficial</span><h2>Próxima partida</h2></div><a href="/pages/eventos.html">Calendário</a></div>
+            </div>
+            <div id="hn3NextMatch"><div class="hn3-empty hn3-skeleton">Carregando agenda...</div></div>
+          </article>
+        </section>
+
+        <section class="hn3-row main">
+          <article class="hn3-card">
+            <div class="hn3-card-inner" style="padding-bottom:8px">
+              <div class="hn3-card-head"><div><span class="hn3-label">HNL Season 01</span><h2>Classificação</h2></div><a href="/pages/rankings.html">Ranking completo</a></div>
+            </div>
+            <div class="hn3-standing-wrap">
+              <table class="hn3-standing">
+                <thead><tr><th>#</th><th>Clube</th><th class="num">J</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">PTS</th></tr></thead>
+                <tbody id="hn3StandingsBody"><tr><td colspan="7"><div class="hn3-empty hn3-skeleton">Montando classificação...</div></td></tr></tbody>
+              </table>
+            </div>
+          </article>
+
+          <aside class="hn3-card hn3-player-card">
+            <div class="hn3-card-inner">
+              <div class="hn3-card-head"><div><span class="hn3-label">Destaque da semana</span><h2>Jogador em evidência</h2></div><a href="/pages/jogadores.html">Jogadores</a></div>
+              <div class="hn3-player-visual">
+                <div class="hn3-player-avatar" id="hn3PlayerAvatar">HN</div>
+                <div class="hn3-player-name"><h3 id="hn3PlayerName">Carregando...</h3><p id="hn3PlayerTeam">Hollow Nexus</p></div>
+              </div>
+              <div class="hn3-player-stats">
+                <div class="hn3-player-stat"><strong id="hn3PlayerGoals">0</strong><span>Gols</span></div>
+                <div class="hn3-player-stat"><strong id="hn3PlayerAssists">0</strong><span>Assist.</span></div>
+                <div class="hn3-player-stat"><strong id="hn3PlayerMvp">0</strong><span>MVP</span></div>
+              </div>
+              <p class="hn3-player-note">O destaque é atualizado usando os dados disponíveis na plataforma e as estatísticas registradas nas partidas.</p>
+            </div>
+          </aside>
+        </section>
+
+        <section class="hn3-row bottom">
+          <article class="hn3-card">
+            <div class="hn3-card-inner">
+              <div class="hn3-card-head"><div><span class="hn3-label">Organizações da liga</span><h2>Clubes em destaque</h2></div><a href="/pages/times.html">Ver todos os clubes</a></div>
+              <div class="hn3-clubs" id="hn3FeaturedClubs"><div class="hn3-empty hn3-skeleton" style="grid-column:1/-1">Carregando clubes...</div></div>
+            </div>
+          </article>
+
+          <div class="hn3-side-stack">
+            <article class="hn3-card">
+              <div class="hn3-card-inner">
+                <div class="hn3-card-head"><div><span class="hn3-label">Andamento</span><h2>Progresso da temporada</h2></div><a href="/pages/eventos.html">Detalhes</a></div>
+                <div class="hn3-progress-head"><div><strong id="hn3RoundLabel">0/14</strong><span>Rodadas / etapas</span></div><span id="hn3PhaseLabel">Preparação</span></div>
+                <div class="hn3-track"><span id="hn3ProgressBar"></span></div>
+                <div class="hn3-phases"><span class="active" data-phase="group">Grupos</span><span data-phase="class">Classificação</span><span data-phase="playoff">Playoffs</span><span data-phase="final">Final</span></div>
+              </div>
+            </article>
+
+            <article class="hn3-card">
+              <div class="hn3-card-inner hn3-cafe">
+                <div class="hn3-cafe-copy"><span class="hn3-label">Ranking individual</span><h3>Café com Leite</h3><p>Dois rankings individuais para acompanhar evolução, desempenho e premiações durante a temporada.</p><div class="hn3-cafe-pills"><span>3v3</span><span>5v5</span></div></div>
+                <a class="hn3-btn" href="/pages/placar.html">Abrir ranking</a>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+      <div id="homeStatus" class="hn3-status" aria-live="polite"></div>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/core/hollow-v2-runtime.js"></script>
+  <script src="/js/core/hollow-v2-final.js"></script>
+  <script src="/js/pages/dashboard-v3.js"></script>
+</body>
+</html>

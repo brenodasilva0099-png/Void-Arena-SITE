@@ -49,6 +49,7 @@ const { registerFinalRuntimeStabilityRoutes } = require('../server/routes/finalR
 const { registerChatBridgeAssetRoutes } = require('../server/routes/chatBridgeAssets.routes');
 const { registerProfileAssetsStableRoutes } = require('../server/routes/profileAssetsStable.routes');
 const { registerMatchReportRoutes } = require('../server/routes/matchReports.routes');
+const { registerHomeDataSafetyRoutes } = require('../server/routes/homeDataSafety.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -89,6 +90,8 @@ registerFinalRuntimeStabilityRoutes(app);
 registerStableTeamInviteRoutes(app);
 registerChatBridgeAssetRoutes(app);
 registerProfileAssetsStableRoutes(app);
+// Último override de dados usados pela Home/Season Center: nunca deixa overview/ranking cair em 500.
+registerHomeDataSafetyRoutes(app);
 
 // Última barreira: registra a causa real de qualquer falha HTTP. Para a raiz,
 // mantém a Home acessível mesmo se uma rota antiga de arquivo estático falhar.
