@@ -1,7 +1,7 @@
 (async()=>{
 'use strict';
 const $=s=>document.querySelector(s),num=v=>Number(v||0)||0;
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 async function get(url){try{const r=await fetch(url,{credentials:'include',cache:'no-store'});const d=await r.json().catch(()=>({}));return r.ok?d:{};}catch{return {};}}
 const HISTORY={title:'Nexus Cup — 1ª edição',date:'2026-07-25T19:30:00-03:00',champion:'Flow',runnerUp:'Griffin Gaming',third:'Império'};
 const teamName=(t={},fallback='Clube')=>t.name||t.teamName||t.tag||fallback;
