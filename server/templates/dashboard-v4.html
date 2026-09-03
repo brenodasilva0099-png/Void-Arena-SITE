@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Início | Hollow Nexus</title>
+  <link rel="icon" href="/assets/hollow-nexus.png" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/organization.css" />
+  <link rel="stylesheet" href="/css/arena-pages.css" />
+  <link rel="stylesheet" href="/css/site-cleanup.css" />
+  <link rel="stylesheet" href="/css/hollow-v2.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-final.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-audit-fixes.css" />
+  <link rel="stylesheet" href="/css/hollow-home-v4.css" />
+</head>
+<body class="va-organized-body" data-page="dashboard">
+  <div class="va-shell">
+    <main class="va-main">
+      <div class="hn4-home">
+        <section class="hn4-hero" aria-labelledby="hn4SeasonTitle">
+          <div class="hn4-stage" aria-hidden="true"></div>
+          <div class="hn4-hero-copy">
+            <h1 class="hn4-title" id="hn4SeasonTitle"><span class="hnl">HNL</span><span class="season">SEASON 01</span></h1>
+            <div class="hn4-live" id="hn4SeasonStatus">TEMPORADA OFICIAL</div>
+            <p class="hn4-subtitle">A principal competição competitiva da Hollow Nexus.</p>
+            <div class="hn4-actions">
+              <a class="hn4-btn primary" href="/pages/eventos.html">Acompanhar temporada</a>
+              <a class="hn4-btn" href="/pages/rankings.html">Ver classificação</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="hn4-top-grid" aria-label="Resumo da temporada">
+          <article class="hn4-card hn4-match">
+            <div class="hn4-card-head"><h2>Último resultado</h2></div>
+            <div id="hn4Latest"><div class="hn4-empty">Carregando resultado...</div></div>
+          </article>
+
+          <article class="hn4-card hn4-match">
+            <div class="hn4-card-head"><h2>Próxima partida</h2></div>
+            <div id="hn4Next"><div class="hn4-empty">Carregando agenda...</div></div>
+          </article>
+
+          <article class="hn4-card hn4-standings">
+            <div class="hn4-card-head"><h2>Classificação</h2></div>
+            <table class="hn4-table">
+              <thead><tr><th>#</th><th>Clube</th><th class="num">J</th><th class="num">V</th><th class="num">D</th><th class="num">PTS</th></tr></thead>
+              <tbody id="hn4Standings"><tr><td colspan="6"><div class="hn4-empty">Montando classificação...</div></td></tr></tbody>
+            </table>
+            <a class="hn4-profile-link" href="/pages/rankings.html">Ver classificação completa →</a>
+          </article>
+
+          <article class="hn4-card hn4-player">
+            <div class="hn4-card-head"><h2>Destaque da semana</h2></div>
+            <div class="hn4-player-body">
+              <div class="hn4-player-avatar" id="hn4PlayerAvatar">HN</div>
+              <div class="hn4-player-copy">
+                <h3 id="hn4PlayerName">Carregando...</h3>
+                <p class="hn4-player-team" id="hn4PlayerTeam">Hollow Nexus</p>
+                <span class="hn4-position" id="hn4PlayerPosition">Jogador</span>
+                <div class="hn4-player-stats">
+                  <div><strong id="hn4PlayerGoals">0</strong><span>Gols</span></div>
+                  <div><strong id="hn4PlayerAssists">0</strong><span>Assistências</span></div>
+                </div>
+              </div>
+            </div>
+            <a class="hn4-profile-link" id="hn4PlayerLink" href="/pages/jogadores.html">Ver perfil do jogador →</a>
+          </article>
+        </section>
+
+        <section class="hn4-bottom-grid">
+          <article class="hn4-card hn4-clubs">
+            <div class="hn4-card-head"><h2>Clubes em destaque</h2></div>
+            <div class="hn4-club-grid" id="hn4Clubs"><div class="hn4-empty" style="grid-column:1/-1">Carregando clubes...</div></div>
+          </article>
+
+          <article class="hn4-card hn4-progress">
+            <div class="hn4-card-head"><h2>Progresso da temporada</h2></div>
+            <div class="hn4-progress-body">
+              <div class="hn4-progress-top"><strong id="hn4Round">RODADA 00 / 14</strong><span id="hn4Percent">0%</span></div>
+              <div class="hn4-track"><span id="hn4Progress"></span></div>
+              <div class="hn4-phases">
+                <span class="hn4-phase active">Fase de grupos</span>
+                <span class="hn4-phase">Classificatória</span>
+                <span class="hn4-phase">Playoffs</span>
+                <span class="hn4-phase">Final</span>
+              </div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/core/hollow-v2-runtime.js"></script>
+  <script src="/js/core/hollow-v2-final.js"></script>
+  <script src="/js/core/hollow-v2-audit-fixes.js"></script>
+  <script src="/js/pages/dashboard-v4.js"></script>
+</body>
+</html>
