@@ -10,52 +10,89 @@
   <link rel="stylesheet" href="/css/arena-pages.css" />
   <link rel="stylesheet" href="/css/hollow-v2.css" />
   <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-final.css" />
+  <link rel="stylesheet" href="/css/hollow-pages-v4.css" />
 </head>
-<body class="va-organized-body" data-page="eventos">
+<body class="va-organized-body hn4-section-page" data-page="eventos">
   <div class="va-shell">
     <main class="va-main">
-      <div class="hn2-title-row">
-        <header class="hn2-page-title"><small>Hollow Nexus League</small><h1>Competições</h1><p>Acompanhe torneios e temporadas, inscrições, formatos, progresso e histórico competitivo.</p></header>
-        <a class="va-btn" href="/pages/times.html">Ver clubes</a>
+      <div class="hn4-page">
+        <section class="hn4-page-hero">
+          <div class="hn4-competition-stage" aria-hidden="true"></div>
+          <div class="hn4-page-hero-copy">
+            <div class="hn4-page-kicker">Centro competitivo</div>
+            <h1>Competições</h1>
+            <p>Temporadas oficiais, copas, rankings individuais e histórico competitivo da Hollow Nexus em um único lugar.</p>
+            <div class="hn4-page-actions">
+              <a class="hn4-v4-btn primary" href="#eventos-oficiais">Ver competições</a>
+              <a class="hn4-v4-btn" href="/pages/grupos.html">Fase de grupos</a>
+              <a class="hn4-v4-btn" href="/pages/chaveamento.html">Chaveamento</a>
+            </div>
+          </div>
+        </section>
+
+        <nav class="hn4-page-tabs" aria-label="Filtrar competições">
+          <button class="active" type="button" data-competition-filter="all">Todas</button>
+          <button type="button" data-competition-filter="running">Em andamento</button>
+          <button type="button" data-competition-filter="upcoming">Próximas</button>
+          <button type="button" data-competition-filter="finished">Encerradas</button>
+        </nav>
+
+        <section class="hn4-v4-strip" aria-label="Atalhos competitivos">
+          <a class="hn4-v4-strip-card" href="/pages/grupos.html"><small>HNL Season 01</small><strong>Fase de grupos</strong><span>Classificação e confrontos →</span></a>
+          <a class="hn4-v4-strip-card" href="/pages/chaveamento.html"><small>HNL Season 01</small><strong>Playoffs</strong><span>Chaveamento oficial →</span></a>
+          <a class="hn4-v4-strip-card" href="/pages/placar.html#3v3"><small>Café com Leite</small><strong>Ranking 3v3</strong><span>Classificação individual →</span></a>
+          <a class="hn4-v4-strip-card" href="/pages/placar.html#5v5"><small>Café com Leite</small><strong>Ranking 5v5</strong><span>Classificação individual →</span></a>
+        </section>
+
+        <section class="hn4-page-grid" id="eventos-oficiais">
+          <div class="hn4-page-main">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head">
+                <div><span class="eyebrow">Temporadas e torneios</span><h2>Competições oficiais</h2><p>Inscrições, formato, progresso, clubes participantes e situação de cada torneio.</p></div>
+                <span class="va-badge"><b id="competitionCountKpi">—</b>&nbsp; cadastradas</span>
+              </div>
+              <div class="hn4-v4-body">
+                <div id="eventsList" class="va-list va-events-list"></div>
+                <div id="eventsStatus" class="va-status">Carregando...</div>
+              </div>
+            </article>
+
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Arquivo da liga</span><h2>Nexus Cup — 1ª edição</h2><p>Competição encerrada que abriu o histórico competitivo oficial da liga.</p></div><span class="va-badge ok">Finalizada</span></div>
+              <div class="hn4-v4-body">
+                <div class="hn4-v4-stats">
+                  <div class="hn4-v4-stat"><strong>Flow</strong><span>Campeão</span></div>
+                  <div class="hn4-v4-stat"><strong>Griffin Gaming</strong><span>Vice-campeão</span></div>
+                  <div class="hn4-v4-stat"><strong>Império</strong><span>3º lugar</span></div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <aside class="hn4-page-side">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">HNL Season 01</span><h2>Temporada oficial</h2></div></div>
+              <div class="hn4-v4-body">
+                <div class="hn4-v4-stats">
+                  <div class="hn4-v4-stat"><strong>01</strong><span>Temporada</span></div>
+                  <div class="hn4-v4-stat"><strong>HNL</strong><span>Liga</span></div>
+                  <div class="hn4-v4-stat"><strong>14</strong><span>Rodadas-base</span></div>
+                </div>
+              </div>
+            </article>
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Central competitiva</span><h2>Acessos rápidos</h2></div></div>
+              <div class="hn4-v4-body hn4-v4-quick">
+                <a href="/pages/inscricao.html">Inscrições</a>
+                <a href="/pages/sumulas.html">Súmulas</a>
+                <a href="/pages/resultados.html">Resultados</a>
+                <a href="/pages/rankings.html">Classificação</a>
+              </div>
+            </article>
+          </aside>
+        </section>
       </div>
-
-      <nav class="hn2-tabs" aria-label="Filtrar competições">
-        <button class="hn2-tab active" type="button" data-competition-filter="all">Todas</button>
-        <button class="hn2-tab" type="button" data-competition-filter="running">Em andamento</button>
-        <button class="hn2-tab" type="button" data-competition-filter="upcoming">Próximas</button>
-        <button class="hn2-tab" type="button" data-competition-filter="finished">Encerradas</button>
-      </nav>
-
-      <section class="hn2-layout">
-        <div class="hn2-main-col">
-          <article class="hn2-panel hn2-competition-feature">
-            <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Temporadas e torneios</span><h2>Competições disponíveis</h2></div><span class="hn2-pill"><b id="competitionCountKpi">—</b>&nbsp; cadastradas</span></div>
-            <div id="eventsList" class="va-list va-events-list"></div>
-            <div id="eventsStatus" class="va-status">Carregando...</div>
-          </article>
-        </div>
-
-        <aside class="hn2-side-col">
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Calendário / próximas etapas</h2></div>
-            <div class="hn2-calendar-list">
-              <a class="hn2-calendar-row" href="/pages/grupos.html"><b>01</b><span><strong>Fase de grupos</strong><small>Classificação e confrontos</small></span></a>
-              <a class="hn2-calendar-row" href="/pages/chaveamento.html"><b>02</b><span><strong>Playoffs</strong><small>Chaveamento oficial</small></span></a>
-              <a class="hn2-calendar-row" href="/pages/placar.html"><b>3V3</b><span><strong>Café com Leite</strong><small>Ranking individual 3v3</small></span></a>
-              <a class="hn2-calendar-row" href="/pages/placar.html"><b>5V5</b><span><strong>Café com Leite</strong><small>Ranking individual 5v5</small></span></a>
-            </div>
-          </article>
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Central competitiva</h2></div>
-            <div class="hn2-quick-links">
-              <a href="/pages/inscricao.html">Inscrições</a>
-              <a href="/pages/sumulas.html">Súmulas</a>
-              <a href="/pages/resultados.html">Resultados</a>
-              <a href="/pages/rankings.html">Classificação</a>
-            </div>
-          </article>
-        </aside>
-      </section>
 
       <div id="eventRegisterModal" class="va-modal-shell" hidden>
         <div class="va-modal-card">
@@ -80,7 +117,7 @@
             <label>Recompensa<input name="reward" maxlength="180" placeholder="Ex: cargo, prêmio, dinheiro, destaque..." /></label>
             <label>Taxa de inscrição<input name="entryFee" maxlength="80" placeholder="Ex: R$ 10,00 por clube" /></label>
             <label class="va-check-row"><input name="isFree" type="checkbox" /> <span>Marcar como F2P / gratuito</span></label>
-            <label class="wide">Instruções de pagamento/validação<textarea name="paymentInstructions" maxlength="420" placeholder="Explique onde enviar comprovante ou como validar a inscrição."></textarea></label>
+            <label class="wide">Instruções de pagamento/validação<textarea name="paymentInstructions" maxlength="420"></textarea></label>
             <label class="wide">Descrição<textarea name="description" maxlength="320"></textarea></label>
             <div class="va-event-settings-teams wide"><div class="va-section-head mini"><div><h3>Clubes inscritos/validados</h3><p>Remova um clube da competição sem apagar o cadastro dele do site.</p></div></div><div id="eventRegisteredTeamsManager" class="va-event-manage-teams"></div></div>
             <div class="va-actions wide"><button class="va-btn primary" type="submit">Salvar definições</button><button id="eventManualDmBtn" class="va-btn secondary" type="button">Reenviar DM</button><button class="va-btn" type="button" data-event-settings-close>Cancelar</button></div>
@@ -93,5 +130,6 @@
   <script src="/js/core/api.js"></script>
   <script src="/js/pages/eventos.js"></script>
   <script src="/js/core/hollow-v2-runtime.js"></script>
+  <script src="/js/core/hollow-v2-final.js"></script>
 </body>
 </html>
