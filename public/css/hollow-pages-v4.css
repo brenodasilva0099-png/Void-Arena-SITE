@@ -1,1 +1,88 @@
-/* placeholder */
+body.hn4-section-page{background:#03040a!important;color:#f4f5f8!important}
+body.hn4-section-page .va-main{width:min(1600px,calc(100% - 64px))!important;max-width:none!important;margin:0 auto!important;padding-bottom:34px!important}
+body.hn4-section-page .va-site-footer{display:none!important}
+.hn4-page{display:grid;gap:16px;padding-bottom:28px}
+.hn4-page-hero{position:relative;overflow:hidden;min-height:250px;padding:34px 38px;border:1px solid rgba(255,255,255,.075);border-radius:14px;background:linear-gradient(115deg,#05070d 0%,#090b15 52%,#0a0815 100%);box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.hn4-page-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 45%,rgba(136,57,237,.28),transparent 26rem),linear-gradient(90deg,rgba(3,4,10,.98),rgba(3,4,10,.70) 48%,rgba(3,4,10,.18) 100%)}
+.hn4-page-hero:after{content:"";position:absolute;right:-6%;top:-52%;width:52%;aspect-ratio:1;border:1px solid rgba(154,81,255,.15);border-radius:50%;box-shadow:0 0 0 44px rgba(129,48,232,.05),0 0 0 92px rgba(129,48,232,.03)}
+.hn4-page-hero-copy{position:relative;z-index:2;width:min(720px,68%)}
+.hn4-page-kicker{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:#a861ff;font-size:.74rem;font-weight:950;letter-spacing:.11em;text-transform:uppercase}
+.hn4-page-kicker:before{content:"";width:24px;height:2px;background:#9147ff;box-shadow:0 0 12px rgba(145,71,255,.75)}
+.hn4-page-hero h1{margin:0;color:#f5f6f8;font-size:clamp(3rem,5vw,5.8rem);line-height:.92;letter-spacing:-.05em;text-transform:uppercase}
+.hn4-page-hero p{max-width:680px;margin:18px 0 0;color:#abb1bd;font-size:1rem;line-height:1.6}
+.hn4-page-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.hn4-v4-btn,.hn4-page .va-btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 16px;border:1px solid rgba(255,255,255,.12);border-radius:7px;background:#090b12;color:#f4f5f8!important;font-weight:850;text-decoration:none;box-shadow:none!important}
+.hn4-v4-btn.primary,.hn4-page .va-btn.primary{border-color:#8c43f8;background:linear-gradient(135deg,#6822db,#9548ff);box-shadow:0 12px 30px rgba(117,42,229,.22)!important}
+.hn4-v4-btn:hover,.hn4-page .va-btn:hover{border-color:rgba(164,95,255,.72);background:#11141d}
+.hn4-page-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0}
+.hn4-page-tabs a,.hn4-page-tabs button{flex:0 0 auto;min-height:38px;padding:0 15px;border:1px solid rgba(255,255,255,.07);border-radius:7px;background:#080a11;color:#8f96a4;text-decoration:none;font-size:.76rem;font-weight:850;cursor:pointer}
+.hn4-page-tabs .active,.hn4-page-tabs a:hover,.hn4-page-tabs button:hover{border-color:rgba(146,66,255,.5);background:rgba(129,45,233,.12);color:#fff}
+.hn4-page-grid{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(300px,.8fr);gap:16px}
+.hn4-page-main,.hn4-page-side{display:grid;gap:16px;align-content:start}
+.hn4-v4-card{overflow:hidden;border:1px solid rgba(255,255,255,.075);border-radius:11px;background:linear-gradient(180deg,rgba(9,12,19,.98),rgba(6,8,13,.99));box-shadow:0 14px 40px rgba(0,0,0,.14)}
+.hn4-v4-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:18px 20px 12px;border-bottom:1px solid rgba(255,255,255,.045)}
+.hn4-v4-card-head .eyebrow{display:block;margin-bottom:4px;color:#a765ff;font-size:.62rem;font-weight:950;letter-spacing:.11em;text-transform:uppercase}
+.hn4-v4-card-head h2{margin:0;color:#f4f4f7;font-size:1rem;font-weight:950;letter-spacing:-.01em;text-transform:uppercase}
+.hn4-v4-card-head p{margin:5px 0 0;color:#757c89;font-size:.74rem;line-height:1.45}
+.hn4-v4-card-head a{color:#a66bff;text-decoration:none;font-size:.72rem;font-weight:850}
+.hn4-v4-body{padding:18px 20px}
+.hn4-v4-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hn4-v4-stat{padding:15px;border:1px solid rgba(255,255,255,.055);border-radius:8px;background:#080a11}
+.hn4-v4-stat strong{display:block;color:#fff;font-size:1.45rem;line-height:1}
+.hn4-v4-stat span{display:block;margin-top:5px;color:#737a88;font-size:.62rem;text-transform:uppercase}
+.hn4-v4-quick{display:grid;gap:8px}
+.hn4-v4-quick a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid rgba(255,255,255,.055);border-radius:7px;background:#080a11;color:#d8dbe2;text-decoration:none;font-size:.76rem;font-weight:800}
+.hn4-v4-quick a:after{content:"→";color:#9c56ff}.hn4-v4-quick a:hover{border-color:rgba(145,70,255,.45);background:#0c0f17}
+.hn4-v4-empty{display:grid;place-items:center;min-height:150px;padding:20px;color:#727987;text-align:center;font-size:.78rem;line-height:1.55}
+.hn4-v4-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hn4-v4-toolbar input,.hn4-v4-toolbar select,.hn4-page input[type="search"]{min-height:42px;border:1px solid rgba(255,255,255,.08)!important;border-radius:7px!important;background:#080a11!important;color:#f0f2f6!important;padding:0 13px!important;outline:none!important}
+.hn4-v4-toolbar input:focus,.hn4-v4-toolbar select:focus,.hn4-page input[type="search"]:focus{border-color:rgba(151,75,255,.6)!important;box-shadow:0 0 0 3px rgba(134,55,235,.08)!important}
+.hn4-v4-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.hn4-v4-strip-card{padding:14px;border:1px solid rgba(255,255,255,.055);border-radius:8px;background:#080a11;text-decoration:none;color:#fff}.hn4-v4-strip-card:hover{border-color:rgba(145,70,255,.45)}
+.hn4-v4-strip-card small{display:block;color:#777f8e;font-size:.62rem;text-transform:uppercase}.hn4-v4-strip-card strong{display:block;margin-top:4px;font-size:.9rem}.hn4-v4-strip-card span{display:block;margin-top:8px;color:#a263ff;font-size:.7rem;font-weight:850}
+/* Competition */
+body[data-page="eventos"] .hn4-page-hero:after{background:radial-gradient(circle at 48% 48%,rgba(147,72,255,.13),transparent 45%)}
+.hn4-competition-stage{position:absolute;z-index:1;right:6%;top:50%;width:min(400px,34%);transform:translateY(-50%);aspect-ratio:1;border:1px solid rgba(150,76,255,.22);border-radius:50%;background:radial-gradient(circle,rgba(122,47,221,.22),rgba(13,8,26,.2) 45%,transparent 67%);box-shadow:0 0 0 22px rgba(135,51,232,.035),0 0 0 48px rgba(135,51,232,.02)}
+.hn4-competition-stage:before{content:"HNL";position:absolute;inset:0;display:grid;place-items:center;color:#d9c0ff;font-size:5rem;font-weight:950;letter-spacing:-.08em;text-shadow:0 0 24px rgba(159,88,255,.4)}
+body[data-page="eventos"] #eventsList{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px!important;padding:0!important}
+body[data-page="eventos"] .va-event-card{margin:0!important;padding:17px!important;border:1px solid rgba(255,255,255,.065)!important;border-radius:9px!important;background:#080a11!important;box-shadow:none!important}
+body[data-page="eventos"] .va-event-card:first-child{border-color:rgba(145,70,255,.65)!important;background:linear-gradient(180deg,rgba(35,17,62,.28),#080a11)!important}
+body[data-page="eventos"] .va-event-main{align-items:flex-start!important}.hn4-page .va-event-icon{display:grid!important;place-items:center!important;width:44px!important;height:44px!important;border:1px solid rgba(145,70,255,.3)!important;border-radius:10px!important;background:rgba(124,45,223,.12)!important;font-size:0!important}.hn4-page .va-event-icon:after{content:"HNL";color:#a66cff;font-size:.7rem;font-weight:950}
+body[data-page="eventos"] .va-event-card h3{font-size:1.05rem!important;color:#fff!important}body[data-page="eventos"] .va-event-card p{color:#7e8592!important;font-size:.76rem!important}
+body[data-page="eventos"] .va-event-team-strip{margin-top:12px!important;background:#05070c!important;border-radius:7px!important;border:1px solid rgba(255,255,255,.04)!important}
+/* Clubs */
+.hn4-club-hero-art{position:absolute;z-index:1;right:3%;bottom:-10%;width:45%;height:120%;background:radial-gradient(circle at 55% 60%,rgba(134,52,231,.25),transparent 44%)}
+.hn4-club-hero-art:before,.hn4-club-hero-art:after{content:"";position:absolute;border:1px solid rgba(154,81,255,.18);transform:rotate(20deg)}.hn4-club-hero-art:before{width:180px;height:220px;right:28%;top:12%;border-radius:32% 32% 46% 46%}.hn4-club-hero-art:after{width:110px;height:140px;right:41%;top:29%;border-radius:32% 32% 46% 46%;background:rgba(115,39,210,.07)}
+body[data-page="times"] #featuredClub{min-height:230px}
+body[data-page="times"] #teamsList{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px!important;padding:0!important}
+body[data-page="times"] .va-team-card{margin:0!important;padding:16px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:9px!important;background:#080a11!important;box-shadow:none!important;cursor:pointer;transition:.18s ease}
+body[data-page="times"] .va-team-card:hover{transform:translateY(-2px);border-color:rgba(145,70,255,.45)!important;background:#0b0e16!important}
+body[data-page="times"] .va-team-card-head{gap:12px!important}.hn4-page .va-team-logo{width:58px!important;height:58px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:10px!important;background:#05070c!important;overflow:hidden!important}.hn4-page .va-team-logo img{width:100%!important;height:100%!important;object-fit:contain!important;padding:6px!important}
+body[data-page="times"] .va-team-card strong{font-size:.9rem!important;color:#fff!important}.hn4-page .va-muted{color:#767d8a!important}
+/* Players */
+.hn4-player-hero-art{position:absolute;z-index:1;right:6%;top:0;width:35%;height:100%;background:radial-gradient(circle at 50% 45%,rgba(136,54,235,.27),transparent 45%)}
+.hn4-player-hero-art:before{content:"";position:absolute;left:50%;top:24px;transform:translateX(-50%);width:118px;height:118px;border:2px solid rgba(169,105,255,.45);border-radius:50%;background:radial-gradient(circle at 50% 34%,rgba(186,129,255,.3),rgba(25,13,43,.55) 56%,rgba(6,7,12,.8));box-shadow:0 0 36px rgba(133,49,234,.18)}
+.hn4-player-hero-art:after{content:"";position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:220px;height:120px;border:1px solid rgba(159,90,255,.22);border-radius:120px 120px 26px 26px;background:linear-gradient(180deg,rgba(115,39,209,.12),transparent)}
+body[data-page="jogadores"] #featuredPlayerPanel{min-height:250px!important;border:0!important;background:transparent!important;padding:0!important;box-shadow:none!important}
+body[data-page="jogadores"] .va-table-wrap,body[data-page="rankings"] .va-table-wrap{border:1px solid rgba(255,255,255,.055)!important;border-radius:8px!important;background:#070910!important;overflow:auto!important}
+body[data-page="jogadores"] .va-rank-table,body[data-page="rankings"] .va-rank-table{width:100%!important;border-collapse:collapse!important}.hn4-page .va-rank-table th{background:#070910!important;color:#686f7c!important;border-bottom:1px solid rgba(255,255,255,.05)!important;font-size:.62rem!important;text-transform:uppercase!important}.hn4-page .va-rank-table td{background:transparent!important;color:#cfd2d8!important;border-bottom:1px solid rgba(255,255,255,.045)!important}.hn4-page .va-rank-table tr:hover td{background:rgba(135,51,232,.05)!important}
+/* Rankings */
+.hn4-rank-hero-art{position:absolute;z-index:1;right:5%;top:50%;transform:translateY(-50%);width:36%;height:78%;display:flex;align-items:flex-end;justify-content:center;gap:12px}
+.hn4-rank-hero-art span{display:block;width:25%;border:1px solid rgba(169,100,255,.24);border-bottom:0;background:linear-gradient(180deg,rgba(151,72,255,.28),rgba(61,19,112,.1));box-shadow:0 -15px 45px rgba(132,51,229,.08)}.hn4-rank-hero-art .p2{height:50%}.hn4-rank-hero-art .p1{height:76%}.hn4-rank-hero-art .p3{height:38%}
+body[data-page="rankings"] #rankingPodium{margin:0!important;padding:18px!important;border:1px solid rgba(255,255,255,.07)!important;border-radius:11px!important;background:linear-gradient(180deg,#0a0c14,#07090f)!important}
+body[data-page="rankings"] .hn2-podium{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+body[data-page="rankings"] .hn2-podium>*{min-width:0}
+/* Matches */
+.hn4-match-hero-art{position:absolute;z-index:1;right:4%;top:12%;width:42%;height:76%;border:1px solid rgba(145,70,255,.18);border-radius:12px;background:linear-gradient(90deg,rgba(125,43,224,.08),rgba(8,10,17,.35)),repeating-linear-gradient(90deg,transparent 0 24%,rgba(155,84,255,.06) 24% 25%),repeating-linear-gradient(0deg,transparent 0 32%,rgba(155,84,255,.05) 32% 33%)}
+.hn4-match-hero-art:before{content:"VS";position:absolute;inset:0;display:grid;place-items:center;color:#b879ff;font-size:3.4rem;font-weight:950;text-shadow:0 0 24px rgba(145,70,255,.42)}
+.hn4-match-hero-art:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(177,116,255,.14)}
+body[data-page="resultados"] #latestMatchSpotlight{min-height:230px!important;border:0!important;background:transparent!important;padding:0!important;box-shadow:none!important}
+body[data-page="resultados"] #resultsList{display:grid!important;gap:10px!important;padding:0!important}
+body[data-page="resultados"] #resultsList>.va-item,body[data-page="resultados"] #resultsList>article{border:1px solid rgba(255,255,255,.055)!important;border-radius:8px!important;background:#080a11!important;margin:0!important}
+/* Existing panels inside V4 */
+.hn4-page .hn2-panel{margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important}.hn4-page .hn2-panel-head{padding:0 0 12px!important;border:0!important}.hn4-page .hn2-panel-head h2{color:#fff!important;font-size:1rem!important}.hn4-page .hn2-panel-kicker{color:#9d5dff!important}.hn4-page .hn2-empty-copy{color:#777e8b!important}
+.hn4-page .va-status{margin-top:10px!important;padding:9px 11px!important;border-radius:7px!important;background:#080a11!important;border:1px solid rgba(255,255,255,.045)!important;color:#777e8b!important;font-size:.72rem!important}
+.hn4-page .va-badge{border-color:rgba(255,255,255,.07)!important;background:#0c0e16!important;color:#acb1bc!important}.hn4-page .va-badge.ok{color:#67e6ae!important;border-color:rgba(70,215,157,.22)!important;background:rgba(48,176,128,.08)!important}.hn4-page .va-badge.warn{color:#ffc85b!important}.hn4-page .va-badge.err{color:#ff7e98!important}
+@media(max-width:1280px){body.hn4-section-page .va-main{width:min(100% - 40px,1600px)!important}.hn4-page-grid{grid-template-columns:1fr}.hn4-v4-strip{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-page="eventos"] #eventsList{grid-template-columns:1fr}body[data-page="times"] #teamsList{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.hn4-page-hero{min-height:280px;padding:28px}.hn4-page-hero-copy{width:76%}.hn4-competition-stage,.hn4-club-hero-art,.hn4-player-hero-art,.hn4-rank-hero-art,.hn4-match-hero-art{opacity:.55;right:-8%;width:50%}.hn4-page-hero:before{background:linear-gradient(90deg,rgba(3,4,10,.98),rgba(3,4,10,.84) 56%,rgba(3,4,10,.55))}.hn4-v4-stats{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){body.hn4-section-page .va-main{width:calc(100% - 24px)!important}.hn4-page-hero{min-height:300px;padding:24px 20px}.hn4-page-hero-copy{width:100%}.hn4-page-hero h1{font-size:3.1rem}.hn4-competition-stage,.hn4-club-hero-art,.hn4-player-hero-art,.hn4-rank-hero-art,.hn4-match-hero-art{opacity:.18;width:70%}.hn4-page-grid{display:block}.hn4-page-side{margin-top:16px}.hn4-v4-strip{grid-template-columns:1fr}.hn4-v4-stats{grid-template-columns:1fr}.hn4-v4-card-head{padding:16px}.hn4-v4-body{padding:16px}body[data-page="times"] #teamsList{grid-template-columns:1fr}.hn4-page-actions .hn4-v4-btn{flex:1 1 160px}}
