@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const TEMPLATE = path.join(__dirname, 'templates', 'dashboard-v4.html');
 const TARGET = path.join(ROOT, 'public', 'pages', 'dashboard.html');
-const BUILD = '2026-09-02-home-v4-history-2';
+const BUILD = '2026-09-03-v4-full-pages-1';
 
 function read(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
@@ -33,6 +33,6 @@ if (!html) throw new Error('Template canônico da Home V4 não encontrado.');
 ].forEach((asset) => { html = withVersion(html, asset); });
 
 fs.writeFileSync(TARGET, html, 'utf8');
-console.log('[Hollow Nexus V4] Home canônica restaurada com histórico da Nexus Cup e troféu atualizado.');
+console.log('[Hollow Nexus V4] Home canônica restaurada com troféu premium e rollout V4 das páginas públicas.');
 
 module.exports = { BUILD, TARGET, TEMPLATE };
