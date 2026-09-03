@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const TEMPLATE = path.join(__dirname, 'templates', 'dashboard-v4.html');
 const TARGET = path.join(ROOT, 'public', 'pages', 'dashboard.html');
-const BUILD = '2026-09-02-home-v4-reference-1';
+const BUILD = '2026-09-02-home-v4-history-2';
 
 function read(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
@@ -24,6 +24,7 @@ if (!html) throw new Error('Template canônico da Home V4 não encontrado.');
   '/css/hollow-v2-final.css',
   '/css/hollow-v2-audit-fixes.css',
   '/css/hollow-home-v4.css',
+  '/css/hollow-home-v4-history.css',
   '/js/core/hollow-v2-runtime.js',
   '/js/core/hollow-v2-final.js',
   '/js/core/hollow-v2-audit-fixes.js',
@@ -32,6 +33,6 @@ if (!html) throw new Error('Template canônico da Home V4 não encontrado.');
 ].forEach((asset) => { html = withVersion(html, asset); });
 
 fs.writeFileSync(TARGET, html, 'utf8');
-console.log('[Hollow Nexus V4] Home canônica restaurada após todos os patches legados.');
+console.log('[Hollow Nexus V4] Home canônica restaurada com histórico da Nexus Cup e troféu atualizado.');
 
 module.exports = { BUILD, TARGET, TEMPLATE };
