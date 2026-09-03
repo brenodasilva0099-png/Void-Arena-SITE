@@ -4,7 +4,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const PAGES = path.join(PUBLIC, 'pages');
-const BUILD = '2026-09-03-v4-full-pages-2';
+const BUILD = '2026-09-03-v4-unified-final-1';
 
 const MAIN_PAGES = [
   'eventos.html',
@@ -69,6 +69,12 @@ function addBodyClass(html, className) {
     return `<body${attrs} class="${className}">`;
   });
 }
+function addUnifiedAssets(html) {
+  let out = addBodyClass(html, 'hn4-unified-page');
+  out = upsertCss(out, '/css/hollow-v4-unified.css');
+  out = upsertJs(out, '/js/core/hollow-v4-unified.js');
+  return out;
+}
 function mainPolish(html) {
   let out = addBodyClass(html, 'hn4-section-page');
   out = upsertCss(out, '/css/hollow-v2-runtime.css');
@@ -79,6 +85,7 @@ function mainPolish(html) {
   out = upsertJs(out, '/js/core/hollow-v2-final.js');
   out = upsertJs(out, '/js/core/hollow-v2-audit-fixes.js');
   out = upsertJs(out, '/js/core/hollow-pages-v4.js');
+  out = addUnifiedAssets(out);
   return out.replaceAll('Void Arena', 'Hollow Nexus');
 }
 function secondaryPolish(html) {
@@ -90,13 +97,15 @@ function secondaryPolish(html) {
   out = upsertJs(out, '/js/core/hollow-v2-runtime.js');
   out = upsertJs(out, '/js/core/hollow-v2-final.js');
   out = upsertJs(out, '/js/core/hollow-v2-audit-fixes.js');
+  out = addUnifiedAssets(out);
   return out
     .replaceAll('Void Arena', 'Hollow Nexus')
     .replaceAll('Correios da Arena', 'Central de Notificações')
     .replaceAll('Federação Hollow Nexus', 'Hollow Nexus League');
 }
 
-// Capture the committed V4 pages before any legacy runtime patch can mutate public/pages.
+// Capture the canonical V4 pages as soon as this module is loaded.
+// checkSiteFinal now loads this module before legacy patches, and production boot no longer runs mutating checks first.
 const capturedMainPages = new Map();
 for (const fileName of MAIN_PAGES) {
   const file = path.join(PAGES, fileName);
