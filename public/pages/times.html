@@ -10,61 +10,83 @@
   <link rel="stylesheet" href="/css/arena-pages.css" />
   <link rel="stylesheet" href="/css/hollow-v2.css" />
   <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-final.css" />
+  <link rel="stylesheet" href="/css/hollow-pages-v4.css" />
 </head>
-<body class="va-organized-body" data-page="times">
+<body class="va-organized-body hn4-section-page" data-page="times">
   <div class="va-shell">
     <main class="va-main">
-      <div class="hn2-title-row">
-        <header class="hn2-page-title"><small>Organizações da liga</small><h1>Clubes</h1><p>Explore as organizações da Hollow Nexus, conheça seus elencos, direção, capitães e conexões.</p></header>
-        <button id="openTeamCreateModalBtn" class="va-btn primary" type="button">Cadastrar clube</button>
-      </div>
-
-      <div class="hn2-filterbar">
-        <input id="clubSearch" type="search" placeholder="Buscar clube por nome, tag, diretor ou capitão..." autocomplete="off" />
-        <a class="va-btn" href="/pages/eventos.html">Ver competições</a>
-      </div>
-
-      <section class="hn2-layout">
-        <div class="hn2-main-col">
-          <article class="hn2-panel hn2-club-feature">
-            <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Destaque</span><h2>Clube em evidência</h2></div><a href="/pages/rankings.html">Classificação</a></div>
-            <div id="featuredClub"><p class="hn2-empty-copy">Carregando clube...</p></div>
-          </article>
-
-          <article class="hn2-panel hn2-club-list">
-            <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Diretório oficial</span><h2>Todos os clubes</h2></div><span class="hn2-pill"><b id="clubCountKpi">—</b>&nbsp; clubes</span></div>
-            <div id="teamsList" class="va-list"></div>
-            <div id="teamsStatus" class="va-status">Carregando...</div>
-          </article>
-        </div>
-
-        <aside class="hn2-side-col">
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Visão geral da liga</h2></div>
-            <div class="hn2-league-summary">
-              <div class="hn2-kpi"><span>Clubes registrados</span><strong id="clubCountKpiSide">—</strong></div>
-              <div class="hn2-kpi"><span>Ranking oficial</span><strong>HNL</strong></div>
-              <div class="hn2-kpi"><span>Temporada</span><strong>01</strong></div>
+      <div class="hn4-page">
+        <section class="hn4-page-hero">
+          <div class="hn4-club-hero-art" aria-hidden="true"></div>
+          <div class="hn4-page-hero-copy">
+            <div class="hn4-page-kicker">Organizações da liga</div>
+            <h1>Clubes</h1>
+            <p>Escudos, elencos, liderança, conexões e presença competitiva das organizações registradas na Hollow Nexus.</p>
+            <div class="hn4-page-actions">
+              <button id="openTeamCreateModalBtn" class="hn4-v4-btn primary" type="button">Cadastrar clube</button>
+              <a class="hn4-v4-btn" href="/pages/rankings.html">Ver classificação</a>
+              <a class="hn4-v4-btn" href="/pages/recrutamento.html">Recrutamento</a>
             </div>
-          </article>
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Gestão de clube</h2></div>
-            <p class="hn2-empty-copy">Diretores e capitães continuam usando o mesmo cadastro, convites e gerenciamento de elenco.</p>
-            <div class="hn2-quick-links" style="margin-top:16px">
-              <a href="/pages/recrutamento.html">Recrutamento</a>
-              <a href="/pages/chaveamento.html">Chaveamento</a>
-              <a href="/pages/resultados.html">Partidas</a>
+          </div>
+        </section>
+
+        <section class="hn4-v4-card">
+          <div class="hn4-v4-body">
+            <div class="hn4-v4-toolbar">
+              <input id="clubSearch" style="flex:1 1 360px" type="search" placeholder="Buscar clube por nome, tag, diretor ou capitão..." autocomplete="off" />
+              <a class="hn4-v4-btn" href="/pages/eventos.html">Competições</a>
+              <a class="hn4-v4-btn" href="/pages/resultados.html">Partidas</a>
             </div>
-          </article>
-          <div id="teamCreateStatus" class="va-status"></div>
-        </aside>
-      </section>
+          </div>
+        </section>
+
+        <section class="hn4-page-grid">
+          <div class="hn4-page-main">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Destaque da liga</span><h2>Clube em evidência</h2><p>Organização destacada com dados de elenco e liderança conectados ao cadastro real.</p></div><a href="/pages/rankings.html">Ranking completo</a></div>
+              <div class="hn4-v4-body" id="featuredClub"><div class="hn4-v4-empty">Carregando clube em destaque...</div></div>
+            </article>
+
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Diretório oficial</span><h2>Todos os clubes</h2><p>Abra qualquer card para ver diretoria, capitão, titulares, reservas e conexões públicas.</p></div><span class="va-badge"><b id="clubCountKpi">—</b>&nbsp; clubes</span></div>
+              <div class="hn4-v4-body">
+                <div id="teamsList" class="va-list"></div>
+                <div id="teamsStatus" class="va-status">Carregando...</div>
+              </div>
+            </article>
+          </div>
+
+          <aside class="hn4-page-side">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Visão geral</span><h2>Liga Hollow Nexus</h2></div></div>
+              <div class="hn4-v4-body">
+                <div class="hn4-v4-stats">
+                  <div class="hn4-v4-stat"><strong id="clubCountKpiSide">—</strong><span>Clubes</span></div>
+                  <div class="hn4-v4-stat"><strong>HNL</strong><span>Ranking</span></div>
+                  <div class="hn4-v4-stat"><strong>01</strong><span>Temporada</span></div>
+                </div>
+              </div>
+            </article>
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Gestão</span><h2>Central de clubes</h2></div></div>
+              <div class="hn4-v4-body hn4-v4-quick">
+                <a href="/pages/recrutamento.html">Mercado e recrutamento</a>
+                <a href="/pages/chaveamento.html">Chaveamento</a>
+                <a href="/pages/resultados.html">Resultados</a>
+                <a href="/pages/sumulas.html">Súmulas</a>
+              </div>
+            </article>
+            <div id="teamCreateStatus" class="va-status"></div>
+          </aside>
+        </section>
+      </div>
     </main>
   </div>
 
   <div id="teamCreateModal" class="va-modal-shell" hidden>
     <div class="va-modal-card va-team-create-modal">
-      <div class="va-modal-head"><div><p class="va-eyebrow">Cadastro de clube</p><h2>Criar clube</h2><p class="va-muted">Organize diretor, capitão, titulares e reservas por nome + ID Discord. Os dados continuam conectados aos perfis públicos.</p></div><button class="va-modal-close" type="button" data-team-create-close>×</button></div>
+      <div class="va-modal-head"><div><p class="va-eyebrow">Cadastro de clube</p><h2>Criar clube</h2><p class="va-muted">Organize diretor, capitão, titulares e reservas por nome + ID Discord.</p></div><button class="va-modal-close" type="button" data-team-create-close>×</button></div>
       <form id="teamCreateForm" class="va-form-grid two">
         <label>Nome do clube<input name="name" type="text" maxlength="80" placeholder="Ex: Hollow Nexus" required /></label>
         <label>Tag<input name="tag" type="text" maxlength="8" placeholder="Ex: HNX" required /></label>
@@ -85,5 +107,6 @@
   <script src="/js/pages/times-manage.js"></script>
   <script src="/js/pages/team-logo-upload.js"></script>
   <script src="/js/core/hollow-v2-runtime.js"></script>
+  <script src="/js/core/hollow-v2-final.js"></script>
 </body>
 </html>
