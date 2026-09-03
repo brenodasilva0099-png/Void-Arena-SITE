@@ -4,9 +4,9 @@
   "description": "Hollow Nexus League: competições, clubes, jogadores, recrutamento e eventos Rematch.",
   "main": "site/index.js",
   "scripts": {
-    "start": "node server/checkSiteFinal.js && node server/checkHollowV2Final.js && node server/bootSite.js",
-    "dev": "node server/checkSiteFinal.js && node server/checkHollowV2Final.js && node server/bootSite.js",
-    "check": "node server/checkSiteFinal.js && node server/checkHollowV2Final.js"
+    "start": "node server/bootSite.js",
+    "dev": "node server/bootSite.js",
+    "check": "node server/checkSiteFinal.js && node server/checkHollowV2Final.js && node server/checkHollowV4Unified.js"
   },
   "keywords": [
     "hollow-nexus-league",
