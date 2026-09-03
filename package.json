@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/bootSite.js",
     "dev": "node server/bootSite.js",
-    "check": "node server/checkSiteFinal.js && node server/checkHollowV2Final.js && node server/checkHollowV4Unified.js"
+    "check": "node server/checkHollowV4Source.js && node server/checkSiteFinal.js && node server/checkHollowV2Final.js && node server/checkHollowV4Unified.js"
   },
   "keywords": [
     "hollow-nexus-league",
