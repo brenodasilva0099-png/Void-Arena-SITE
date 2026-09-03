@@ -11,54 +11,86 @@
   <link rel="stylesheet" href="/css/recruitment.css" />
   <link rel="stylesheet" href="/css/hollow-v2.css" />
   <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-final.css" />
+  <link rel="stylesheet" href="/css/hollow-pages-v4.css" />
 </head>
-<body class="va-organized-body" data-page="jogadores">
+<body class="va-organized-body hn4-section-page" data-page="jogadores">
   <div class="va-shell">
     <main class="va-main">
-      <div class="hn2-title-row">
-        <header class="hn2-page-title"><small>Desempenho individual</small><h1>Jogadores</h1><p>Acompanhe perfis, posições, clubes e destaques individuais da comunidade competitiva.</p></header>
-        <a class="va-btn" href="/pages/recrutamento.html">Mercado / recrutamento</a>
-      </div>
-
-      <section class="hn2-player-feature">
-        <article id="featuredPlayerPanel" class="hn2-panel hn2-player-feature-card"><p class="hn2-empty-copy">Carregando jogador em destaque...</p></article>
-        <aside class="hn2-panel">
-          <div class="hn2-panel-head"><h2>Diretório competitivo</h2></div>
-          <div class="hn2-kpis">
-            <div class="hn2-kpi"><strong id="playerCountKpi">—</strong><span>Jogadores registrados</span></div>
-            <div class="hn2-kpi"><strong>HNL</strong><span>Temporada atual</span></div>
+      <div class="hn4-page">
+        <section class="hn4-page-hero">
+          <div class="hn4-player-hero-art" aria-hidden="true"></div>
+          <div class="hn4-page-hero-copy">
+            <div class="hn4-page-kicker">Desempenho individual</div>
+            <h1>Jogadores</h1>
+            <p>Perfis, posições, clubes, estatísticas e destaques individuais da comunidade competitiva da Hollow Nexus.</p>
+            <div class="hn4-page-actions">
+              <a class="hn4-v4-btn primary" href="#diretorio-jogadores">Explorar jogadores</a>
+              <a class="hn4-v4-btn" href="/pages/rankings.html">Rankings</a>
+              <a class="hn4-v4-btn" href="/pages/recrutamento.html">Mercado / recrutamento</a>
+            </div>
           </div>
-          <div class="hn2-quick-links" style="margin-top:14px"><a href="/pages/rankings.html">Ranking de jogadores</a><a href="/pages/placar.html">Café com Leite</a></div>
-        </aside>
-      </section>
+        </section>
 
-      <section class="hn2-layout" style="margin-top:16px">
-        <div class="hn2-main-col">
-          <article class="hn2-panel hn2-player-directory">
-            <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Todos os jogadores</span><h2>Perfis registrados</h2></div><button id="reloadDirectoryBtn" class="va-btn secondary" type="button">Atualizar</button></div>
-            <div class="hn2-filterbar" style="grid-template-columns:1fr"><input id="playerSearch" type="search" placeholder="Buscar por nome, clube, posição ou região..." autocomplete="off" /></div>
-            <div class="va-table-wrap"><table class="va-rank-table" id="playerDirectoryTable"></table></div>
-            <div id="playerDirectoryStatus" class="va-status">Carregando jogadores...</div>
-          </article>
-        </div>
+        <section class="hn4-page-grid">
+          <div class="hn4-page-main">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Destaque da comunidade</span><h2>Jogador em evidência</h2><p>O destaque é alimentado pelos perfis e estatísticas disponíveis na plataforma.</p></div><a href="/pages/rankings.html">Ranking completo</a></div>
+              <div class="hn4-v4-body"><div id="featuredPlayerPanel"><div class="hn4-v4-empty">Carregando jogador em destaque...</div></div></div>
+            </article>
+          </div>
+          <aside class="hn4-page-side">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Diretório competitivo</span><h2>Visão geral</h2></div></div>
+              <div class="hn4-v4-body">
+                <div class="hn4-v4-stats">
+                  <div class="hn4-v4-stat"><strong id="playerCountKpi">—</strong><span>Jogadores</span></div>
+                  <div class="hn4-v4-stat"><strong>HNL</strong><span>Liga</span></div>
+                  <div class="hn4-v4-stat"><strong>01</strong><span>Temporada</span></div>
+                </div>
+              </div>
+            </article>
+          </aside>
+        </section>
 
-        <aside class="hn2-side-col">
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Destaques do diretório</h2><a href="/pages/rankings.html">Ranking completo</a></div>
-            <div id="playerLeaders" class="hn2-leader-list"><p class="hn2-empty-copy">Aguardando jogadores...</p></div>
-          </article>
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Mercado e recrutamento</h2></div>
-            <p class="hn2-empty-copy">Jogadores livres e clubes continuam usando o fluxo de recrutamento conectado aos perfis públicos.</p>
-            <div class="hn2-quick-links" style="margin-top:14px"><a href="/pages/recrutamento.html">Abrir recrutamento</a><a href="/pages/times.html">Ver clubes</a></div>
-          </article>
-        </aside>
-      </section>
+        <section class="hn4-page-grid" id="diretorio-jogadores">
+          <div class="hn4-page-main">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head">
+                <div><span class="eyebrow">Todos os jogadores</span><h2>Diretório oficial</h2><p>Pesquise por nome, clube, posição ou região.</p></div>
+                <button id="reloadDirectoryBtn" class="va-btn secondary" type="button">Atualizar</button>
+              </div>
+              <div class="hn4-v4-body">
+                <div class="hn4-v4-toolbar" style="margin-bottom:12px"><input id="playerSearch" style="flex:1" type="search" placeholder="Buscar por nome, clube, posição ou região..." autocomplete="off" /></div>
+                <div class="va-table-wrap"><table class="va-rank-table" id="playerDirectoryTable"></table></div>
+                <div id="playerDirectoryStatus" class="va-status">Carregando jogadores...</div>
+              </div>
+            </article>
+          </div>
+
+          <aside class="hn4-page-side">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Líderes</span><h2>Destaques do diretório</h2></div><a href="/pages/rankings.html">Ranking</a></div>
+              <div class="hn4-v4-body" id="playerLeaders"><div class="hn4-v4-empty">Aguardando jogadores...</div></div>
+            </article>
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Mercado</span><h2>Carreira competitiva</h2></div></div>
+              <div class="hn4-v4-body hn4-v4-quick">
+                <a href="/pages/recrutamento.html">Jogadores livres</a>
+                <a href="/pages/times.html">Clubes da liga</a>
+                <a href="/pages/placar.html">Café com Leite</a>
+                <a href="/pages/perfil.html">Meu perfil</a>
+              </div>
+            </article>
+          </aside>
+        </section>
+      </div>
     </main>
   </div>
   <script src="/assets/api.js"></script>
   <script src="/js/core/social-icons.js"></script>
   <script src="/js/pages/recruitment.js"></script>
   <script src="/js/core/hollow-v2-runtime.js"></script>
+  <script src="/js/core/hollow-v2-final.js"></script>
 </body>
 </html>
