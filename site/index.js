@@ -3,8 +3,6 @@ require('dotenv').config();
 const CANONICAL_SITE_URL = 'https://hollownexus.com.br';
 const CANONICAL_DISCORD_CALLBACK_URL = `${CANONICAL_SITE_URL}/auth/discord/callback`;
 
-// Definido antes dos requires: nenhuma rota ou fallback antigo pode capturar
-// as variáveis do Render antes da troca para o domínio oficial.
 process.env.CANONICAL_SITE_URL = CANONICAL_SITE_URL;
 process.env.PUBLIC_SITE_URL = CANONICAL_SITE_URL;
 process.env.SITE_PUBLIC_URL = CANONICAL_SITE_URL;
@@ -50,6 +48,7 @@ const { registerChatBridgeAssetRoutes } = require('../server/routes/chatBridgeAs
 const { registerProfileAssetsStableRoutes } = require('../server/routes/profileAssetsStable.routes');
 const { registerMatchReportRoutes } = require('../server/routes/matchReports.routes');
 const { registerHomeDataSafetyRoutes } = require('../server/routes/homeDataSafety.routes');
+const { registerCriticalPublicDataGuard } = require('../server/routes/criticalPublicDataGuard.routes');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -84,17 +83,17 @@ registerLeagueStableRoutes(app);
 registerMatchReportRoutes(app);
 registerNexusCupRulesPublicationRoutes(app);
 registerTeamRegistrationGuidancePublicationRoutes(app);
-// Registros finais: removem rotas antigas e impedem que outra camada as sobrescreva.
 registerHubResultBridgeDisabledRoutes(app);
 registerFinalRuntimeStabilityRoutes(app);
 registerStableTeamInviteRoutes(app);
 registerChatBridgeAssetRoutes(app);
 registerProfileAssetsStableRoutes(app);
-// Último override de dados usados pela Home/Season Center: nunca deixa overview/ranking cair em 500.
 registerHomeDataSafetyRoutes(app);
 
-// Última barreira: registra a causa real de qualquer falha HTTP. Para a raiz,
-// mantém a Home acessível mesmo se uma rota antiga de arquivo estático falhar.
+// Barreira frontal definitiva: mesmo que uma rota legada ainda exista na pilha,
+// estes dois endpoints são resolvidos antes dela e nunca propagam HTTP 500.
+registerCriticalPublicDataGuard(app);
+
 app.use((error, req, res, next) => {
   console.error(`[HTTP/Error] ${req.method} ${req.originalUrl || req.url}:`, error?.stack || error?.message || error);
   if (res.headersSent) return next(error);
