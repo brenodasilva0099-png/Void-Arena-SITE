@@ -10,57 +10,84 @@
   <link rel="stylesheet" href="/css/scoring-rankings.css" />
   <link rel="stylesheet" href="/css/hollow-v2.css" />
   <link rel="stylesheet" href="/css/hollow-v2-runtime.css" />
+  <link rel="stylesheet" href="/css/hollow-v2-final.css" />
+  <link rel="stylesheet" href="/css/hollow-pages-v4.css" />
 </head>
-<body class="va-organized-body" data-page="rankings">
+<body class="va-organized-body hn4-section-page" data-page="rankings">
   <div class="va-shell">
     <main class="va-main">
-      <section class="hn2-rank-hero">
-        <header class="hn2-page-title"><small>A elite da Hollow Nexus</small><h1>Rankings</h1><p>Acompanhe a classificação de clubes e jogadores, desempenho competitivo e os rankings individuais da comunidade.</p></header>
-      </section>
-
-      <nav class="hn2-ranking-tabs" aria-label="Tipos de ranking">
-        <a class="active" href="/pages/rankings.html">Global</a>
-        <a href="/pages/placar.html#3v3">3v3</a>
-        <a href="/pages/placar.html#5v5">5v5</a>
-        <a href="/pages/placar.html">Café com Leite</a>
-      </nav>
-
-      <section id="rankingPodium" class="hn2-podium"><p class="hn2-empty-copy">Carregando pódio...</p></section>
-
-      <section class="hn2-ranking-main">
-        <div class="hn2-main-col">
-          <article class="hn2-panel">
-            <div class="hn2-panel-head">
-              <div><span class="hn2-panel-kicker">Classificação geral</span><h2>Ranking de clubes</h2></div>
-              <div class="va-rankings-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button></div>
+      <div class="hn4-page">
+        <section class="hn4-page-hero">
+          <div class="hn4-rank-hero-art" aria-hidden="true"><span class="p2"></span><span class="p1"></span><span class="p3"></span></div>
+          <div class="hn4-page-hero-copy">
+            <div class="hn4-page-kicker">Classificação oficial</div>
+            <h1>Rankings</h1>
+            <p>A elite da Hollow Nexus: clubes, jogadores e rankings individuais 3v3 e 5v5 em uma central competitiva única.</p>
+            <div class="hn4-page-actions">
+              <a class="hn4-v4-btn primary" href="#ranking-global">Ranking global</a>
+              <a class="hn4-v4-btn" href="/pages/placar.html#3v3">3v3</a>
+              <a class="hn4-v4-btn" href="/pages/placar.html#5v5">5v5</a>
             </div>
-            <div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div>
-          </article>
-        </div>
+          </div>
+        </section>
 
-        <aside class="hn2-ranking-side">
-          <article class="hn2-panel hn2-rank-stat"><span class="hn2-panel-kicker">Temporada</span><strong>HNL Season 01</strong><span>Classificação oficial da liga.</span><div class="hn2-progress"><span></span></div></article>
-          <article class="hn2-panel hn2-match-meta">
-            <div class="hn2-kpi"><strong id="rankedClubCount">—</strong><span>Clubes ranqueados</span></div>
-            <div class="hn2-kpi"><strong id="rankedPlayerCount">—</strong><span>Jogadores ranqueados</span></div>
-          </article>
-          <article class="hn2-panel">
-            <div class="hn2-panel-head"><h2>Explorar</h2></div>
-            <div class="hn2-quick-links"><a href="/pages/jogadores.html">Jogadores</a><a href="/pages/pontuacao.html">Regras de pontuação</a><a href="/pages/placar.html">Café com Leite</a></div>
-          </article>
-        </aside>
-      </section>
+        <nav class="hn4-page-tabs" aria-label="Tipos de ranking">
+          <a class="active" href="/pages/rankings.html">Global</a>
+          <a href="/pages/placar.html#3v3">3v3</a>
+          <a href="/pages/placar.html#5v5">5v5</a>
+          <a href="/pages/placar.html">Café com Leite</a>
+        </nav>
 
-      <section class="hn2-panel hn2-player-ranking-block">
-        <div class="hn2-panel-head"><div><span class="hn2-panel-kicker">Desempenho individual</span><h2>Ranking de jogadores</h2></div><a href="/pages/jogadores.html">Ver diretório</a></div>
-        <div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div>
-        <div id="rankingStatus" class="va-status">Carregando...</div>
-      </section>
+        <section class="hn4-v4-card">
+          <div class="hn4-v4-card-head"><div><span class="eyebrow">Top da liga</span><h2>Pódio geral</h2><p>Os três primeiros colocados aparecem em destaque conforme a classificação disponível.</p></div></div>
+          <div class="hn4-v4-body"><section id="rankingPodium" class="hn2-podium"><div class="hn4-v4-empty">Carregando pódio...</div></section></div>
+        </section>
+
+        <section class="hn4-page-grid" id="ranking-global">
+          <div class="hn4-page-main">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head">
+                <div><span class="eyebrow">Classificação geral</span><h2>Ranking de clubes</h2><p>Desempenho oficial por evento e temporada.</p></div>
+                <div class="hn4-v4-toolbar"><select id="rankingEventFilter"><option value="">Todos os eventos</option></select><button id="reloadRankingsBtn" class="va-btn secondary" type="button">Atualizar</button></div>
+              </div>
+              <div class="hn4-v4-body"><div class="va-table-wrap"><table class="va-rank-table" id="teamRankingTable"></table></div></div>
+            </article>
+
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Desempenho individual</span><h2>Ranking de jogadores</h2><p>Classificação individual com os dados oficiais disponíveis.</p></div><a href="/pages/jogadores.html">Diretório</a></div>
+              <div class="hn4-v4-body"><div class="va-table-wrap"><table class="va-rank-table" id="playerRankingTable"></table></div><div id="rankingStatus" class="va-status">Carregando...</div></div>
+            </article>
+          </div>
+
+          <aside class="hn4-page-side">
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">HNL Season 01</span><h2>Temporada</h2></div></div>
+              <div class="hn4-v4-body">
+                <div class="hn4-v4-stats">
+                  <div class="hn4-v4-stat"><strong id="rankedClubCount">—</strong><span>Clubes</span></div>
+                  <div class="hn4-v4-stat"><strong id="rankedPlayerCount">—</strong><span>Jogadores</span></div>
+                  <div class="hn4-v4-stat"><strong>01</strong><span>Season</span></div>
+                </div>
+              </div>
+            </article>
+            <article class="hn4-v4-card">
+              <div class="hn4-v4-card-head"><div><span class="eyebrow">Explorar</span><h2>Outros rankings</h2></div></div>
+              <div class="hn4-v4-body hn4-v4-quick">
+                <a href="/pages/placar.html#3v3">Café com Leite 3v3</a>
+                <a href="/pages/placar.html#5v5">Café com Leite 5v5</a>
+                <a href="/pages/pontuacao.html">Regras de pontuação</a>
+                <a href="/pages/jogadores.html">Jogadores</a>
+              </div>
+            </article>
+          </aside>
+        </section>
+      </div>
     </main>
   </div>
   <script src="/assets/api.js"></script>
   <script src="/js/core/social-icons.js"></script>
   <script src="/js/pages/rankings.js"></script>
   <script src="/js/core/hollow-v2-runtime.js"></script>
+  <script src="/js/core/hollow-v2-final.js"></script>
 </body>
 </html>
