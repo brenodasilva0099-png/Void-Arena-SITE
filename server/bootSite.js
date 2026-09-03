@@ -1,5 +1,8 @@
 require('dotenv').config();
 
+// Capture the committed V4 pages before any legacy patch can rewrite public/pages.
+const hollowV4 = require('./hollowV4CanonicalPages');
+
 const patches = [
   './patchCanonicalBotBridgeRuntime',
   './fetchTimeoutPatch',
@@ -73,8 +76,7 @@ const patches = [
   './patchNexusCupFinalPublicationRuntime',
   './patchSeasonMatchCentersRuntime',
   './patchCurrentSumulasNavigationRuntime',
-  './patchHollowNexusV2Runtime',
-  './patchHollowNexusV3CanonicalRuntime'
+  './patchHollowNexusV2Runtime'
 ];
 
 const patchFailures = [];
@@ -88,7 +90,24 @@ for (const patch of patches) {
   }
 }
 
-console.log(`[Boot] ${patches.length - patchFailures.length}/${patches.length} patches carregados.`);
+try {
+  hollowV4.restoreMainPages();
+  hollowV4.polishSecondaryPages();
+} catch (error) {
+  patchFailures.push({ patch: './hollowV4CanonicalPages', message: error?.message || String(error) });
+  console.error('[Boot/NonFatal] Não foi possível restaurar completamente as páginas V4:', error);
+}
+
+// Home has its own canonical template and must always be the final visual write.
+try {
+  require('./patchHollowNexusV3CanonicalRuntime');
+} catch (error) {
+  patchFailures.push({ patch: './patchHollowNexusV3CanonicalRuntime', message: error?.message || String(error) });
+  console.error('[Boot/NonFatal] Home V4 canônica não pôde ser restaurada:', error);
+}
+
+const totalPatches = patches.length + 2;
+console.log(`[Boot] ${totalPatches - patchFailures.length}/${totalPatches} patches/camadas carregados.`);
 if (patchFailures.length) {
   console.warn('[Boot] SITE continuará online com patches opcionais pendentes:', patchFailures);
 }
