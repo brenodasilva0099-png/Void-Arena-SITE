@@ -1,6 +1,6 @@
 {
   "name": "void-arena-site",
-  "version": "5.1.5",
+  "version": "5.1.6",
   "description": "Hollow Projects: portal público para demonstrações e downloads de projetos.",
   "main": "site/index.js",
   "scripts": {
