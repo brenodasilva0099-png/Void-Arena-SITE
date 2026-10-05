@@ -27,6 +27,12 @@ const forbiddenVisible = ['Void Arena', 'Federação Hollow Nexus', 'Correios da
 for (const file of htmlFiles) {
   const html = read(file);
   const relative = path.relative(ROOT, file).replaceAll(path.sep, '/');
+  if (html.includes('data-projects-portal="true"')) {
+    if (!html.includes('/css/ebook-downloads.css')) failures.push(`${relative}: estilo do portal ausente`);
+    if (/<script\b/i.test(html)) failures.push(`${relative}: scripts da liga não devem ser injetados no portal`);
+    if ((html.match(/ download(?:[\s>])/g) || []).length !== 4) failures.push(`${relative}: os quatro downloads do portal devem estar presentes`);
+    continue;
+  }
   if (!/class=["'][^"']*hn4-unified-page/i.test(html)) failures.push(`${relative}: classe hn4-unified-page ausente`);
   for (const asset of requiredAssets) {
     if (!html.includes(asset)) failures.push(`${relative}: asset V4 final ausente ${asset}`);

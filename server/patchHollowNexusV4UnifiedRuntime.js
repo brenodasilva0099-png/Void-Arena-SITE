@@ -59,6 +59,8 @@ function normalizeVisibleBranding(html) {
 function patch(file) {
   let html = read(file);
   if (!html) return false;
+  // The projects homepage has its own layout, without the league shell.
+  if (html.includes('data-projects-portal="true"')) return false;
   html = addBodyClass(html, 'hn4-unified-page');
   html = upsertCss(html, CSS_ASSET);
   html = upsertJs(html, JS_ASSET);

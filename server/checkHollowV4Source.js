@@ -6,7 +6,7 @@ const PAGES = path.join(ROOT, 'public', 'pages');
 const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 const required = {
-  'dashboard.html': ['hn4-home', 'HNL', 'SEASON 01'],
+  'dashboard.html': ['data-projects-portal="true"', 'Hollow Projects', 'projetos-ebooks'],
   'eventos.html': ['hn4-page', '<h1>Competições</h1>'],
   'times.html': ['hn4-page', '<h1>Clubes</h1>'],
   'jogadores.html': ['hn4-page', '<h1>Jogadores</h1>'],
