@@ -1,19 +1,18 @@
 {
   "name": "void-arena-site",
-  "version": "5.1.4",
-  "description": "Hollow Nexus League: competições, clubes, jogadores, recrutamento e eventos Rematch.",
+  "version": "5.1.5",
+  "description": "Hollow Projects: portal público para demonstrações e downloads de projetos.",
   "main": "site/index.js",
   "scripts": {
-    "start": "node server/bootSite.js",
-    "dev": "node server/bootSite.js",
-    "check": "node server/checkHollowV4Source.js && node server/checkSiteFinal.js && node server/checkHollowV2Final.js && node server/checkHollowV4Unified.js"
+    "start": "node site/index.js",
+    "dev": "node site/index.js",
+    "check": "node --check site/index.js && node --check server/app.js"
   },
   "keywords": [
-    "hollow-nexus-league",
-    "rematch",
-    "discord",
-    "tournament",
-    "community-league"
+    "hollow-projects",
+    "portfolio",
+    "ebooks",
+    "web-projects"
   ],
   "author": "Projeto Abyss",
   "license": "MIT",
